@@ -3,12 +3,25 @@
 import { readFile, stat } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  loadPerformanceBudgets,
+  validatePerformanceReport,
+} from "./validate-performance-results.mjs";
 
 const integration = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const native = resolve(integration, "../native");
 const formFactors = new Set(["phone", "tablet", "foldable", "2in1"]);
 const environments = new Set(["physical", "cloud"]);
 const minimumApiLevel = 26;
+export const requiredResourceCounters = Object.freeze([
+  "destinations",
+  "fileHandles",
+  "maps",
+  "mediaPlayers",
+  "nativeNodes",
+  "overlays",
+  "watchers",
+]);
 
 const [elementCatalog, capabilityCatalog] = await Promise.all([
   readFile(resolve(native, "native-elements.json"), "utf8"),
@@ -32,6 +45,14 @@ function coversExactly(result, expected) {
     return false;
   }
   return [...passed].sort().every((name, index) => name === expected[index]);
+}
+
+function hasNoResourceLeaks(resources) {
+  if (typeof resources !== "object" || resources === null) return false;
+  const names = Object.keys(resources).sort();
+  return names.length === requiredResourceCounters.length &&
+    names.every((name, index) => name === requiredResourceCounters[index]) &&
+    names.every((name) => resources[name] === 0);
 }
 
 export async function validateDeviceResults({ directory, commit, deviceName }) {
@@ -69,6 +90,9 @@ export async function validateDeviceResults({ directory, commit, deviceName }) {
   if (result.accessibility?.violations !== 0 || result.performance?.failures !== 0) {
     throw new Error("HarmonyOS accessibility or performance checks failed");
   }
+  if (!hasNoResourceLeaks(result.resources)) {
+    throw new Error("HarmonyOS device evidence contains missing or leaked resources");
+  }
   const files = [
     result.artifacts?.junit,
     result.artifacts?.accessibility,
@@ -90,6 +114,10 @@ export async function validateDeviceResults({ directory, commit, deviceName }) {
       throw new Error(`HarmonyOS evidence artifact is empty: ${relative}`);
     }
   }
+  const performanceReport = JSON.parse(
+    await readFile(resolve(directory, result.artifacts.performance), "utf8"),
+  );
+  validatePerformanceReport(performanceReport, loadPerformanceBudgets());
   return result;
 }
 

@@ -76,7 +76,7 @@ final class RestResponse<T> {
     this.headers,
     this.config,
     this.statusText,
-    this.xhrStatus,
+    this.transportStatus,
   });
 
   /// The data.
@@ -100,8 +100,8 @@ final class RestResponse<T> {
   /// The status text.
   final String? statusText;
 
-  /// The xhr status.
-  final HttpResponseStatus? xhrStatus;
+  /// Transport completion status.
+  final HttpResponseStatus? transportStatus;
 }
 
 /// Supported rest response source values.

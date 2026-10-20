@@ -246,7 +246,7 @@ class AngularTsTest {
             headers = mapOf("Content-Type" to "text/plain"),
             config = request,
             statusText = "OK",
-            xhrStatus = HttpResponseStatus.Complete,
+            transportStatus = HttpResponseStatus.Complete,
         )
 
         assertEquals("/api/items", request.url)
@@ -308,6 +308,40 @@ class AngularTsTest {
             val service = rest<Any, Int>("/api/items/{id}")
 
             assertNotNull(service)
+        }
+    }
+
+    @Test
+    fun preservesHttpFetchOptionsAndResponseStatus(): Promise<Unit> {
+        val controller = js("new AbortController()")
+        val raw = js("({})")
+        var captured: dynamic = null
+        raw.get = { _: String, options: dynamic ->
+            captured = options
+            Promise.resolve<dynamic>(js("({data:'ok',status:200,statusText:'OK',transportStatus:'complete'})"))
+        }
+        val http = HttpService(raw.unsafeCast<angular.ts.generated.HttpService>())
+        http.setDefaults(HttpDefaults(credentials = HttpCredentials.Include))
+        assertEquals("include", raw.defaults.credentials)
+        val response = http.get<String>(
+            "/api/items",
+            HttpRequestOptions(
+                defaults = HttpDefaults(credentials = HttpCredentials.Include),
+                credentials = HttpCredentials.Omit,
+                signal = controller.signal,
+                timeout = 1200,
+            ),
+        )
+        assertEquals("omit", captured.credentials)
+        assertEquals(1200, captured.timeout)
+        assertSame(controller.signal, captured.signal)
+        assertEquals("undefined", jsTypeOf(captured.withCredentials))
+        assertEquals("undefined", jsTypeOf(captured.eventHandlers))
+        assertEquals("undefined", jsTypeOf(captured.uploadEventHandlers))
+        controller.abort()
+        assertEquals(true, captured.signal.aborted)
+        return response.then<Unit> { value ->
+            assertEquals(HttpResponseStatus.Complete, value.transportStatus)
         }
     }
 

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "repeatIterations": 5,
+  "budgets": [
+    {
+      "metric": "coldStartMs.median",
+      "maximum": 1500,
+      "unit": "ms"
+    },
+    {
+      "metric": "firstNativeRevealMs.p95",
+      "maximum": 150,
+      "unit": "ms"
+    },
+    {
+      "metric": "bridgeRoundTripMs.p95",
+      "maximum": 100,
+      "unit": "ms"
+    },
+    {
+      "metric": "navigationMs.p95",
+      "maximum": 500,
+      "unit": "ms"
+    },
+    {
+      "metric": "scrollFrameMs.p95",
+      "maximum": 100,
+      "unit": "ms"
+    },
+    {
+      "metric": "memoryRssKb.median",
+      "maximum": 131072,
+      "unit": "KiB"
+    }
+  ]
+}

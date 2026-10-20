@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: bootstrap openharmony-bootstrap openharmony-audit openharmony-build toolchain-check generate generate-check contract-check artifact-check core-test script-test sample-check coverage-check bridge-test protocol-parity security-check node-test layout-test accessibility-test typecheck package-check proof-assets-check stage-proof-assets format-check lint compile proof compatibility-check parity-check check clean-consumer release-check publication-check device-evidence-check publish verify-published publish-release clean
+.PHONY: bootstrap openharmony-bootstrap openharmony-audit openharmony-build toolchain-check generate generate-check contract-check artifact-check core-test script-test sample-check coverage-check bridge-test protocol-parity security-check node-test layout-test accessibility-test typecheck package-check proof-assets-check stage-proof-assets format-check lint compile proof compatibility-check parity-check check clean-consumer device-test-build device-test-run device-test release-check publication-check device-evidence-check publish verify-published publish-release clean
 
 bootstrap:
 	./scripts/bootstrap-sdk.sh
@@ -91,7 +91,18 @@ clean-consumer: compile
 
 check: artifact-check typecheck coverage-check package-check format-check compatibility-check sample-check
 
-release-check: check lint compile clean-consumer
+device-test-build: toolchain-check generate-check stage-proof-assets
+	@trap 'rm -rf entry/src/main/resources/rawfile/dist' EXIT; \
+		ohpm install --all && \
+		hvigorw --mode project -p product=default -p buildMode=debug assembleHap && \
+		hvigorw --mode module -p module=entry@ohosTest -p isOhosTest=true -p buildMode=test assembleHap
+
+device-test-run: toolchain-check
+	node scripts/run-device-tests.mjs
+
+device-test: device-test-build device-test-run
+
+release-check: check lint compile clean-consumer device-test-build
 
 publication-check: release-check parity-check device-evidence-check
 

@@ -62,7 +62,7 @@ export class HarmonyNavigation {
       case "deep-link":
         return this._transaction(() => this._open("push", "deep-link", parameters, false));
       case "external": {
-        const location = safeLocation(parameters?.url, true);
+        const location = normalizeNavigationLocation(parameters?.url, true);
         return this._transaction(async () => {
           await this.platform.openExternal(location);
           this._assertActive();
@@ -123,7 +123,7 @@ export class HarmonyNavigation {
     parameters: Readonly<Record<string, unknown>> | null,
     modal: boolean,
   ): Promise<unknown> {
-    const location = safeLocation(parameters?.url, false);
+    const location = normalizeNavigationLocation(parameters?.url, false);
     const requested = transitionValue(parameters?.transition);
     const transition = this.reducedMotion && requested !== "none" ? "fade" : requested;
     const state = recordValue(parameters?.state);
@@ -195,14 +195,15 @@ export class HarmonyNavigation {
   }
 }
 
-function safeLocation(value: unknown, external: boolean): string {
+/** @internal */
+export function normalizeNavigationLocation(value: unknown, external: boolean): string {
   if (typeof value !== "string" || value.length === 0) {
     throw navigationError("invalid_params", "navigation requires params.url");
   }
   if (/[\u0000-\u0020\\]/u.test(value)) {
     throw navigationError("invalid_params", "navigation location is invalid");
   }
-  if (!external && value.startsWith("/")) return value;
+  if (!external && value.startsWith("/") && !value.startsWith("//")) return value;
   const schemeBoundary = value.indexOf(":");
   if (schemeBoundary < 1) {
     throw navigationError("invalid_params", "navigation location is invalid");
@@ -277,7 +278,7 @@ function recordValue(value: unknown): Readonly<Record<string, unknown>> {
 }
 
 function validateEntry(entry: NavigationEntry): NavigationEntry {
-  safeLocation(entry.location, false);
+  normalizeNavigationLocation(entry.location, false);
   transitionValue(entry.transition);
   return { ...entry, state: recordValue(entry.state) };
 }

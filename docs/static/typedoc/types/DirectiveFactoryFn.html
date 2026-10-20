@@ -86,59 +86,110 @@
           <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
             <li><a href="" aria-current="page">DirectiveFactoryFn</a></li>
           </ul>
-          <h1>Type Alias DirectiveFactoryFn</h1>
+          <h1>Type Alias DirectiveFactoryFn&lt;TController&gt;</h1>
         </div>
         <div class="tsd-signature">
           <span class="tsd-kind-type-alias">DirectiveFactoryFn</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-symbol">(</span
-          ><span class="tsd-signature-symbol">...</span
+          <span class="tsd-signature-symbol">(</span><br />    <span
+            class="tsd-signature-symbol"
+            >...</span
           ><span class="tsd-kind-parameter">args</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">never</span
           ><span class="tsd-signature-symbol">[]</span
-          ><span class="tsd-signature-symbol">)</span>
+          ><span class="tsd-signature-symbol">,</span><br /><span
+            class="tsd-signature-symbol"
+            >)</span
+          >
           <span class="tsd-signature-symbol">=&gt;</span>
-          <a
+          <span class="tsd-signature-type">Omit</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
             href="../interfaces/Directive.html"
             class="tsd-signature-type tsd-kind-interface"
             >Directive</a
-          >
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">,</span>
+          <span class="tsd-signature-type">never</span
+          ><span class="tsd-signature-symbol">&gt;</span>
           <span class="tsd-signature-symbol">|</span>
           <a
             href="DirectiveLinkFn.html"
             class="tsd-signature-type tsd-kind-type-alias"
             >DirectiveLinkFn</a
           ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">unknown</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
           ><span class="tsd-signature-symbol">&gt;</span>
         </div>
+        <div class="tsd-comment tsd-typography">
+          <p>
+            Injectable factory returning a directive definition or a link
+            function. Structural results let registries accept definitions with
+            known controller types.
+          </p>
+        </div>
+        <section class="tsd-panel">
+          <h4>Type Parameters</h4>
+          <ul class="tsd-type-parameter-list">
+            <li>
+              <span id="tcontroller"
+                ><span class="tsd-kind-type-parameter">TController</span> =
+                <span class="tsd-signature-type">unknown</span></span
+              >
+            </li>
+          </ul>
+        </section>
         <div class="tsd-type-declaration">
           <h4>Type Declaration</h4>
           <ul class="tsd-parameters">
             <li class="tsd-parameter-signature">
               <ul class="tsd-signatures">
                 <li class="tsd-signature" id="__type">
-                  <span class="tsd-signature-symbol">(</span
-                  ><span class="tsd-signature-symbol">...</span
+                  <span class="tsd-signature-symbol">(</span><br />    <span
+                    class="tsd-signature-symbol"
+                    >...</span
                   ><span class="tsd-kind-parameter">args</span
                   ><span class="tsd-signature-symbol">:</span>
                   <span class="tsd-signature-type">never</span
                   ><span class="tsd-signature-symbol">[]</span
-                  ><span class="tsd-signature-symbol">)</span
+                  ><span class="tsd-signature-symbol">,</span><br /><span
+                    class="tsd-signature-symbol"
+                    >)</span
                   ><span class="tsd-signature-symbol">:</span>
-                  <a
+                  <span class="tsd-signature-type">Omit</span
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><a
                     href="../interfaces/Directive.html"
                     class="tsd-signature-type tsd-kind-interface"
                     >Directive</a
-                  >
+                  ><span class="tsd-signature-symbol">&lt;</span
+                  ><a
+                    class="tsd-signature-type tsd-kind-type-parameter"
+                    href="#tcontroller"
+                    >TController</a
+                  ><span class="tsd-signature-symbol">&gt;</span
+                  ><span class="tsd-signature-symbol">,</span>
+                  <span class="tsd-signature-type">never</span
+                  ><span class="tsd-signature-symbol">&gt;</span>
                   <span class="tsd-signature-symbol">|</span>
                   <a
                     href="DirectiveLinkFn.html"
                     class="tsd-signature-type tsd-kind-type-alias"
                     >DirectiveLinkFn</a
                   ><span class="tsd-signature-symbol">&lt;</span
-                  ><span class="tsd-signature-type">unknown</span
+                  ><a
+                    class="tsd-signature-type tsd-kind-type-parameter"
+                    href="#tcontroller"
+                    >TController</a
                   ><span class="tsd-signature-symbol">&gt;</span>
                 </li>
                 <li class="tsd-description">
@@ -156,19 +207,31 @@
                     </ul>
                   </div>
                   <h4 class="tsd-returns-title">
-                    Returns
-                    <a
+                    Returns <span class="tsd-signature-type">Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
                       href="../interfaces/Directive.html"
                       class="tsd-signature-type tsd-kind-interface"
                       >Directive</a
-                    >
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#tcontroller"
+                      >TController</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">never</span
+                    ><span class="tsd-signature-symbol">&gt;</span>
                     <span class="tsd-signature-symbol">|</span>
                     <a
                       href="DirectiveLinkFn.html"
                       class="tsd-signature-type tsd-kind-type-alias"
                       >DirectiveLinkFn</a
                     ><span class="tsd-signature-symbol">&lt;</span
-                    ><span class="tsd-signature-type">unknown</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#tcontroller"
+                      >TController</a
                     ><span class="tsd-signature-symbol">&gt;</span>
                   </h4>
                 </li>

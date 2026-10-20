@@ -101,7 +101,14 @@
               <a href="../classes/HttpError.html" class="tsd-kind-class"
                 >HttpError</a
               >
-              for errors.
+              for HTTP or transport failures. Configuration, transform, and
+              interceptor errors can reject with other error types.
+            </p>
+            <p>
+              Uses Fetch exclusively. Cancel with a native
+              <code>AbortSignal</code>, set a numeric <code>timeout</code> for a
+              deadline, and observe completion through the returned promise.
+              Upload progress events are not available.
             </p>
           </div>
         </section>

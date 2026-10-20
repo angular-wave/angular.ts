@@ -96,17 +96,9 @@
               <code>$http.defaults</code>.
             </p>
             <p>
-              Not every <code>HttpRequestOptions</code> field is supported here;
-              this shape only includes the fields that the runtime reads from
-              provider-level defaults.
-            </p>
-            <p>
-              <a href="https://docs.angularjs.org/api/ng/service/$http#defaults"
-                >https://docs.angularjs.org/api/ng/service/$http#defaults</a
-              >
-              <a href="https://docs.angularjs.org/api/ng/service/$http#usage"
-                >https://docs.angularjs.org/api/ng/service/$http#usage</a
-              >
+              Only the settings declared here are read from service-level
+              defaults. Set <code>timeout</code>, <code>signal</code>, and
+              <code>responseType</code> on individual requests instead.
             </p>
           </div>
         </section>
@@ -122,6 +114,12 @@
             href="../types/HttpCacheOption.html"
             class="tsd-signature-type tsd-kind-type-alias"
             >HttpCacheOption</a
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
+            href="#credentials"
+            >credentials</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">RequestCredentials</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#headers"
@@ -183,12 +181,6 @@
           ><span class="tsd-signature-symbol">[]</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
-            href="#withcredentials"
-            >withCredentials</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">boolean</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
             href="#xsrfcookiename"
             >xsrfCookieName</a
           ><span class="tsd-signature-symbol">?:</span>
@@ -204,7 +196,7 @@
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="2897">
+        <section class="tsd-panel tsd-hierarchy" data-refl="2971">
           <h4>
             Hierarchy (<a href="../hierarchy.html#HttpDefaults">View Summary</a
             >)
@@ -252,6 +244,15 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>cache?</span></a
                     >
+                    <a href="#credentials" class="tsd-index-link"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>credentials?</span></a
+                    >
                     <a href="#headers" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -287,15 +288,6 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>transform<wbr />Response?</span></a
-                    >
-                    <a href="#withcredentials" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>with<wbr />Credentials?</span></a
                     >
                     <a href="#xsrfcookiename" class="tsd-index-link"
                       ><svg
@@ -354,8 +346,31 @@
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Cache used for cacheable requests. <code>true</code> enables
-                  the default cache.
+                  GET caching: <code>true</code> enables the URL cache; a
+                  strategy selects strategy-aware caching.
+                </p>
+              </div>
+            </section>
+            <section class="tsd-panel tsd-member">
+              <h3 class="tsd-anchor-link" id="credentials">
+                <code class="tsd-tag">Optional</code><span>credentials</span
+                ><a
+                  href="#credentials"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">credentials</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">RequestCredentials</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Fetch credential mode. Defaults to
+                  <code>&quot;same-origin&quot;</code>.
                 </p>
               </div>
             </section>
@@ -380,7 +395,10 @@
                 >
               </div>
               <div class="tsd-comment tsd-typography">
-                <p>Default headers merged into each request.</p>
+                <p>
+                  Default headers grouped by method and merged into each request
+                  case-insensitively.
+                </p>
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -476,30 +494,6 @@
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Response body transform pipeline.</p>
-              </div>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="withcredentials">
-                <code class="tsd-tag">Optional</code
-                ><span>with<wbr />Credentials</span
-                ><a
-                  href="#withcredentials"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">withCredentials</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">boolean</span>
-              </div>
-              <div class="tsd-comment tsd-typography">
-                <p>
-                  Whether cross-site requests should include credentials by
-                  default.
-                </p>
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -715,6 +709,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>cache</span></a
+                  ><a href="#credentials"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>credentials</span></a
                   ><a href="#headers"
                     ><svg
                       class="tsd-kind-icon"
@@ -747,14 +749,6 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>transform<wbr />Response</span></a
-                  ><a href="#withcredentials"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>with<wbr />Credentials</span></a
                   ><a href="#xsrfcookiename"
                     ><svg
                       class="tsd-kind-icon"

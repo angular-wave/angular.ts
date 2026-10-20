@@ -403,6 +403,13 @@ export type {
   HtmlCanvasSourceOptions,
   NativeHtmlCanvasService,
 } from "./services/html-canvas/html-canvas.ts";
+export { canvasModule } from "./runtime/canvas.ts";
+export type {
+  CanvasFrame,
+  CanvasRenderer,
+  CanvasSize,
+  CanvasSurface,
+} from "./directive/canvas/canvas.ts";
 export type {
   TemplateCache,
   TemplateCacheConfig,

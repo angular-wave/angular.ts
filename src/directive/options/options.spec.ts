@@ -346,6 +346,86 @@ describe("ngOptions", () => {
     expect(options[1].selected).toEqual(true);
   });
 
+  [
+    ["collection", "item.name for item in collections[' as ']"],
+    ["group", "item.name group by 'shown as a group' for item in values"],
+    [
+      "disabled condition",
+      "item.name disable when item.name === 'locked as a value' for item in values",
+    ],
+  ].forEach(([clause, expression]) => {
+    [false, true].forEach((multiple) => {
+      it(`should preserve object values with ' as ' in the ${clause} expression (${multiple ? "multiple" : "single"})`, async () => {
+        scope.values = [
+          { name: "A" },
+          { name: "B" },
+          { name: "locked as a value" },
+        ];
+        scope.collections = { " as ": scope.values };
+        scope.selected = multiple ? [scope.values[0]] : scope.values[0];
+
+        await createSelect({
+          "ng-model": "selected",
+          "ng-options": expression,
+          ...(multiple ? { multiple: "" } : {}),
+        });
+        await wait();
+
+        expect(element).toEqualSelectValue(scope.selected, multiple);
+        const options = Array.from(element.options);
+        expect(options.length).toBe(3);
+        if (clause === "group") {
+          expect(element.querySelector("optgroup").label).toBe(
+            "shown as a group",
+          );
+        }
+        if (clause === "disabled condition") {
+          expect(
+            options.find((option) => option.label === "locked as a value")
+              .disabled,
+          ).toBeTrue();
+        }
+
+        options.forEach((option) => {
+          option.selected = option.label === "B";
+        });
+        browserTrigger(element, "change");
+        await wait();
+
+        expect(multiple ? scope.selected[0] : scope.selected).toBe(
+          scope.values[1],
+        );
+        if (multiple) expect(scope.selected.length).toBe(1);
+        expect(errors).toEqual([]);
+      });
+    });
+  });
+
+  it("should map values with multiline optional clauses", async () => {
+    scope.values = [
+      { id: 0, name: "A", group: "Available", disabled: false },
+      { id: 1, name: "B", group: "Available", disabled: false },
+      { id: 2, name: "C", group: "Unavailable", disabled: true },
+    ];
+    scope.selected = 0;
+    await compile(`<select ng-model="selected" ng-options="item.id
+      as item.name
+      group by item.group
+      disable when item.disabled
+      for item in values"></select>`);
+
+    const options = element.querySelectorAll("option");
+    expect(options.length).toBe(3);
+    expect(options[0].selected).toBeTrue();
+    expect(options[2].disabled).toBeTrue();
+    expect(element.querySelectorAll("optgroup").length).toBe(2);
+
+    setSelectValue(element, 1);
+    await wait();
+    expect(scope.selected).toBe(1);
+    expect(errors).toEqual([]);
+  });
+
   it("should not include properties with non-numeric keys in array-like collections when using array syntax", async () => {
     await compile(
       '<select ng-model="selected" ng-options="value for value in values"></select>',

@@ -23,19 +23,18 @@ function ngOptionsDirective($compile, $parse) {
         const match = NG_OPTIONS_REGEXP.exec(optionsExp);
         if (!match) {
             throw ngOptionsError("iexp", "Expected expression in form of " +
-                "'_select_ (as _label_)? for (_key_,)?_value_ in _collection_'" +
+                "'_select_ (as _label_)? (group by _group_)? " +
+                "(disable when _condition_)? for _value_ in _collection_' " +
+                "(or 'for (_key_, _value_) in _collection_')" +
                 " but got '{0}'. Element: {1}", optionsExp, startingTag(selectElement));
         }
-        const [, selectAsExpression, displayExpression, , , valueAlias, keyName, itemAlias,] = match;
+        const [, valueExpression, labelExpression, groupExpression, disabledExpression, valueAlias, keyName, itemAlias, collectionExpression,] = match;
         const valueName = valueAlias || itemAlias;
-        const selectAs = match[0].includes(" as ") && selectAsExpression;
-        const valueFn = $parse(displayExpression ? selectAsExpression : valueName);
-        const selectAsFn = selectAs && $parse(selectAs);
-        const viewValueFn = selectAsFn || valueFn;
-        const displayFn = $parse(match[2] || match[1]);
-        const groupByFn = $parse(match[3] || "");
-        const disableWhenFn = $parse(match[4] || "");
-        const valuesFn = $parse(match[8]);
+        const viewValueFn = $parse(labelExpression ? valueExpression : valueName);
+        const displayFn = $parse(labelExpression || valueExpression);
+        const groupByFn = $parse(groupExpression || "");
+        const disableWhenFn = $parse(disabledExpression || "");
+        const valuesFn = $parse(collectionExpression);
         const locals = {};
         const getLocals = keyName
             ? (value, key) => {
@@ -48,7 +47,7 @@ function ngOptionsDirective($compile, $parse) {
                 return locals;
             };
         return {
-            _getWatchables: match[8],
+            _getWatchables: collectionExpression,
             /** @internal */
             _getOptions() {
                 const optionItems = [];

@@ -77,6 +77,10 @@ Rust reference example makes one necessary.
 | `Angular` | deferred |
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | deferred |
+| `CanvasFrame` | deferred |
+| `CanvasRenderer` | deferred |
+| `CanvasSize` | deferred |
+| `CanvasSurface` | deferred |
 | `ClassMap` | deferred |
 | `ClassValue` | deferred |
 | `Component` | covered |

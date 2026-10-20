@@ -58,6 +58,14 @@ public enum class HttpMethod(
     Options("OPTIONS"),
 }
 
+public enum class HttpCredentials(
+    public val raw: String,
+) {
+    Omit("omit"),
+    SameOrigin("same-origin"),
+    Include("include"),
+}
+
 public enum class HttpResponseStatus(
     public val raw: String,
 ) {
@@ -143,7 +151,7 @@ public data class HttpDefaults public constructor(
     public val headers: HttpRequestConfigHeaders? = null,
     public val xsrfHeaderName: String? = null,
     public val xsrfCookieName: String? = null,
-    public val withCredentials: Boolean? = null,
+    public val credentials: HttpCredentials? = null,
     public val paramSerializer: Any? = null,
 )
 
@@ -155,11 +163,12 @@ public data class HttpRequestOptions public constructor(
     public val headers: HttpRequestConfigHeaders? = null,
     public val xsrfHeaderName: String? = null,
     public val xsrfCookieName: String? = null,
-    public val withCredentials: Boolean? = null,
+    public val credentials: HttpCredentials? = null,
     public val paramSerializer: Any? = null,
     public val params: HttpParams? = null,
     public val data: Any? = null,
-    public val timeout: Any? = null,
+    public val timeout: Int? = null,
+    public val signal: Any? = null,
     public val responseType: HttpResponseType? = null,
 )
 
@@ -173,14 +182,13 @@ public data class HttpRequestConfig public constructor(
     public val headers: HttpRequestConfigHeaders? = null,
     public val xsrfHeaderName: String? = null,
     public val xsrfCookieName: String? = null,
-    public val withCredentials: Boolean? = null,
+    public val credentials: HttpCredentials? = null,
     public val paramSerializer: Any? = null,
     public val params: HttpParams? = null,
     public val data: Any? = null,
-    public val timeout: Any? = null,
+    public val timeout: Int? = null,
+    public val signal: Any? = null,
     public val responseType: HttpResponseType? = null,
-    public val eventHandlers: Map<String, Any?>? = null,
-    public val uploadEventHandlers: Map<String, Any?>? = null,
 )
 
 public data class HttpResponse<T> public constructor(
@@ -189,7 +197,7 @@ public data class HttpResponse<T> public constructor(
     public val headers: HttpHeaders = emptyMap(),
     public val config: HttpRequestConfig? = null,
     public val statusText: String = "",
-    public val xhrStatus: HttpResponseStatus? = null,
+    public val transportStatus: HttpResponseStatus? = null,
 ) {
     internal companion object {
         internal fun <T> fromJs(raw: dynamic): HttpResponse<T> =
@@ -197,7 +205,7 @@ public data class HttpResponse<T> public constructor(
                 data = raw.data.unsafeCast<T>(),
                 status = raw.status.unsafeCast<Int>(),
                 statusText = raw.statusText.unsafeCast<String?>() ?: "",
-                xhrStatus = httpResponseStatus(raw.xhrStatus),
+                transportStatus = httpResponseStatus(raw.transportStatus),
             )
     }
 }
@@ -231,7 +239,7 @@ public data class RestResponse<T> public constructor(
     public val headers: HttpHeaders? = null,
     public val config: HttpRequestConfig? = null,
     public val statusText: String? = null,
-    public val xhrStatus: HttpResponseStatus? = null,
+    public val transportStatus: HttpResponseStatus? = null,
 ) {
     internal companion object {
         internal fun <T> fromJs(raw: dynamic): RestResponse<T> =
@@ -241,7 +249,7 @@ public data class RestResponse<T> public constructor(
                 stale = raw.stale.unsafeCast<Boolean?>() ?: false,
                 status = raw.status.unsafeCast<Int?>(),
                 statusText = raw.statusText.unsafeCast<String?>(),
-                xhrStatus = httpResponseStatus(raw.xhrStatus),
+                transportStatus = httpResponseStatus(raw.transportStatus),
             )
     }
 }
@@ -779,7 +787,7 @@ private fun HttpDefaults.toJs(): dynamic {
     if (headers != null) raw.headers = headers.toJs()
     if (xsrfHeaderName != null) raw.xsrfHeaderName = xsrfHeaderName
     if (xsrfCookieName != null) raw.xsrfCookieName = xsrfCookieName
-    if (withCredentials != null) raw.withCredentials = withCredentials
+    if (credentials != null) raw.credentials = credentials.raw
     if (paramSerializer != null) raw.paramSerializer = paramSerializer
 
     return raw
@@ -794,11 +802,12 @@ private fun HttpRequestOptions.toJs(): dynamic {
     if (headers != null) raw.headers = headers.toJs()
     if (xsrfHeaderName != null) raw.xsrfHeaderName = xsrfHeaderName
     if (xsrfCookieName != null) raw.xsrfCookieName = xsrfCookieName
-    if (withCredentials != null) raw.withCredentials = withCredentials
+    if (credentials != null) raw.credentials = credentials.raw
     if (paramSerializer != null) raw.paramSerializer = paramSerializer
     if (params != null) raw.params = params.toJsRecord()
     if (data != null) raw.data = data
     if (timeout != null) raw.timeout = timeout
+    if (signal != null) raw.signal = signal
     if (responseType != null) raw.responseType = responseType.raw
 
     return raw
@@ -813,14 +822,13 @@ private fun HttpRequestConfig.toJs(): dynamic {
     if (headers != null) raw.headers = headers.toJs()
     if (xsrfHeaderName != null) raw.xsrfHeaderName = xsrfHeaderName
     if (xsrfCookieName != null) raw.xsrfCookieName = xsrfCookieName
-    if (withCredentials != null) raw.withCredentials = withCredentials
+    if (credentials != null) raw.credentials = credentials.raw
     if (paramSerializer != null) raw.paramSerializer = paramSerializer
     if (params != null) raw.params = params.toJsRecord()
     if (data != null) raw.data = data
     if (timeout != null) raw.timeout = timeout
+    if (signal != null) raw.signal = signal
     if (responseType != null) raw.responseType = responseType.raw
-    if (eventHandlers != null) raw.eventHandlers = eventHandlers.toJsRecord()
-    if (uploadEventHandlers != null) raw.uploadEventHandlers = uploadEventHandlers.toJsRecord()
 
     raw.method = method.raw
     raw.url = url
@@ -852,7 +860,7 @@ private fun RestResponse<*>.toJs(): dynamic {
     if (headers != null) raw.headers = headers.toJsRecord()
     if (config != null) raw.config = config.toJs()
     if (statusText != null) raw.statusText = statusText
-    if (xhrStatus != null) raw.xhrStatus = xhrStatus.raw
+    if (transportStatus != null) raw.transportStatus = transportStatus.raw
 
     return raw
 }

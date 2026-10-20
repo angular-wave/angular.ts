@@ -104,13 +104,12 @@
         </div>
         <div class="tsd-comment tsd-typography">
           <p>
-            Downloads a template using $http and, upon success, stores the
-            contents inside of $templateCache.
-          </p>
-          <p>
-            If the HTTP request fails or the response data of the HTTP request
-            is empty then a $compile error will be thrown (unless
-            {ignoreRequestError} is set to true).
+            Returns cached template text or downloads it through
+            <code>$http</code> and stores it in <code>$templateCache</code>.
+            Concurrent requests for the same URL share one promise.
+            <code>$compile.resourceUrlPolicy</code> validates or rewrites the
+            URL before lookup. HTTP failures reject; an empty successful
+            response is returned unchanged.
           </p>
         </div>
         <div class="tsd-type-declaration">

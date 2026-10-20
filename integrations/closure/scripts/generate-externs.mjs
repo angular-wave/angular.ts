@@ -59,6 +59,14 @@ const memberTypeOverrides = new Map([
   ["Angular.subapps", "!Array<!ng.Angular>"],
   ["Angular.tokens", "!Object"],
   ["Scope._target", "!Object"],
+  // Closure cannot express the controller-dependent mapped binding keys.
+  ["Component.bindings", "!Object<string, string>"],
+  ["ComponentDefinition.bindings", "!Object<string, string>"],
+  ["Directive.bindToController", "(!Object<string, string>|boolean)"],
+  [
+    "AngularElementOptions.directives",
+    "(!Array<!Object<string, !ng.DirectiveFactory>>|!Object<string, !ng.DirectiveFactory>)",
+  ],
 ]);
 
 memberTypeOverrides.set(
@@ -102,6 +110,7 @@ const parameterTypeOverrides = new Map([
   ["NgModule.provider.providerType", "!ng.Injectable"],
   ["NgModule.decorator.decorFn", "!ng.Injectable"],
   ["NgModule.directive.directiveFactory", "!ng.DirectiveFactory"],
+  ["RouterModule.directive.directiveFactory", "!ng.DirectiveFactory"],
   ["NgModule.animation.animationFactory", "!ng.Injectable"],
   ["NgModule.controller.ctlFn", "!ng.Injectable"],
   ["NgModule.store.ctor", storeCreatorType],

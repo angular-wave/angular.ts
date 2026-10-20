@@ -28,6 +28,12 @@ export type {
   HarmonyNavPathStack,
 } from "./HarmonyNavPathPlatform.ts";
 export { openHarmonyExternalLocation } from "./HarmonyExternalNavigation.ets";
+export { AngularNativeNavigationAbility } from "./AngularNativeNavigationAbility.ets";
+export {
+  HARMONY_NAVIGATION_RECOVERY_PARAMETER,
+  HarmonyNavigationRecovery,
+  harmonyNavigationRecovery,
+} from "./HarmonyNavigationRecovery.ts";
 export {
   AngularNativeNavigation,
   AngularNativeNavigationController,

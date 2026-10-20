@@ -5,12 +5,10 @@ import {
 import { extend, isArray, isString } from "../../shared/utils.ts";
 
 /**
- * Downloads a template using $http and, upon success, stores the
- * contents inside of $templateCache.
- *
- * If the HTTP request fails or the response data of the HTTP request is
- * empty then a $compile error will be thrown (unless
- * {ignoreRequestError} is set to true).
+ * Returns cached template text or downloads it through `$http` and stores it in
+ * `$templateCache`. Concurrent requests for the same URL share one promise.
+ * `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup.
+ * HTTP failures reject; an empty successful response is returned unchanged.
  *
  * @param templateUrl The template URL.
  *
@@ -24,7 +22,8 @@ export type TemplateRequestService = (templateUrl: string) => Promise<string>;
  */
 export interface TemplateRequestConfig {
   /**
-   * `$http.get()` options merged into every template request.
+   * `$http.get()` options merged into every template request, including Fetch
+   * credentials, a numeric timeout, and a native cancellation signal.
    */
   httpOptions?: ng.HttpRequestOptions;
 }

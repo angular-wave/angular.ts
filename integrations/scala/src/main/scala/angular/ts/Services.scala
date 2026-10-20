@@ -3145,6 +3145,11 @@ enum HttpMethod(val value: String):
   case Head extends HttpMethod("HEAD")
   case Options extends HttpMethod("OPTIONS")
 
+enum HttpCredentials(val value: String):
+  case Omit extends HttpCredentials("omit")
+  case SameOrigin extends HttpCredentials("same-origin")
+  case Include extends HttpCredentials("include")
+
 enum HttpResponseStatus(val value: String):
   case Complete extends HttpResponseStatus("complete")
   case Error extends HttpResponseStatus("error")
@@ -3154,18 +3159,20 @@ enum HttpResponseStatus(val value: String):
 final case class HttpRequestOptions(
     params: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
     data: js.UndefOr[js.Any] = js.undefined,
-    timeout: js.UndefOr[Double | js.Promise[js.Any]] = js.undefined,
+    timeout: js.UndefOr[Double] = js.undefined,
+    signal: js.UndefOr[dom.AbortSignal] = js.undefined,
     responseType: js.UndefOr[String] = js.undefined,
-    withCredentials: js.UndefOr[Boolean] = js.undefined,
+    credentials: js.UndefOr[HttpCredentials] = js.undefined,
     headers: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
     JsObjectBuilder(
       "params" -> params,
       "data" -> data,
-      "timeout" -> timeout.asInstanceOf[js.UndefOr[js.Any]],
+      "timeout" -> timeout,
+      "signal" -> signal,
       "responseType" -> responseType,
-      "withCredentials" -> withCredentials,
+      "credentials" -> credentials.map(_.value),
       "headers" -> headers,
     )
 
@@ -3174,9 +3181,10 @@ final case class HttpRequestConfig(
     url: String,
     params: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
     data: js.UndefOr[js.Any] = js.undefined,
-    timeout: js.UndefOr[Double | js.Promise[js.Any]] = js.undefined,
+    timeout: js.UndefOr[Double] = js.undefined,
+    signal: js.UndefOr[dom.AbortSignal] = js.undefined,
     responseType: js.UndefOr[String] = js.undefined,
-    withCredentials: js.UndefOr[Boolean] = js.undefined,
+    credentials: js.UndefOr[HttpCredentials] = js.undefined,
     headers: js.UndefOr[js.Dictionary[js.Any]] = js.undefined,
 ):
   private[ts] def toJS: js.Object =
@@ -3185,9 +3193,10 @@ final case class HttpRequestConfig(
       "url" -> url,
       "params" -> params,
       "data" -> data,
-      "timeout" -> timeout.asInstanceOf[js.UndefOr[js.Any]],
+      "timeout" -> timeout,
+      "signal" -> signal,
       "responseType" -> responseType,
-      "withCredentials" -> withCredentials,
+      "credentials" -> credentials.map(_.value),
       "headers" -> headers,
     )
 
@@ -3203,7 +3212,7 @@ trait HttpResponse[+A] extends js.Object:
   val headers: HttpHeadersGetter = js.native
   val config: js.Object = js.native
   val statusText: String = js.native
-  val xhrStatus: String = js.native
+  val transportStatus: String = js.native
 
 @js.native
 trait HttpDefaults extends js.Object:
@@ -3211,7 +3220,7 @@ trait HttpDefaults extends js.Object:
   var headers: js.UndefOr[js.Dictionary[js.Any]] = js.native
   var xsrfHeaderName: js.UndefOr[String] = js.native
   var xsrfCookieName: js.UndefOr[String] = js.native
-  var withCredentials: js.UndefOr[Boolean] = js.native
+  var credentials: js.UndefOr[String] = js.native
   var paramSerializer: js.UndefOr[String | js.Function1[js.Dictionary[js.Any], String]] =
     js.native
 

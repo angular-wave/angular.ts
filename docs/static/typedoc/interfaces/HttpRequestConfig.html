@@ -92,10 +92,6 @@
           <div class="tsd-comment tsd-typography">
             <p>
               Full request configuration accepted by <code>$http(...)</code>.
-              See
-              <a href="http://docs.angularjs.org/api/ng/service/$http#usage"
-                >http://docs.angularjs.org/api/ng/service/$http#usage</a
-              >
             </p>
           </div>
         </section>
@@ -113,25 +109,16 @@
             >HttpCacheOption</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
+            href="#credentials"
+            >credentials</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">RequestCredentials</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
             href="#data"
             >data</a
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-type">unknown</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
-            href="#eventhandlers"
-            >eventHandlers</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Partial</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">Record</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type"
-            >EventListenerOrEventListenerObject</span
-          ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#headers"
@@ -194,15 +181,16 @@
           <span class="tsd-signature-type">string</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
+            href="#signal"
+            >signal</a
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">AbortSignal</span
+          ><span class="tsd-signature-symbol">;</span><br />    <a
+            class="tsd-kind-property"
             href="#timeout"
             >timeout</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">number</span>
-          <span class="tsd-signature-symbol">|</span>
-          <span class="tsd-signature-type">Promise</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">unknown</span
-          ><span class="tsd-signature-symbol">&gt;</span
+          <span class="tsd-signature-type">number</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#transformrequest"
@@ -237,34 +225,10 @@
           ><span class="tsd-signature-symbol">[]</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
-            href="#uploadeventhandlers"
-            >uploadEventHandlers</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Partial</span
-          ><span class="tsd-signature-symbol">&lt;</span><br />        <span
-            class="tsd-signature-type"
-            >Record</span
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type"
-            >EventListenerOrEventListenerObject</span
-          ><span class="tsd-signature-symbol">&gt;</span
-          ><span class="tsd-signature-symbol">,</span><br />    <span
-            class="tsd-signature-symbol"
-            >&gt;</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
             href="#url"
             >url</a
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">;</span><br />    <a
-            class="tsd-kind-property"
-            href="#withcredentials"
-            >withCredentials</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">boolean</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#xsrfcookiename"
@@ -282,7 +246,7 @@
             >}</span
           >
         </div>
-        <section class="tsd-panel tsd-hierarchy" data-refl="2976">
+        <section class="tsd-panel tsd-hierarchy" data-refl="3050">
           <h4>
             Hierarchy (<a href="../hierarchy.html#HttpRequestConfig"
               >View Summary</a
@@ -331,6 +295,17 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>cache?</span></a
                     >
+                    <a
+                      href="#credentials"
+                      class="tsd-index-link tsd-is-inherited"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>credentials?</span></a
+                    >
                     <a href="#data" class="tsd-index-link tsd-is-inherited"
                       ><svg
                         class="tsd-kind-icon"
@@ -339,15 +314,6 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>data?</span></a
-                    >
-                    <a href="#eventhandlers" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>event<wbr />Handlers?</span></a
                     >
                     <a href="#headers" class="tsd-index-link tsd-is-inherited"
                       ><svg
@@ -398,6 +364,15 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>response<wbr />Type?</span></a
                     >
+                    <a href="#signal" class="tsd-index-link tsd-is-inherited"
+                      ><svg
+                        class="tsd-kind-icon"
+                        viewBox="0 0 24 24"
+                        aria-label="Property"
+                      >
+                        <use href="../assets/icons.svg#icon-1024"></use></svg
+                      ><span>signal?</span></a
+                    >
                     <a href="#timeout" class="tsd-index-link tsd-is-inherited"
                       ><svg
                         class="tsd-kind-icon"
@@ -429,15 +404,6 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>transform<wbr />Response?</span></a
                     >
-                    <a href="#uploadeventhandlers" class="tsd-index-link"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>upload<wbr />Event<wbr />Handlers?</span></a
-                    >
                     <a href="#url" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
@@ -446,17 +412,6 @@
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>url</span></a
-                    >
-                    <a
-                      href="#withcredentials"
-                      class="tsd-index-link tsd-is-inherited"
-                      ><svg
-                        class="tsd-kind-icon"
-                        viewBox="0 0 24 24"
-                        aria-label="Property"
-                      >
-                        <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>with<wbr />Credentials?</span></a
                     >
                     <a
                       href="#xsrfcookiename"
@@ -519,8 +474,8 @@
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Cache used for cacheable requests. <code>true</code> enables
-                  the default cache.
+                  GET caching: <code>true</code> enables the URL cache; a
+                  strategy selects strategy-aware caching.
                 </p>
               </div>
               <aside class="tsd-sources">
@@ -529,6 +484,38 @@
                   <a href="HttpRequestOptions.html">HttpRequestOptions</a>.<a
                     href="HttpRequestOptions.html#cache"
                     >cache</a
+                  >
+                </p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member tsd-is-inherited">
+              <h3 class="tsd-anchor-link" id="credentials">
+                <code class="tsd-tag">Optional</code><span>credentials</span
+                ><a
+                  href="#credentials"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">credentials</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">RequestCredentials</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Fetch credential mode. Defaults to
+                  <code>&quot;same-origin&quot;</code>.
+                </p>
+              </div>
+              <aside class="tsd-sources">
+                <p>
+                  Inherited from
+                  <a href="HttpRequestOptions.html">HttpRequestOptions</a>.<a
+                    href="HttpRequestOptions.html#credentials"
+                    >credentials</a
                   >
                 </p>
               </aside>
@@ -548,7 +535,11 @@
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Request body. Shorthand methods with explicit data set this
+                  Request body. Objects and arrays are JSON serialized by
+                  default; File, Blob, and FormData are passed through. For
+                  browser-generated content headers, override the default with
+                  <code>headers: { &quot;Content-Type&quot;: undefined }</code>.
+                  Shorthand methods with an explicit body set this field
                   automatically.
                 </p>
               </div>
@@ -561,36 +552,6 @@
                   >
                 </p>
               </aside>
-            </section>
-            <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="eventhandlers">
-                <code class="tsd-tag">Optional</code
-                ><span>event<wbr />Handlers</span
-                ><a
-                  href="#eventhandlers"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">eventHandlers</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Partial</span
-                ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">Record</span
-                ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">string</span
-                ><span class="tsd-signature-symbol">,</span>
-                <span class="tsd-signature-type"
-                  >EventListenerOrEventListenerObject</span
-                ><span class="tsd-signature-symbol">&gt;</span
-                ><span class="tsd-signature-symbol">&gt;</span>
-              </div>
-              <div class="tsd-comment tsd-typography">
-                <p>Event handlers notified by the underlying transport.</p>
-              </div>
             </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
               <h3 class="tsd-anchor-link" id="headers">
@@ -613,7 +574,10 @@
                 >
               </div>
               <div class="tsd-comment tsd-typography">
-                <p>Default headers merged into each request.</p>
+                <p>
+                  Default headers grouped by method and merged into each request
+                  case-insensitively.
+                </p>
               </div>
               <aside class="tsd-sources">
                 <p>
@@ -750,7 +714,12 @@
                 <span class="tsd-signature-type">string</span>
               </div>
               <div class="tsd-comment tsd-typography">
-                <p>Native fetch response body reader hint.</p>
+                <p>
+                  Response body reader: text (default), json, blob, arraybuffer,
+                  document, or stream. Default response transforms still apply;
+                  set <code>transformResponse: []</code> to preserve raw text.
+                  Stream responses skip implicit transforms.
+                </p>
               </div>
               <aside class="tsd-sources">
                 <p>
@@ -758,6 +727,38 @@
                   <a href="HttpRequestOptions.html">HttpRequestOptions</a>.<a
                     href="HttpRequestOptions.html#responsetype"
                     >responseType</a
+                  >
+                </p>
+              </aside>
+            </section>
+            <section class="tsd-panel tsd-member tsd-is-inherited">
+              <h3 class="tsd-anchor-link" id="signal">
+                <code class="tsd-tag">Optional</code><span>signal</span
+                ><a
+                  href="#signal"
+                  aria-label="Permalink"
+                  class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h3>
+              <div class="tsd-signature">
+                <span class="tsd-kind-property">signal</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">AbortSignal</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Native cancellation signal. Aborting it rejects with
+                  <code>transportStatus: &quot;abort&quot;</code>.
+                </p>
+              </div>
+              <aside class="tsd-sources">
+                <p>
+                  Inherited from
+                  <a href="HttpRequestOptions.html">HttpRequestOptions</a>.<a
+                    href="HttpRequestOptions.html#signal"
+                    >signal</a
                   >
                 </p>
               </aside>
@@ -777,16 +778,15 @@
                 <span class="tsd-kind-property">timeout</span
                 ><span class="tsd-signature-symbol">?:</span>
                 <span class="tsd-signature-type">number</span>
-                <span class="tsd-signature-symbol">|</span>
-                <span class="tsd-signature-type">Promise</span
-                ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">unknown</span
-                ><span class="tsd-signature-symbol">&gt;</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Millisecond timeout, or a promise whose resolution aborts the
-                  request.
+                  Timeout in milliseconds. Positive values abort with
+                  <code>transportStatus: &quot;timeout&quot;</code>; zero or
+                  negative values disable the timer. Covers response body
+                  reading except when
+                  <code>responseType: &quot;stream&quot;</code> hands the body
+                  to the caller.
                 </p>
               </div>
               <aside class="tsd-sources">
@@ -880,40 +880,6 @@
               </aside>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="uploadeventhandlers">
-                <code class="tsd-tag">Optional</code
-                ><span>upload<wbr />Event<wbr />Handlers</span
-                ><a
-                  href="#uploadeventhandlers"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">uploadEventHandlers</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Partial</span
-                ><span class="tsd-signature-symbol">&lt;</span><br />    <span
-                  class="tsd-signature-type"
-                  >Record</span
-                ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">string</span
-                ><span class="tsd-signature-symbol">,</span>
-                <span class="tsd-signature-type"
-                  >EventListenerOrEventListenerObject</span
-                ><span class="tsd-signature-symbol">&gt;</span
-                ><span class="tsd-signature-symbol">,</span><br /><span
-                  class="tsd-signature-symbol"
-                  >&gt;</span
-                >
-              </div>
-              <div class="tsd-comment tsd-typography">
-                <p>Upload event handlers. Not used by the fetch transport.</p>
-              </div>
-            </section>
-            <section class="tsd-panel tsd-member">
               <h3 class="tsd-anchor-link" id="url">
                 <span>url</span
                 ><a href="#url" aria-label="Permalink" class="tsd-anchor-icon"
@@ -932,39 +898,6 @@
                   appended to this URL.
                 </p>
               </div>
-            </section>
-            <section class="tsd-panel tsd-member tsd-is-inherited">
-              <h3 class="tsd-anchor-link" id="withcredentials">
-                <code class="tsd-tag">Optional</code
-                ><span>with<wbr />Credentials</span
-                ><a
-                  href="#withcredentials"
-                  aria-label="Permalink"
-                  class="tsd-anchor-icon"
-                  ><svg viewBox="0 0 24 24" aria-hidden="true">
-                    <use href="../assets/icons.svg#icon-anchor"></use></svg
-                ></a>
-              </h3>
-              <div class="tsd-signature">
-                <span class="tsd-kind-property">withCredentials</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">boolean</span>
-              </div>
-              <div class="tsd-comment tsd-typography">
-                <p>
-                  Whether cross-site requests should include credentials by
-                  default.
-                </p>
-              </div>
-              <aside class="tsd-sources">
-                <p>
-                  Inherited from
-                  <a href="HttpRequestOptions.html">HttpRequestOptions</a>.<a
-                    href="HttpRequestOptions.html#withcredentials"
-                    >withCredentials</a
-                  >
-                </p>
-              </aside>
             </section>
             <section class="tsd-panel tsd-member tsd-is-inherited">
               <h3 class="tsd-anchor-link" id="xsrfcookiename">
@@ -1197,6 +1130,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>cache</span></a
+                  ><a href="#credentials" class="tsd-is-inherited"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>credentials</span></a
                   ><a href="#data" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
@@ -1205,14 +1146,6 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>data</span></a
-                  ><a href="#eventhandlers"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>event<wbr />Handlers</span></a
                   ><a href="#headers" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
@@ -1253,6 +1186,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>response<wbr />Type</span></a
+                  ><a href="#signal" class="tsd-is-inherited"
+                    ><svg
+                      class="tsd-kind-icon"
+                      viewBox="0 0 24 24"
+                      aria-label="Property"
+                    >
+                      <use href="../assets/icons.svg#icon-1024"></use></svg
+                    ><span>signal</span></a
                   ><a href="#timeout" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"
@@ -1277,14 +1218,6 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>transform<wbr />Response</span></a
-                  ><a href="#uploadeventhandlers"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>upload<wbr />Event<wbr />Handlers</span></a
                   ><a href="#url"
                     ><svg
                       class="tsd-kind-icon"
@@ -1293,14 +1226,6 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>url</span></a
-                  ><a href="#withcredentials" class="tsd-is-inherited"
-                    ><svg
-                      class="tsd-kind-icon"
-                      viewBox="0 0 24 24"
-                      aria-label="Property"
-                    >
-                      <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>with<wbr />Credentials</span></a
                   ><a href="#xsrfcookiename" class="tsd-is-inherited"
                     ><svg
                       class="tsd-kind-icon"

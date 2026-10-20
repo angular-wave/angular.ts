@@ -33,9 +33,9 @@ AngularTS services when a pattern needs capabilities beyond them.
 
 ## How they differ from `$http`
 
-When you use `$http` directly you write controller code: define the request,
-subscribe to the promise, update scope properties, handle errors, and trigger a
-digest. The HTTP directives do all of this declaratively:
+When you use `$http` directly you write controller code to define the request,
+await the promise, update scope properties, and handle errors. The HTTP
+directives do this declaratively:
 
 ```html
 <button ng-click="loadUser()">Load user</button>
@@ -43,10 +43,11 @@ digest. The HTTP directives do all of this declaratively:
 ```
 
 ```js
-  $http.get('/api/user/1').then(function(res) {
-    $scope.user = res.data;
+function loadUser() {
+  return $http.get('/api/user/1').then(({ data }) => {
+    $scope.user = data;
   });
-};
+}
 ```
 
 ```html
@@ -56,6 +57,12 @@ digest. The HTTP directives do all of this declaratively:
 
 JSON is available to `on-success` as `$res`; it never mutates scope implicitly.
 HTML responses are compiled and inserted using the configured swap strategy.
+
+HTTP requests use the Fetch-based `$http` service and inherit its defaults and
+interceptors. The directive supplies an `AbortSignal` and aborts requests and
+stream consumption when its scope is destroyed. Use `$http` directly for
+per-request numeric timeouts, credential modes, or independent cancellation. See
+the [$http guide]({{< relref "/docs/services/http" >}}) for those options.
 
 ---
 
@@ -135,6 +142,12 @@ elements, the trigger defaults to `click`.
 When the form element has an `enctype` attribute, the request body is
 URL-encoded using `Content-Type: application/x-www-form-urlencoded`. Without
 `enctype`, form data is sent as a JSON object.
+
+For file uploads, send native `FormData` through `$http` and clear its default
+JSON content-type header. The declarative form directives convert entries to an
+object and do not build multipart bodies. See [Cancel a file
+upload]({{< relref "/docs/cookbook/upload-cancel" >}}). Fetch does not expose
+upload progress events.
 
 ---
 

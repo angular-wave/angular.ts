@@ -10,6 +10,7 @@
           "coverage": "canonical"
         },
         "bind": { "page": "directive/bind.md", "coverage": "dedicated" },
+        "canvas": { "page": "directive/canvas.md", "coverage": "dedicated" },
         "channel": { "page": "directive/channel.md", "coverage": "dedicated" },
         "class": { "page": "directive/class.md", "coverage": "dedicated" },
         "cloak": { "page": "directive/cloak.md", "coverage": "dedicated" },

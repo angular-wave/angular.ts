@@ -21,12 +21,23 @@ interface NativeChildEventPayload {
   readonly data: Readonly<Record<string, ESObject>>;
 }
 
+class AngularNativeScrollOffset {
+  readonly x: number;
+  readonly y: number;
+
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
 class AngularNativeNodeParameters {
   snapshot: NativeComponentSnapshot;
   primitive: string;
   width: number;
   height: number;
   emit: NativeComponentEventEmitter;
+  scroller: Scroller;
 
   constructor(
     snapshot: NativeComponentSnapshot,
@@ -34,12 +45,14 @@ class AngularNativeNodeParameters {
     width: number,
     height: number,
     emit: NativeComponentEventEmitter,
+    scroller: Scroller,
   ) {
     this.snapshot = snapshot;
     this.primitive = primitive;
     this.width = width;
     this.height = height;
     this.emit = emit;
+    this.scroller = scroller;
   }
 }
 
@@ -305,7 +318,7 @@ struct AngularNativeElement {
         .width(this.params.width)
         .height(this.params.height);
     } else if (this.params.snapshot.name === "scroll") {
-      Scroll() {
+      Scroll(this.params.scroller) {
         Column({ space: numberProperty(this.params.snapshot, "spacing", 0) }) {
           this.renderChildren();
         }
@@ -316,7 +329,7 @@ struct AngularNativeElement {
           this.params.emit("scroll", { x: xOffset, y: yOffset });
         });
     } else if (this.params.snapshot.name === "list") {
-      List() {
+      List({ scroller: this.params.scroller }) {
         ForEach(nativeChildren(this.params.snapshot), (child: NativeChildDescriptor) => {
           ListItem() {
             AngularNativeElement({ params: childParameters(this.params, child) });
@@ -327,7 +340,7 @@ struct AngularNativeElement {
         .height(this.params.height)
         .onReachEnd(() => this.params.emit("loadMore"));
     } else if (this.params.snapshot.name === "grid") {
-      Grid() {
+      Grid(this.params.scroller) {
         ForEach(nativeChildren(this.params.snapshot), (child: NativeChildDescriptor) => {
           GridItem() {
             AngularNativeElement({ params: childParameters(this.params, child) });
@@ -409,7 +422,7 @@ struct AngularNativeElement {
         .onChange((value: number) => this.params.emit("change", { value }));
     } else if (this.params.snapshot.name === "pull-to-refresh") {
       Refresh({ refreshing: booleanProperty(this.params.snapshot, "refreshing", false) }) {
-        Scroll() {
+        Scroll(this.params.scroller) {
           Column() {
             this.renderChildren();
           }
@@ -550,6 +563,8 @@ export class ArkUISameLayerNodeController extends NodeController implements Same
   private rootNode: BuilderNode<[AngularNativeNodeParameters]> | null = null;
   private readonly embed: SameLayerEmbed;
   private parameters: AngularNativeNodeParameters | null = null;
+  private readonly scroller = new Scroller();
+  private restoredOffset: AngularNativeScrollOffset | null = null;
 
   constructor(embed: SameLayerEmbed) {
     super();
@@ -563,6 +578,7 @@ export class ArkUISameLayerNodeController extends NodeController implements Same
     });
     if (this.parameters !== null) {
       this.rootNode.build(wrapBuilder(angularNativeElementBuilder), this.parameters);
+      this._applyRestoredOffset();
     }
     return this.rootNode.getFrameNode();
   }
@@ -574,9 +590,10 @@ export class ArkUISameLayerNodeController extends NodeController implements Same
   ): void {
     const width = this.parameters?.width ?? this.embed.width;
     const height = this.parameters?.height ?? this.embed.height;
-    this.parameters = new AngularNativeNodeParameters(snapshot, primitive, width, height, emit);
+    this.parameters = new AngularNativeNodeParameters(snapshot, primitive, width, height, emit, this.scroller);
     this.rootNode?.update(this.parameters);
     this.rebuild();
+    this._applyRestoredOffset();
   }
 
   layout(rect: NativeNodeRect): void {
@@ -587,12 +604,50 @@ export class ArkUISameLayerNodeController extends NodeController implements Same
       rect.width,
       rect.height,
       this.parameters.emit,
+      this.scroller,
     );
     this.rootNode?.update(this.parameters);
   }
 
   invoke(_method: string, _argumentsValue: Readonly<Record<string, ESObject>>): ESObject {
     return undefined;
+  }
+
+  saveState(): Readonly<Record<string, ESObject>> | undefined {
+    if (this.parameters === null || !isScrollable(this.parameters.snapshot.name)) return undefined;
+    if (this.restoredOffset !== null) {
+      return this.restoredOffset as Readonly<Record<string, ESObject>>;
+    }
+    try {
+      const offset = this.scroller.currentOffset();
+      if (Number.isFinite(offset.xOffset) && Number.isFinite(offset.yOffset)) {
+        return new AngularNativeScrollOffset(
+          Math.max(0, offset.xOffset),
+          Math.max(0, offset.yOffset),
+        ) as Readonly<Record<string, ESObject>>;
+      }
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  }
+
+  restoreState(state: Readonly<Record<string, ESObject>>): void {
+    const offset = state as AngularNativeScrollOffset;
+    const x = offset.x;
+    const y = offset.y;
+    if (
+      typeof x !== "number" ||
+      typeof y !== "number" ||
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      x < 0 ||
+      y < 0
+    ) {
+      return;
+    }
+    this.restoredOffset = new AngularNativeScrollOffset(x, y);
+    this._applyRestoredOffset();
   }
 
   postTouchEvent(event: ESObject): boolean {
@@ -602,6 +657,33 @@ export class ArkUISameLayerNodeController extends NodeController implements Same
   dispose(): void {
     this.rootNode = null;
     this.rebuild();
+  }
+
+  /** @internal */
+
+  private _applyRestoredOffset(): void {
+    if (
+      this.rootNode === null ||
+      this.parameters === null ||
+      !isScrollable(this.parameters.snapshot.name) ||
+      this.restoredOffset === null
+    ) {
+      return;
+    }
+    const offset = this.restoredOffset;
+    setTimeout(() => {
+      if (this.rootNode === null || this.restoredOffset !== offset) return;
+      try {
+        this.scroller.scrollTo({
+          xOffset: offset.x,
+          yOffset: offset.y,
+          animation: false,
+        });
+        if (this.restoredOffset === offset) this.restoredOffset = null;
+      } catch {
+        // Keep the offset pending so a later connected update can retry it.
+      }
+    });
   }
 }
 
@@ -739,7 +821,12 @@ function childParameters(
       };
       parent.emit("childEvent", payload as Readonly<Record<string, ESObject>>);
     },
+    new Scroller(),
   );
+}
+
+function isScrollable(name: string): boolean {
+  return name === "scroll" || name === "list" || name === "grid" || name === "pull-to-refresh";
 }
 
 function gridColumns(snapshot: NativeComponentSnapshot): string {

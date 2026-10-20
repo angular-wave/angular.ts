@@ -97,6 +97,9 @@ jobs:
       - name: Validate official toolchain and packages
         run: make -C integrations/harmonyos release-check
 
+      - name: Confirm tracked HarmonyOS device tests
+        run: find integrations/harmonyos/entry/build -path '*/ohosTest/*.hap' -type f -print -quit | grep -q .
+
       - name: Stage checksummed HarmonyOS release packages
         run: >-
           node integrations/harmonyos/scripts/stage-release-artifacts.mjs

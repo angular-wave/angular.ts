@@ -90,6 +90,33 @@ test("tracks platform-owned system pops without touching the root", async () => 
   assert.equal(value.current.id, "root");
 });
 
+test("restores destination ownership without replaying platform navigation", () => {
+  const { calls, destinations, value } = fixture();
+  value.restore([entry("root"), entry("one"), entry("dialog", true)]);
+  assert.deepEqual(value.entries.map((item) => item.id), ["root", "one", "dialog"]);
+  assert.equal(value.resolve("one"), destinations.get("one"));
+  assert.equal(value.resolve("dialog"), destinations.get("dialog"));
+  assert.deepEqual(calls, []);
+
+  assert.throws(() => value.restore([]), /restored destination/u);
+  assert.throws(() => value.restore([entry("wrong")]), /restored destination/u);
+  assert.throws(
+    () => value.restore([entry("root"), entry("duplicate"), entry("duplicate")]),
+    /restored destination/u,
+  );
+});
+
+test("closes partially staged restoration when destination creation fails", () => {
+  const { destinations, value } = fixture();
+  assert.throws(() => value.restore([
+    entry("root"),
+    entry("one"),
+    { ...entry("failed"), id: "" },
+  ]), /keys must not be empty/u);
+  assert.equal(destinations.get("one").closed, 1);
+  assert.deepEqual(value.entries.map((item) => item.id), ["root"]);
+});
+
 test("rejects malformed mutations before creating destinations", async () => {
   const { destinations, value } = fixture();
   for (const [operation, entries] of [

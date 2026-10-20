@@ -36,6 +36,6 @@ export class HarmonyMedia {
   close(): void {
     if (this.closed) return;
     this.closed = true;
-    void Promise.resolve(this.platform.release());
+    void Promise.resolve(this.platform.release()).catch(() => {});
   }
 }

@@ -451,11 +451,6 @@ class NgModule {
         this._runBlocks.push(block);
         return this;
     }
-    /**
-     * @param {string} name
-     * @param {ng.ComponentDefinition} options
-     * @returns {NgModule}
-     */
     component(name, options) {
         validate(isString, name, "name");
         validate(isDefined, options, "object");
@@ -511,11 +506,6 @@ class NgModule {
         this._configBlocks.push(registerDecorator(name, decorFn));
         return this;
     }
-    /**
-     * @param {string} name
-     * @param {ng.Injectable<(...args: unknown[]) => unknown>} directiveFactory
-     * @returns {NgModule}
-     */
     directive(name, directiveFactory) {
         validate(isString, name, "name");
         validateRequired(directiveFactory, "directiveFactory");

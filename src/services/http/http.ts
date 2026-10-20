@@ -110,14 +110,12 @@ export function mergeHttpHeaderDefaults(
   return merged;
 }
 
-// See the jsdoc for transformData() at https://github.com/angular/angular.ts/blob/master/src/ng/http.js#L228
 /** Transforms request data before it is sent. */
 export type HttpRequestTransformer = (
   data: unknown,
   headersGetter: HttpHeadersGetter,
 ) => unknown;
 
-// The definition of fields are the same as HttpResponse
 /** Transforms response data before the returned promise settles. */
 export type HttpResponseTransformer = (
   data: unknown,
@@ -137,24 +135,24 @@ export type HttpHeaderType = Record<string, HttpHeaderValue>;
 
 /** Strategy-aware cache configuration accepted by `$http`. */
 export interface HttpCacheConfig {
+  /** Read strategy. Defaults to `cache-first` when a cache config is supplied. */
   strategy?: CacheStrategy;
+  /** Response store keyed by URL including serialized params. Defaults to an in-memory store. */
   store?: CacheStore<HttpResponse<unknown>>;
 }
 
+/** GET cache option. `false` disables caching even when defaults enable it. */
 export type HttpCacheOption = boolean | CacheStrategy | HttpCacheConfig;
 
 /**
  * Default request settings configured through `app.config({ $http })` and
  * exposed at runtime through `$http.defaults`.
  *
- * Not every `HttpRequestOptions` field is supported here; this shape only includes the
- * fields that the runtime reads from provider-level defaults.
- *
- * https://docs.angularjs.org/api/ng/service/$http#defaults
- * https://docs.angularjs.org/api/ng/service/$http#usage
+ * Only the settings declared here are read from service-level defaults. Set
+ * `timeout`, `signal`, and `responseType` on individual requests instead.
  */
 export interface HttpDefaults {
-  /** Cache used for cacheable requests. `true` enables the default cache. */
+  /** GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching. */
   cache?: HttpCacheOption;
   /** Request body transform pipeline. */
   transformRequest?:
@@ -166,14 +164,14 @@ export interface HttpDefaults {
     | HttpResponseTransformer
     | HttpResponseTransformer[]
     | undefined;
-  /** Default headers merged into each request. */
+  /** Default headers grouped by method and merged into each request case-insensitively. */
   headers?: HttpRequestConfigHeaders | undefined;
   /** Header name used when sending the XSRF token. */
   xsrfHeaderName?: string | undefined;
   /** Cookie name used when reading the XSRF token. */
   xsrfCookieName?: string | undefined;
-  /** Whether cross-site requests should include credentials by default. */
-  withCredentials?: boolean | undefined;
+  /** Fetch credential mode. Defaults to `"same-origin"`. */
+  credentials?: RequestCredentials | undefined;
   /** Query parameter serializer token or function. */
   paramSerializer?: string | ((obj: HttpParams) => string) | undefined;
 }
@@ -187,49 +185,55 @@ export type HttpResponseType =
   | "stream"
   | "text";
 
-/**
- * Request options shared by the `$http` shortcut methods.
- * See http://docs.angularjs.org/api/ng/service/$http#usage
- */
+/** Request options shared by the `$http` shorthand methods. */
 export interface HttpRequestOptions extends HttpDefaults {
   /** Query parameters appended to the request URL. */
   params?: HttpParams;
-  /** Request body. Shorthand methods with explicit data set this automatically. */
+  /**
+   * Request body. Objects and arrays are JSON serialized by default; File,
+   * Blob, and FormData are passed through. For browser-generated content
+   * headers, override the default with `headers: { "Content-Type": undefined }`.
+   * Shorthand methods with an explicit body set this field automatically.
+   */
   data?: unknown;
-  /** Millisecond timeout, or a promise whose resolution aborts the request. */
-  timeout?: number | Promise<unknown> | undefined;
-  /** Native fetch response body reader hint. */
+  /**
+   * Timeout in milliseconds. Positive values abort with `transportStatus:
+   * "timeout"`; zero or negative values disable the timer. Covers response
+   * body reading except when `responseType: "stream"` hands the body to the caller.
+   */
+  timeout?: number | undefined;
+  /** Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`. */
+  signal?: AbortSignal | undefined;
+  /**
+   * Response body reader: text (default), json, blob, arraybuffer, document,
+   * or stream. Default response transforms still apply; set `transformResponse:
+   * []` to preserve raw text. Stream responses skip implicit transforms.
+   */
   responseType?: string | undefined;
 }
 
-/**
- * Full request configuration accepted by `$http(...)`.
- * See http://docs.angularjs.org/api/ng/service/$http#usage
- */
+/** Full request configuration accepted by `$http(...)`. */
 export interface HttpRequestConfig extends HttpRequestOptions {
   /** HTTP verb to use for the request. */
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "HEAD" | "OPTIONS";
   /** Request URL. Query parameters from `params` are appended to this URL. */
   url: string;
-  /** Event handlers notified by the underlying transport. */
-  eventHandlers?: Partial<Record<string, EventListenerOrEventListenerObject>>;
-  /** Upload event handlers. Not used by the fetch transport. */
-  uploadEventHandlers?: Partial<
-    Record<string, EventListenerOrEventListenerObject>
-  >;
 }
 
 /** HTTP method accepted by {@link HttpRequestConfig.method}. */
 export type HttpMethod = HttpRequestConfig["method"];
 
-/** Final transport status reported by transport completion handlers. */
+/**
+ * Fetch transport outcome exposed on responses and errors. `complete` includes
+ * non-2xx HTTP responses; `error` indicates a transport or security-policy failure.
+ */
 export type HttpResponseStatus = "complete" | "error" | "timeout" | "abort";
 
 /** Response object returned by `$http` requests. */
 export interface HttpResponse<T> {
   /** Parsed response body. */
   data: T;
-  /** Numeric HTTP status code. Non-2xx statuses reject the promise. */
+  /** Numeric HTTP status code, or a non-positive value when no HTTP response exists. */
   status: number;
   /** Lazy response header reader. */
   headers: HttpHeadersGetter;
@@ -238,10 +242,15 @@ export interface HttpResponse<T> {
   /** Native status text such as `OK` or `Not Found`. */
   statusText: string;
   /** Transport completion status. Useful for distinguishing timeout, abort, and network errors. */
-  xhrStatus: HttpResponseStatus;
+  transportStatus: HttpResponseStatus;
 }
 
-/** Error used when `$http` receives a non-success response. */
+/**
+ * Error for non-2xx responses, transport failures, cancellation, timeouts, and
+ * security-policy rejection. Exposes response fields directly and through
+ * `response`. Configuration, transform, and interceptor failures can reject
+ * with other error types.
+ */
 export class HttpError<T> extends Error implements HttpResponse<T> {
   data: T;
 
@@ -253,7 +262,7 @@ export class HttpError<T> extends Error implements HttpResponse<T> {
 
   statusText: string;
 
-  xhrStatus: HttpResponseStatus;
+  transportStatus: HttpResponseStatus;
 
   response: HttpResponse<T>;
 
@@ -270,7 +279,7 @@ export class HttpError<T> extends Error implements HttpResponse<T> {
     this.headers = response.headers;
     this.config = response.config;
     this.statusText = response.statusText;
-    this.xhrStatus = response.xhrStatus;
+    this.transportStatus = response.transportStatus;
   }
 }
 
@@ -280,7 +289,12 @@ export class HttpError<T> extends Error implements HttpResponse<T> {
  * Call the service directly with a full {@link HttpRequestConfig}, or use a
  * shorthand method for common HTTP verbs. All methods return an
  * `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and
- * rejects with {@link HttpError} for errors.
+ * rejects with {@link HttpError} for HTTP or transport failures. Configuration,
+ * transform, and interceptor errors can reject with other error types.
+ *
+ * Uses Fetch exclusively. Cancel with a native `AbortSignal`, set a numeric
+ * `timeout` for a deadline, and observe completion through the returned promise.
+ * Upload progress events are not available.
  */
 export interface HttpService {
   /** Send a request using the full configuration object. */
@@ -340,7 +354,7 @@ export interface HttpInterceptor {
   response?<T>(
     response: HttpResponse<T>,
   ): Promise<HttpResponse<T>> | HttpResponse<T>;
-  /** Recover from a transport error or non-2xx response. */
+  /** Recover from a rejected request, including transport, HTTP, transform, and interceptor failures. */
   responseError?<T>(
     rejection: unknown,
   ): Promise<HttpResponse<T>> | HttpResponse<T>;
@@ -364,7 +378,8 @@ export interface HttpConfig {
    */
   interceptors?: (string | ng.Injectable<HttpInterceptorFactory>)[];
   /**
-   * Origins trusted to receive the configured XSRF token.
+   * Additional origins trusted to receive the configured XSRF token. The current
+   * origin is always trusted. Does not enable CORS or change Fetch credentials.
    */
   xsrfTrustedOrigins?: string[];
 }
@@ -724,12 +739,12 @@ export function createHttpRuntimeConfiguration(): HttpRuntimeConfiguration {
   const interceptors = [] as (string | ng.Injectable<HttpInterceptorFactory>)[];
 
   /**
-   * Array containing URLs whose origins are trusted to receive the XSRF token. See the
-   * See the `$http` service documentation for XSRF security considerations.
+   * Additional origins trusted to receive the XSRF token. The current origin
+   * is always trusted. This does not enable CORS or change Fetch credentials.
    *
    * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
    * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
-   * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
+   * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking)). For `http:` and
    * `https:`, the port number can be omitted when using the default ports (80 and 443 respectively).
    * Examples: `http://example.com`, `https://api.example.com:9876`
    *
@@ -1038,10 +1053,10 @@ export function createHttpService(
       const providerDefaults = defaults;
 
       if (
-        isUndefined(configParam.withCredentials) &&
-        !isUndefined(providerDefaults.withCredentials)
+        isUndefined(configParam.credentials) &&
+        !isUndefined(providerDefaults.credentials)
       ) {
-        configParam.withCredentials = providerDefaults.withCredentials;
+        configParam.credentials = providerDefaults.credentials;
       }
 
       const securityContext: RequestPolicyContext = {
@@ -1049,7 +1064,7 @@ export function createHttpService(
         transport: "http",
         method: configParam.method,
         url: configParam.url,
-        credentials: configParam.withCredentials ? "include" : "same-origin",
+        credentials: configParam.credentials ?? "same-origin",
         headers: securityHeaders,
         hasBody: !isUndefined(reqData),
       };
@@ -1064,7 +1079,7 @@ export function createHttpService(
           config: configParam,
           statusText:
             securityDecision.reason ?? "Request denied by security policy",
-          xhrStatus: "error" as const,
+          transportStatus: "error" as const,
         };
 
         return Promise.reject(new HttpError(rejectedResponse));
@@ -1078,7 +1093,7 @@ export function createHttpService(
           config: configParam,
           statusText:
             securityDecision.reason ?? "Request redirected by security policy",
-          xhrStatus: "error" as const,
+          transportStatus: "error" as const,
         };
 
         return Promise.reject(new HttpError(rejectedResponse));
@@ -1110,7 +1125,9 @@ export function createHttpService(
       }
 
       if (credentials.withCredentials !== undefined) {
-        configParam.withCredentials = credentials.withCredentials;
+        configParam.credentials = credentials.withCredentials
+          ? "include"
+          : "same-origin";
       }
     }
 
@@ -1171,9 +1188,7 @@ export function createHttpService(
 
   /**
    * Exposes the live configured HTTP defaults.
-   * It allows configuration of default headers, `withCredentials`, and request/response transforms.
-   *
-   * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
+   * It allows configuration of default headers, `credentials`, and request/response transforms.
    */
   $http.defaults = defaults;
 
@@ -1346,38 +1361,14 @@ export function createHttpService(
         done,
         reqHeaders as Record<string, string | undefined>,
         config.timeout,
-        config.withCredentials,
+        config.credentials,
         config.responseType,
-        createEventHandlers(config.eventHandlers),
-        createEventHandlers(config.uploadEventHandlers),
+        config.signal,
         $stream,
       );
     }
 
     return promise;
-
-    /** Wraps raw transport event handlers with function/object listener support. */
-    function createEventHandlers(
-      eventHandlers: HttpRequestConfig["eventHandlers"],
-    ): Record<string, EventListener> {
-      if (eventHandlers) {
-        const handlers: Record<string, EventListener> = {};
-
-        entries(eventHandlers).forEach(([key, eventHandler]) => {
-          handlers[key] = function (event: Event) {
-            if (isFunction(eventHandler)) {
-              eventHandler(event);
-            } else if (typeof eventHandler === "object") {
-              eventHandler.handleEvent(event);
-            }
-          };
-        });
-
-        return handlers;
-      } else {
-        return {};
-      }
-    }
 
     /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
     function done(
@@ -1385,7 +1376,7 @@ export function createHttpService(
       response: unknown,
       headersString: string | null,
       statusText: string,
-      xhrStatus: HttpResponseStatus,
+      transportStatus: HttpResponseStatus,
     ): void {
       if (cache) {
         if (isSuccess(status)) {
@@ -1394,7 +1385,7 @@ export function createHttpService(
             response,
             parseHeaders(headersString),
             statusText,
-            xhrStatus,
+            transportStatus,
           ]);
         } else {
           // remove promise from the cache
@@ -1402,7 +1393,13 @@ export function createHttpService(
         }
       }
 
-      resolvePromise(response, status, headersString, statusText, xhrStatus);
+      resolvePromise(
+        response,
+        status,
+        headersString,
+        statusText,
+        transportStatus,
+      );
     }
 
     /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
@@ -1411,9 +1408,9 @@ export function createHttpService(
       status: number,
       headers: string | Record<string, string> | null,
       statusText: string,
-      xhrStatus: HttpResponseStatus,
+      transportStatus: HttpResponseStatus,
     ): void {
-      // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
+      // status: HTTP response status code, 0, -1 (aborted by timeout / signal)
       status = status >= -1 ? status : 0;
 
       (isSuccess(status) ? resolve : reject)({
@@ -1422,7 +1419,7 @@ export function createHttpService(
         headers: headersGetter(headers ?? ""),
         config,
         statusText,
-        xhrStatus,
+        transportStatus,
       });
     }
 
@@ -1433,7 +1430,7 @@ export function createHttpService(
         result.status,
         shallowCopy(result.headers()),
         result.statusText,
-        result.xhrStatus,
+        result.transportStatus,
       );
     }
 
@@ -1456,18 +1453,17 @@ export function createHttpService(
 }
 
 /**
- * Sends a low-level fetch request using AngularTS-compatible callback and timeout semantics.
+ * Sends a low-level fetch request with native cancellation and numeric timeouts.
  *
  * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
  * @param [url] - The request URL. Defaults to the current page URL.
  * @param [post] - Optional request body.
  * @param [callback] - Completion callback invoked when the request settles.
  * @param [headers] - Request headers to apply before sending.
- * @param [timeout] - Timeout in milliseconds or a cancellable promise.
- * @param [withCredentials] - Whether to send credentials with the request.
+ * @param [timeout] - Timeout in milliseconds.
+ * @param [credentials] - Fetch credential mode, defaulting to `"same-origin"`.
  * @param [responseType] - The response body reader hint.
- * @param [eventHandlers] - Event listeners notified by the fetch transport.
- * @param [uploadEventHandlers] - Currently ignored by the fetch transport.
+ * @param [signal] - Native request cancellation signal.
  * @param [streamService] - Optional stream reader used by `$http` for text-like responses.
  */
 export function http(
@@ -1479,21 +1475,21 @@ export function http(
     response: unknown,
     headersString: string | null,
     statusText: string,
-    xhrStatus: HttpResponseStatus,
+    transportStatus: HttpResponseStatus,
   ) => void,
   headers?: Record<string, string | undefined>,
-  timeout?: number | Promise<unknown>,
-  withCredentials?: boolean,
+  timeout?: number,
+  credentials?: RequestCredentials,
   responseType?: string,
-  eventHandlers?: HttpRequestConfig["eventHandlers"],
-  uploadEventHandlers?: HttpRequestConfig["uploadEventHandlers"],
+  signal?: AbortSignal,
   streamService?: ng.StreamService,
 ): void {
   url = url ?? trimEmptyHash(window.location.href);
 
-  void uploadEventHandlers;
-
   const abortController = new AbortController();
+  const requestSignal = signal
+    ? AbortSignal.any([signal, abortController.signal])
+    : abortController.signal;
 
   let abortReason: "timeout" | "abort" = "abort";
 
@@ -1514,8 +1510,8 @@ export function http(
   const init: RequestInit = {
     method: upperMethod,
     headers: requestHeaders,
-    signal: abortController.signal,
-    credentials: withCredentials ? "include" : "same-origin",
+    signal: requestSignal,
+    credentials: credentials ?? "same-origin",
   };
 
   if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
@@ -1524,14 +1520,17 @@ export function http(
 
   if (isNumber(timeout) && timeout > 0) {
     timeoutId = setTimeout(() => {
-      timeoutRequest("timeout");
+      if (!requestSignal.aborted) {
+        abortReason = "timeout";
+        abortController.abort();
+      }
     }, timeout);
-  } else if (isPromiseLike(timeout)) {
-    void timeout.then(() => {
-      timeoutRequest("abort");
+  }
 
-      return undefined;
-    });
+  if (requestSignal.aborted) {
+    completeRequest(-1, null, null, "", "abort");
+
+    return;
   }
 
   void (async () => {
@@ -1540,40 +1539,23 @@ export function http(
 
       const status = response.status || 0;
 
-      try {
-        const body = await responseBody(response, responseType, streamService);
+      const body = await responseBody(response, responseType, streamService);
 
-        notifyEvent("load", eventHandlers);
-        completeRequest(
-          status,
-          body,
-          responseHeadersString(response.headers),
-          response.statusText || "",
-          "complete",
-        );
-      } catch {
-        notifyEvent("error", eventHandlers);
-        completeRequest(-1, null, null, "", "error");
-      }
+      completeRequest(
+        status,
+        body,
+        responseHeadersString(response.headers),
+        response.statusText || "",
+        "complete",
+      );
     } catch (error: unknown) {
-      if (isObject(error) && "name" in error && error.name === "AbortError") {
-        notifyEvent(abortReason, eventHandlers);
-        completeRequest(-1, null, null, "", abortReason);
+      const aborted =
+        requestSignal.aborted ||
+        (isObject(error) && "name" in error && error.name === "AbortError");
 
-        return;
-      }
-
-      notifyEvent("error", eventHandlers);
-      completeRequest(-1, null, null, "", "error");
+      completeRequest(-1, null, null, "", aborted ? abortReason : "error");
     }
   })();
-
-  /** Aborts the underlying fetch due to timeout expiry or external cancellation. */
-  function timeoutRequest(reason: "timeout" | "abort"): void {
-    abortReason = reason;
-
-    abortController.abort();
-  }
 
   /**
    * Finalizes the request, clears timeout state, and notifies the caller.
@@ -1582,21 +1564,21 @@ export function http(
    * @param response - Parsed or raw response payload from the server.
    * @param headersString - Raw response headers as a string.
    * @param statusText - HTTP status text returned by the server.
-   * @param xhrStatus - Final transport status reported for the request.
+   * @param transportStatus - Final transport status reported for the request.
    */
   function completeRequest(
     status: number,
     response: unknown,
     headersString: string | null,
     statusText: string,
-    xhrStatus: HttpResponseStatus,
+    transportStatus: HttpResponseStatus,
   ): void {
     if (isDefined(timeoutId)) {
       clearTimeout(timeoutId);
     }
 
     if (callback) {
-      callback(status, response, headersString, statusText, xhrStatus);
+      callback(status, response, headersString, statusText, transportStatus);
     }
   }
 }
@@ -1607,6 +1589,7 @@ function normalizeFetchBody(post: unknown): BodyInit | null {
 
   if (
     isString(post) ||
+    isFile(post) ||
     isBlob(post) ||
     isFormData(post) ||
     isInstanceOf(post, URLSearchParams) ||
@@ -1668,24 +1651,4 @@ function responseHeadersString(headers: Headers): string {
   });
 
   return headerLines.join("\n");
-}
-
-/** Notifies configured transport event handlers for compatibility. */
-function notifyEvent(
-  eventName: string,
-  eventHandlers: HttpRequestConfig["eventHandlers"],
-): void {
-  if (!eventHandlers) return;
-
-  const handler = eventHandlers[eventName];
-
-  if (!handler) return;
-
-  const event = new Event(eventName);
-
-  if (isFunction(handler)) {
-    handler(event);
-  } else if (typeof handler === "object") {
-    handler.handleEvent(event);
-  }
 }

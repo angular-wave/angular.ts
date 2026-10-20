@@ -117,6 +117,77 @@ scope: {
 Prefer components for larger reusable UI pieces. Use directives for behaviors,
 DOM integrations, structural transforms, and lightweight element coordination.
 
+## Typed controller bindings
+
+Declare controller properties to check directive binding names and callbacks in
+TypeScript:
+
+```ts
+interface User {
+  name: string;
+}
+
+class UserEditor {
+  user!: User;
+  onSave!: (locals: { user: User }) => void;
+
+  save() {
+    this.onSave({ user: this.user });
+  }
+}
+
+angular.getModule('app').directive('userEditor', () => ({
+  scope: {},
+  controller: UserEditor,
+  controllerAs: 'editor',
+  bindToController: { user: '<sourceUser', onSave: '&saveUser' },
+  template: '<button ng-click="editor.save()">{{ editor.user.name }}</button>',
+}));
+```
+
+`usr: '<'` produces a type error because the controller declares `user`.
+`user: '&'` also produces a type error because `user` is not a function.
+Optional bindings, attribute aliases, and function-valued `<` or `=` inputs keep
+their existing syntax. Programmatic views receive the inferred controller type
+too.
+
+The same directive is authored in HTML as:
+
+```html
+<div user-editor source-user="selectedUser" save-user="saveUser(user)"></div>
+```
+
+With `bindToController: true`, registration checks the bindings declared in
+`scope` instead:
+
+```ts
+angular.getModule('app').directive('scopedUserEditor', () => ({
+  controller: UserEditor,
+  bindToController: true,
+  scope: { user: '<sourceUser', onSave: '&saveUser' },
+}));
+```
+
+With `bindToController: false` or an omitted setting, isolate-scope bindings
+belong to the scope and may use names absent from the controller. An object in
+`bindToController` checks that object's properties; separate `scope` bindings
+remain independent.
+
+Classes, dependency-annotated controllers, and factories returning typed
+controller objects supply controller types. Named or untyped controllers stay
+permissive; use `.directive<UserEditor>(...)` to supply a known controller type
+explicitly. Stored definitions can use
+[`ng.Directive<UserEditor>`](../../../typedoc/interfaces/Directive.html), and
+factory types such as
+[`ng.DirectiveFactory<UserEditor>`](../../../typedoc/types/DirectiveFactory.html)
+accept a controller type too. Keep binding declarations and
+`bindToController: true` literal with `as const` when storing otherwise
+unannotated options. Widened `string` values cannot be checked for their
+callback mode.
+
+TypeScript checks the locals passed to `onSave()` in controller code. HTML
+expressions keep their existing runtime evaluation.
+
 ## Next Steps
 
 - [Data binding]({{< relref "/docs/directives/data-binding" >}})

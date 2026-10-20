@@ -6,8 +6,10 @@ import { resolve } from "node:path";
 import {
   requiredNativeCapabilities,
   requiredNativeElements,
+  requiredResourceCounters,
   validateDeviceResults,
 } from "./validate-device-results.mjs";
+import { performanceReportFixture } from "./performance-results.fixture.mjs";
 
 const commit = "a".repeat(40);
 
@@ -32,6 +34,7 @@ function result() {
     },
     accessibility: { violations: 0 },
     performance: { failures: 0 },
+    resources: Object.fromEntries(requiredResourceCounters.map((name) => [name, 0])),
     artifacts: {
       junit: "junit.xml",
       accessibility: "accessibility.json",
@@ -46,12 +49,15 @@ async function fixture() {
   for (const file of [
     "junit.xml",
     "accessibility.json",
-    "performance.json",
     "phone.png",
     "tablet.png",
   ]) {
     await writeFile(resolve(directory, file), "evidence");
   }
+  await writeFile(
+    resolve(directory, "performance.json"),
+    JSON.stringify(performanceReportFixture()),
+  );
   return directory;
 }
 
@@ -84,6 +90,9 @@ test("rejects stale identity, incomplete tests, contracts, and quality checks", 
       (value) => value.contracts.capabilities.failed.push("media"),
       (value) => (value.accessibility.violations = 1),
       (value) => (value.performance.failures = 1),
+      (value) => (value.resources.watchers = 1),
+      (value) => delete value.resources.fileHandles,
+      (value) => (value.resources.unexpected = 0),
     ]) {
       const value = result();
       mutate(value);
@@ -92,6 +101,30 @@ test("rejects stale identity, incomplete tests, contracts, and quality checks", 
         validateDeviceResults({ directory, commit, deviceName: "reference" }),
       );
     }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("rejects missing and over-budget performance measurements", async () => {
+  const directory = await fixture();
+  try {
+    const value = result();
+    await writeFile(resolve(directory, "results.json"), JSON.stringify(value));
+    const report = performanceReportFixture();
+    delete report.metrics.firstNativeRevealMs;
+    await writeFile(resolve(directory, "performance.json"), JSON.stringify(report));
+    await assert.rejects(
+      validateDeviceResults({ directory, commit, deviceName: "reference" }),
+      /missing firstNativeRevealMs\.p95/u,
+    );
+
+    report.metrics.firstNativeRevealMs = { p95: 151 };
+    await writeFile(resolve(directory, "performance.json"), JSON.stringify(report));
+    await assert.rejects(
+      validateDeviceResults({ directory, commit, deviceName: "reference" }),
+      /budget is 150 ms/u,
+    );
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -279,7 +279,7 @@ describe("NgModule", () => {
               Authorization: "Bearer token",
             },
           },
-          withCredentials: true,
+          credentials: "include",
         },
         interceptors: [
           () => ({
@@ -305,14 +305,14 @@ describe("NgModule", () => {
           headers: {
             "X-Template": "configured",
           },
-          withCredentials: true,
+          credentials: "include",
         },
       },
     });
     ngModule.config({
       $rest: {
         defaults: {
-          withCredentials: true,
+          credentials: "include",
         },
       },
     });
@@ -425,7 +425,7 @@ describe("NgModule", () => {
       },
       $http: {
         defaults: {
-          withCredentials: true,
+          credentials: "include",
         },
         xsrfTrustedOrigins: ["https://api.example.com"],
       },
@@ -437,7 +437,7 @@ describe("NgModule", () => {
       },
       $templateRequest: {
         httpOptions: {
-          withCredentials: true,
+          credentials: "include",
         },
       },
       $rest: {
@@ -633,7 +633,7 @@ describe("NgModule", () => {
                 "X-Mode": "configured",
               },
             },
-            withCredentials: true,
+            credentials: "include",
             xsrfCookieName: "APP-XSRF",
             xsrfHeaderName: "X-APP-XSRF",
           },
@@ -682,7 +682,7 @@ describe("NgModule", () => {
             headers: {
               "X-Template": "configured",
             },
-            withCredentials: true,
+            credentials: "include",
           },
         },
       })
@@ -788,7 +788,7 @@ describe("NgModule", () => {
     );
     expect($http.defaults.headers.post["X-Mode"]).toBe("configured");
     expect($http.defaults.headers.delete["X-Delete"]).toBe("configured");
-    expect($http.defaults.withCredentials).toBeTrue();
+    expect($http.defaults.credentials).toBe("include");
     expect($http.defaults.xsrfCookieName).toBe("APP-XSRF");
     expect($http.defaults.xsrfHeaderName).toBe("X-APP-XSRF");
     expect(httpInterceptor).toHaveBeenCalledTimes(1);
@@ -840,7 +840,7 @@ describe("NgModule", () => {
         Accept: "text/html",
         "X-Template": "configured",
       },
-      withCredentials: true,
+      credentials: "include",
     });
     expect(injector.get("$rest")("/posts")._options).toEqual({
       timeout: 1200,

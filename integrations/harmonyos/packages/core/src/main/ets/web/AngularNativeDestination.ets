@@ -6,7 +6,9 @@ import type {
   HarmonyCapabilityPlatform,
 } from "../capabilities/HarmonyCapabilities.ts";
 import { HarmonyNativeNodeAdapter } from "../nodes/HarmonyNativeNodeAdapter.ts";
+import type { HarmonyNativeNode } from "../nodes/HarmonyNativeNodeAdapter.ts";
 import { NativeNodeRegistry } from "../nodes/NativeNodeRegistry.ts";
+import type { NativeNodeSavedState } from "../nodes/NativeNodeRegistry.ts";
 import { ArkUISameLayerSurface } from "../nodes/ArkUISameLayerSurface.ets";
 import type { ArkUISameLayerControllerFactory } from "../nodes/ArkUISameLayerSurface.ets";
 import { ArkWebDestination } from "./ArkWebDestination.ets";
@@ -45,6 +47,7 @@ export interface AngularNativeDestinationOptions {
 export class AngularNativeDestination {
   readonly nativeSurface: ArkUISameLayerSurface;
   readonly web: ArkWebDestination;
+  private readonly component: NativeNodeRegistry<HarmonyNativeNode>;
 
   constructor(
     location: string,
@@ -59,7 +62,7 @@ export class AngularNativeDestination {
       event: string,
       data: Readonly<Record<string, ESObject>>,
     ): void => destination?.host.emitEvent(target, event, data);
-    const component = new NativeNodeRegistry(
+    this.component = new NativeNodeRegistry(
       new HarmonyNativeNodeAdapter(
         this.nativeSurface.surface,
         (name) => rendererPrimitive(options.renderers, name),
@@ -71,7 +74,7 @@ export class AngularNativeDestination {
     const handlers = destinationHandlers(
       createHarmonyCapabilityHandlers(platform, emit),
       options.handlers,
-      component,
+      this.component,
     );
     destination = new ArkWebDestination(
       location,
@@ -81,6 +84,14 @@ export class AngularNativeDestination {
       options.routeDecision ?? (() => false),
     );
     this.web = destination;
+  }
+
+  saveState(): readonly NativeNodeSavedState[] {
+    return this.component.saveState();
+  }
+
+  restoreState(states: readonly NativeNodeSavedState[]): void {
+    this.component.restoreState(states);
   }
 
   close(): void {

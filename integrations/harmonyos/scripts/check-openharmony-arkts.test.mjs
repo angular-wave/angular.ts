@@ -12,11 +12,12 @@ import {
 
 const integration = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
-test("discovers only application and package ArkTS source roots", async () => {
+test("discovers application, device-test, and package ArkTS source roots", async () => {
   const root = await mkdtemp(resolve(tmpdir(), "harmony-arkts-sources-"));
   try {
     const expected = [
       resolve(root, "entry/src/main/ets/Index.ets"),
+      resolve(root, "entry/src/ohosTest/ets/test/Proof.test.ets"),
       resolve(root, "packages/core/src/main/ets/Core.ts"),
       resolve(root, "samples/demo/entry/src/main/ets/Demo.ets"),
     ];

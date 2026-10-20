@@ -27,6 +27,16 @@ files.set("oh-package.json5", json5({
     "@angular-wave/angular-native-harmony-core": "file:./packages/core",
   },
 }));
+files.set("AppScope/app.json5", json5({
+  app: {
+    bundleName: "io.github.angularwave.harmony.proof",
+    vendor: "Angular Wave",
+    versionCode,
+    versionName: version,
+    icon: "$media:app_icon",
+    label: "$string:app_name",
+  },
+}));
 files.set("build-profile.json5", json5({
   app: {
     signingConfigs: [],
@@ -131,6 +141,9 @@ files.set("entry/oh-package.json5", json5({
     "@angular-wave/angular-native-harmony-core": "file:../packages/core",
     "@angular-wave/angular-native-harmony-navigation": "file:../packages/navigation",
   },
+  devDependencies: {
+    "@ohos/hypium": "1.0.29",
+  },
 }));
 files.set("entry/build-profile.json5", json5({
   apiType: "stageMode",
@@ -229,6 +242,7 @@ files.set("samples/pulse/entry/oh-package.json5", json5({
   description: "Pulse sample for AngularTS Native on HarmonyOS",
   license: "MIT",
   dependencies: {
+    "@angular-wave/angular-native-harmony-core": "file:../../../packages/core",
     "@angular-wave/angular-native-harmony-navigation": "file:../../../packages/navigation",
   },
 }));

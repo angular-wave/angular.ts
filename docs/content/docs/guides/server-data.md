@@ -26,18 +26,16 @@ class TaskList {
 app.factory('taskRepository', [
   '$http',
   ($http) => ({
-    list: (cancelled) =>
-      $http
-        .get('/api/tasks', { timeout: cancelled })
-        .then((response) => response.data),
+    list: (signal) =>
+      $http.get('/api/tasks', { signal }).then((response) => response.data),
   }),
 ]);
 ```
 
-The timeout promise should resolve when the component is destroyed or a newer
-query supersedes the request. Cancellation saves work; a request sequence or
-identity check still protects against transports that complete while
-cancellation is racing.
+Pass an `AbortController` signal and abort the controller when the component is
+destroyed or a newer query supersedes the request. Cancellation saves work; a
+request sequence or identity check still protects against transports that
+complete while cancellation is racing.
 
 Set loading before starting. On success, replace the collection property so
 typed readers observe the commit. In `finally`, clear loading only if the

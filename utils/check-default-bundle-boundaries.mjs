@@ -13,6 +13,7 @@ const wasmImplementationMarkers = [
   "WebAssembly module does not export the AngularTS reactive ABI",
   "Cannot bind a disposed WebAssembly resource",
 ];
+const canvasImplementationMarker = "ng-canvas requires a renderer expression.";
 
 for (const file of defaultUmdBundles) {
   const source = readFileSync(resolve(file), "utf8");
@@ -25,6 +26,9 @@ for (const file of defaultUmdBundles) {
       `${file} includes opt-in WebAssembly integration code (${marker}).`,
     );
   }
+  if (source.includes(canvasImplementationMarker)) {
+    throw new Error(`${file} includes opt-in native canvas integration code.`);
+  }
 }
 
 const optInSource = readFileSync(resolve(wasmBundle), "utf8");
@@ -35,7 +39,9 @@ if (
   !optInSource.includes("../directive/wasm/wasm.js") ||
   !optInSource.includes("../services/wasm/wasm.js")
 ) {
-  throw new Error(`${wasmBundle} does not compose the opt-in WASM integration.`);
+  throw new Error(
+    `${wasmBundle} does not compose the opt-in WASM integration.`,
+  );
 }
 
 if (!directiveSource.includes(wasmImplementationMarkers[0])) {
@@ -44,10 +50,24 @@ if (!directiveSource.includes(wasmImplementationMarkers[0])) {
 
 for (const marker of wasmImplementationMarkers.slice(1)) {
   if (!serviceSource.includes(marker)) {
-    throw new Error(`${wasmServiceBundle} is missing expected marker: ${marker}`);
+    throw new Error(
+      `${wasmServiceBundle} is missing expected marker: ${marker}`,
+    );
   }
 }
 
+const canvasModule = readFileSync(resolve("dist/runtime/canvas.js"), "utf8");
+const canvasDirective = readFileSync(
+  resolve("dist/directive/canvas/canvas.js"),
+  "utf8",
+);
+if (
+  !canvasModule.includes("../directive/canvas/canvas.js") ||
+  !canvasDirective.includes(canvasImplementationMarker)
+) {
+  throw new Error("The opt-in canvas module is missing its native directive.");
+}
+
 console.log(
-  "Default UMD bundles exclude WASM integration code; the opt-in WASM module is available.",
+  "Default UMD bundles exclude WASM and native canvas integration code; both opt-in modules are available.",
 );

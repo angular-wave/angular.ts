@@ -188,7 +188,7 @@ Checkbox models use boolean values.
   <option value="gb">United Kingdom</option>
 </select>
 
-<!-- Object options with ng-options -->
+<!-- Map objects to role identifiers with ng-options -->
 <select
   ng-model="selectedRole"
   ng-options="role.id as role.label for role in roles"
@@ -196,6 +196,43 @@ Checkbox models use boolean values.
   <option value="">-- Select a role --</option>
 </select>
 ```
+
+For simple lists, render `<option>` elements with `ng-repeat` and bind their
+values with `ng-value`:
+
+```html
+<select ng-model="selectedRoleId">
+  <option value="">-- Select a role --</option>
+  <option ng-repeat="role in roles" ng-value="role.id">{{ role.label }}</option>
+</select>
+```
+
+Ordinary `value` attributes and interpolated values produce strings. `ng-value`
+preserves the expression's type, including numeric identifiers and object
+references. Use `ng-value="role"` to store the role object itself.
+
+Use `ng-options` when its compact expression helps describe the list. Its
+supported clauses are:
+
+| Syntax                                                    | Behavior                                                   |
+| --------------------------------------------------------- | ---------------------------------------------------------- |
+| `role.label for role in roles`                            | Display a label and store the role object.                 |
+| `role.id as role.label for role in roles`                 | Display a label and store the identifier.                  |
+| `role.label group by role.team for role in roles`         | Render options in `<optgroup>` elements.                   |
+| `role.label disable when role.archived for role in roles` | Disable unavailable options.                               |
+| `label for (code, label) in rolesByCode`                  | Iterate an object's own entries; store each entry's value. |
+
+The clauses can be combined in this order: `select as label`, `group by`,
+`disable when`, then `for ... in ...`. Without `select as`, each option stores
+the collection item. Object values match by reference: a newly created object
+with identical fields is a different choice. Map to a stable identifier with
+`role.id as role.label` when choices are replaced with fresh server objects.
+
+Both forms support `multiple`; the model then holds an array of selected values.
+For ordinary options, use `ng-disabled` on each `<option>` and native
+`<optgroup>` elements for grouping. With `ng-options`, use `disable when` and
+`group by`; the directive generates those elements itself. Keep a static
+`<option value="">` inside the select when you need an explicit empty choice.
 
 ---
 

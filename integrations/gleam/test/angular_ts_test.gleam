@@ -161,6 +161,24 @@ pub fn http_response_type_name_test() {
   |> should.equal("arraybuffer")
 }
 
+pub fn http_fetch_options_test() {
+  let signal = unsafe.empty_object()
+  let options =
+    http.shortcut_config()
+    |> http.with_signal(signal)
+    |> http.with_timeout(1200)
+    |> http.with_credentials(http.Omit)
+    |> http.to_js_shortcut_config
+
+  options |> unsafe.get_property("signal") |> should.equal(signal)
+  options |> unsafe.get_property("timeout") |> should.equal(unsafe.coerce(1200))
+  options
+  |> unsafe.get_property("credentials")
+  |> should.equal(unsafe.coerce("omit"))
+  http.credentials_name(http.SameOrigin) |> should.equal("same-origin")
+  http.credentials_name(http.Include) |> should.equal("include")
+}
+
 pub fn storage_type_name_test() {
   storage.storage_type_name(storage.Session)
   |> should.equal("session")

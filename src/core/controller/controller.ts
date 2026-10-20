@@ -16,7 +16,7 @@ export interface ControllerLocals {
   $element: Node;
 }
 
-export type ControllerExpression = string | Injectable<ControllerConstructor>;
+export type ControllerExpression = string | InjectableController;
 
 export type ControllerService = (
   expression: ControllerExpression,
@@ -25,7 +25,9 @@ export type ControllerService = (
   ident?: string,
 ) => unknown;
 
-type InjectableController = Injectable<ControllerConstructor>;
+type InjectableController =
+  | Injectable<ControllerConstructor>
+  | [...string[], ControllerConstructor];
 
 type ControllerInstance = Record<string, unknown> & {
   /** @internal */
@@ -218,7 +220,7 @@ export function createControllerService(
       validateFunction(expression, constructorName, true);
     }
 
-    const injectable = expression as InjectableController;
+    const injectable = expression;
     const meta = unwrapController(injectable, constructorName);
 
     if (later) {

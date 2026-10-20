@@ -2,7 +2,7 @@ import { url } from "@kit.ArkTS";
 import { media } from "@kit.MediaKit";
 import type { MediaPlatform } from "./HarmonyMedia.ts";
 
-interface HarmonyMediaStatus {
+export interface HarmonyMediaStatus {
   readonly available: boolean;
   readonly loaded: boolean;
   readonly playing: boolean;
@@ -25,7 +25,11 @@ export class HarmonyAVPlayer implements MediaPlatform {
   }
 
   static async create(): Promise<HarmonyAVPlayer> {
-    return new HarmonyAVPlayer(await media.createAVPlayer());
+    try {
+      return new HarmonyAVPlayer(await media.createAVPlayer());
+    } catch {
+      throw new Error("HarmonyOS could not create a media player");
+    }
   }
 
   status(): HarmonyMediaStatus {
@@ -40,7 +44,7 @@ export class HarmonyAVPlayer implements MediaPlatform {
     };
   }
 
-  async load(parameters: Readonly<Record<string, ESObject>>): Promise<ESObject> {
+  async load(parameters: Readonly<Record<string, ESObject>>): Promise<HarmonyMediaStatus> {
     this.assertActive();
     const options = parameters as HarmonyMediaLoadParameters;
     const source = options.url;
@@ -49,47 +53,69 @@ export class HarmonyAVPlayer implements MediaPlatform {
     if (mediaUrl.protocol !== "https:" && mediaUrl.protocol !== "http:") {
       throw new TypeError("media.load only accepts HTTP or HTTPS URLs");
     }
-    if (this.player.state !== "idle") await this.player.reset();
+    if (this.player.state !== "idle") await this._run("reset");
     this.player.url = mediaUrl.href;
-    await this.player.prepare();
-    if (options.autoplay === true) await this.player.play();
+    await this._run("prepare");
+    if (options.autoplay === true) await this._run("play");
     return this.status();
   }
 
-  async play(): Promise<ESObject> {
+  async play(): Promise<HarmonyMediaStatus> {
     this.assertActive();
-    await this.player.play();
+    await this._run("play");
     return this.status();
   }
 
-  async pause(): Promise<ESObject> {
+  async pause(): Promise<HarmonyMediaStatus> {
     this.assertActive();
-    await this.player.pause();
+    await this._run("pause");
     return this.status();
   }
 
-  async stop(): Promise<ESObject> {
+  async stop(): Promise<HarmonyMediaStatus> {
     this.assertActive();
-    await this.player.stop();
+    await this._run("stop");
     return this.status();
   }
 
-  seek(position: number): ESObject {
+  seek(position: number): HarmonyMediaStatus {
     this.assertActive();
-    this.player.seek(position, media.SeekMode.SEEK_CLOSEST);
+    try {
+      this.player.seek(position, media.SeekMode.SEEK_CLOSEST);
+    } catch {
+      throw new Error("HarmonyOS media seek failed");
+    }
     return this.status();
   }
 
-  async release(): Promise<ESObject> {
+  async release(): Promise<HarmonyMediaStatus> {
     if (this.released) return unavailableStatus();
     this.released = true;
-    await this.player.release();
+    await this._run("release");
     return unavailableStatus();
   }
 
   private assertActive(): void {
     if (this.released || this.player.state === "released") {
       throw new Error("HarmonyOS media player was released");
+    }
+  }
+
+  /** @internal */
+
+  private async _run(operation: string): Promise<void> {
+    try {
+      switch (operation) {
+        case "reset": await this.player.reset(); return;
+        case "prepare": await this.player.prepare(); return;
+        case "play": await this.player.play(); return;
+        case "pause": await this.player.pause(); return;
+        case "stop": await this.player.stop(); return;
+        case "release": await this.player.release(); return;
+        default: throw new Error(`Unsupported media operation: ${operation}`);
+      }
+    } catch {
+      throw new Error(`HarmonyOS media ${operation} failed`);
     }
   }
 }

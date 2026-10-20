@@ -22,7 +22,9 @@ import {
 import {
   requiredNativeCapabilities,
   requiredNativeElements,
+  requiredResourceCounters,
 } from "./validate-device-results.mjs";
+import { performanceReportFixture } from "./performance-results.fixture.mjs";
 
 const sha = "a".repeat(40);
 const integrationRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -77,9 +79,13 @@ test("verifies complete device evidence and the exact release HARs", async () =>
     const output = resolve(temporary, "evidence");
     await mkdir(source);
     await mkdir(release);
-    for (const file of ["junit.xml", "accessibility.json", "performance.json", "phone.png", "tablet.png"]) {
+    for (const file of ["junit.xml", "accessibility.json", "phone.png", "tablet.png"]) {
       await writeFile(resolve(source, file), "evidence");
     }
+    await writeFile(
+      resolve(source, "performance.json"),
+      JSON.stringify(performanceReportFixture()),
+    );
     await writeFile(resolve(source, "results.json"), JSON.stringify({
       schemaVersion: 2,
       platform: "harmonyos",
@@ -100,6 +106,7 @@ test("verifies complete device evidence and the exact release HARs", async () =>
       },
       accessibility: { violations: 0 },
       performance: { failures: 0 },
+      resources: Object.fromEntries(requiredResourceCounters.map((name) => [name, 0])),
       artifacts: {
         junit: "junit.xml",
         accessibility: "accessibility.json",

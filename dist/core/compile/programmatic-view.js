@@ -478,7 +478,7 @@ const tags = /* @__PURE__ */ new Proxy(((namespaceUri) => getTagProxy(namespaceU
         return Reflect.get(htmlTags, property);
     },
 });
-/** Direct, tree-shakable factories for every supported HTML element. */
+/** Direct, tree-shakable factories for current HTML elements. Use `tag()` for legacy names. */
 // HTMLElementTagNameMap
 const a = (...args) => createTag(undefined, "a", ...args);
 const abbr = (...args) => createTag(undefined, "abbr", ...args);
@@ -592,36 +592,6 @@ const ul = (...args) => createTag(undefined, "ul", ...args);
 const varTag = (...args) => createTag(undefined, "var", ...args);
 const video = (...args) => createTag(undefined, "video", ...args);
 const wbr = (...args) => createTag(undefined, "wbr", ...args);
-// HTMLElementDeprecatedTagNameMap
-const acronym = (...args) => createTag(undefined, "acronym", ...args);
-const applet = (...args) => createTag(undefined, "applet", ...args);
-const basefont = (...args) => createTag(undefined, "basefont", ...args);
-const bgsound = (...args) => createTag(undefined, "bgsound", ...args);
-const big = (...args) => createTag(undefined, "big", ...args);
-const blink = (...args) => createTag(undefined, "blink", ...args);
-const center = (...args) => createTag(undefined, "center", ...args);
-const dir = (...args) => createTag(undefined, "dir", ...args);
-const font = (...args) => createTag(undefined, "font", ...args);
-const frame = (...args) => createTag(undefined, "frame", ...args);
-const frameset = (...args) => createTag(undefined, "frameset", ...args);
-const isindex = (...args) => createTag(undefined, "isindex", ...args);
-const keygen = (...args) => createTag(undefined, "keygen", ...args);
-const listing = (...args) => createTag(undefined, "listing", ...args);
-const marquee = (...args) => createTag(undefined, "marquee", ...args);
-const menuitem = (...args) => createTag(undefined, "menuitem", ...args);
-const multicol = (...args) => createTag(undefined, "multicol", ...args);
-const nextid = (...args) => createTag(undefined, "nextid", ...args);
-const nobr = (...args) => createTag(undefined, "nobr", ...args);
-const noembed = (...args) => createTag(undefined, "noembed", ...args);
-const noframes = (...args) => createTag(undefined, "noframes", ...args);
-const param = (...args) => createTag(undefined, "param", ...args);
-const plaintext = (...args) => createTag(undefined, "plaintext", ...args);
-const rb = (...args) => createTag(undefined, "rb", ...args);
-const rtc = (...args) => createTag(undefined, "rtc", ...args);
-const spacer = (...args) => createTag(undefined, "spacer", ...args);
-const strike = (...args) => createTag(undefined, "strike", ...args);
-const tt = (...args) => createTag(undefined, "tt", ...args);
-const xmp = (...args) => createTag(undefined, "xmp", ...args);
 function uniqueRecords(nodes) {
     const records = [];
     const seen = new Set();
@@ -1281,4 +1251,4 @@ function sanitizeProgrammaticSrcset(value, valueOf, trustMediaUrl) {
         .join(", ");
 }
 
-export { PROGRAMMATIC_VIEW_MARKER, PROGRAMMATIC_VIEW_TEMPLATE, a, abbr, acronym, address, applet, area, article, aside, attrs, audio, b, base, basefont, bdi, bdo, bgsound, big, blink, blockquote, body, br, button, canvas, caption, center, cite, code, col, colgroup, createProgrammaticComponentCompile, createProgrammaticDirectiveCompile, data, datalist, dd, del, details, dfn, dialog, dir, div, dl, dt, each, em, embed, event, fieldset, figcaption, figure, font, footer, form, frame, frameset, h1, h2, h3, h4, h5, h6, head, header, hgroup, hr, html, i, iframe, img, input, ins, isindex, kbd, keygen, label, legend, li, link, listing, main, map, mark, marquee, materializeProgrammaticView, menu, menuitem, meta, meter, multicol, nav, nextid, nobr, noembed, noframes, noscript, object, ol, optgroup, option, output, p, param, picture, plaintext, pre, progress, props, q, rb, rp, rt, rtc, ruby, s, samp, sanitizeProgrammaticSrcset, script, search, section, select, slot, small, source, spacer, span, strike, strong, style, sub, summary, sup, table, tag, tagNS, tags, tbody, td, template, textarea, tfoot, th, thead, time, title, tr, track, tt, u, ul, varTag, video, wbr, xmp };
+export { PROGRAMMATIC_VIEW_MARKER, PROGRAMMATIC_VIEW_TEMPLATE, a, abbr, address, area, article, aside, attrs, audio, b, base, bdi, bdo, blockquote, body, br, button, canvas, caption, cite, code, col, colgroup, createProgrammaticComponentCompile, createProgrammaticDirectiveCompile, data, datalist, dd, del, details, dfn, dialog, div, dl, dt, each, em, embed, event, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, head, header, hgroup, hr, html, i, iframe, img, input, ins, kbd, label, legend, li, link, main, map, mark, materializeProgrammaticView, menu, meta, meter, nav, noscript, object, ol, optgroup, option, output, p, picture, pre, progress, props, q, rp, rt, ruby, s, samp, sanitizeProgrammaticSrcset, script, search, section, select, slot, small, source, span, strong, style, sub, summary, sup, table, tag, tagNS, tags, tbody, td, template, textarea, tfoot, th, thead, time, title, tr, track, u, ul, varTag, video, wbr };

@@ -42,6 +42,10 @@ part of the Gleam public facade.
 | `AngularService` | inventory |
 | `AnnotatedDirectiveFactory` | inventory |
 | `AriaConfig` | inventory |
+| `CanvasFrame` | inventory |
+| `CanvasRenderer` | inventory |
+| `CanvasSize` | inventory |
+| `CanvasSurface` | inventory |
 | `ClassMap` | inventory |
 | `ClassValue` | review |
 | `Component` | started |

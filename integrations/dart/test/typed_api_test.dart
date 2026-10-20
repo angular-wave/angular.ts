@@ -82,6 +82,28 @@ void main() {
     }
   });
 
+  test('HTTP options preserve native signals and Fetch credential modes', () {
+    final controller = AbortController();
+    for (final mode in ng.HttpCredentials.values) {
+      final options = ng.HttpRequestOptions(
+        defaults:
+            const ng.HttpDefaults(credentials: ng.HttpCredentials.include),
+        credentials: mode,
+        timeout: 1200,
+        signal: controller.signal,
+      );
+      final raw = options.toJsValue() as JSObject;
+      expect(raw.getProperty<JSString>('credentials'.toJS).toDart, mode.value);
+      expect(raw.getProperty<JSNumber>('timeout'.toJS).toDartInt, 1200);
+      expect(raw.getProperty<JSAny>('signal'.toJS), same(controller.signal));
+      expect(raw.getProperty<JSAny?>('withCredentials'.toJS), isNull);
+      expect(raw.getProperty<JSAny?>('eventHandlers'.toJS), isNull);
+      expect(raw.getProperty<JSAny?>('uploadEventHandlers'.toJS), isNull);
+    }
+    controller.abort();
+    expect(controller.signal.aborted, isTrue);
+  });
+
   test('geolocation values expose nullable coordinates', () {
     final raw = JSObject()
       ..setProperty('latitude'.toJS, 56.9496.toJS)
@@ -445,7 +467,7 @@ void main() {
       defaults: httpDefaults,
       headers:
           ng.HttpRequestConfigHeaders(common: {'Accept': 'application/json'}),
-      withCredentials: true,
+      credentials: ng.HttpCredentials.include,
       paramSerializer: r'$httpParamSerializer',
       params: {'page': 1},
       responseType: ng.HttpResponseType.json,
@@ -466,7 +488,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       config: request,
       statusText: 'OK',
-      xhrStatus: ng.HttpResponseStatus.complete,
+      transportStatus: ng.HttpResponseStatus.complete,
     );
     const cookie = ng.CookieOptions(samesite: ng.SameSite.lax);
     final sse = ng.SseConfig(
@@ -551,7 +573,8 @@ void main() {
     expect(injector.instantiate('Type'), isNotNull);
     injector.loadNewModules(['lazy']);
     expect(http.defaults, isNotNull);
-    http.defaults = const ng.HttpDefaults(withCredentials: true);
+    http.defaults =
+        const ng.HttpDefaults(credentials: ng.HttpCredentials.include);
     expect(http.defaults, isNotNull);
     expect(http.pendingRequests, isNotNull);
     http.pendingRequests = [];
@@ -650,12 +673,12 @@ void main() {
     expect(state.component, 'homePage');
     expect(state.dynamicState, isTrue);
     expect(httpDefaults.toMap()['transformRequest'], 'requestTransform');
-    expect(shortcut.toMap()['withCredentials'], isTrue);
+    expect(shortcut.toMap()['credentials'], 'include');
     expect(request.cache, isFalse);
     expect(request.xsrfHeaderName, 'X-XSRF-TOKEN');
     expect(entityClass({'id': 1}).raw, {'id': 1});
     expect(response.status, 200);
-    expect(response.xhrStatus, ng.HttpResponseStatus.complete);
+    expect(response.transportStatus, ng.HttpResponseStatus.complete);
     expect(cookie.samesite?.value, 'Lax');
     expect(sse.eventTypes, ['message']);
     expect(websocket.maxRetries, 1);

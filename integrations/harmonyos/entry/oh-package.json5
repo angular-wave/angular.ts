@@ -8,5 +8,8 @@
   "dependencies": {
     "@angular-wave/angular-native-harmony-core": "file:../packages/core",
     "@angular-wave/angular-native-harmony-navigation": "file:../packages/navigation"
+  },
+  "devDependencies": {
+    "@ohos/hypium": "1.0.29"
   }
 }

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AngularTS canvas chart</title>
+    <script
+      type="module"
+      src="/utils/source-bootstrap.js"
+      data-angular-ts-entry="./chart.js"
+    ></script>
+    <style>
+      body {
+        font: 16px sans-serif;
+        margin: 24px;
+      }
+      canvas {
+        display: block;
+        width: min(480px, 100%);
+        height: 180px;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body ng-app="canvasChart" ng-controller="ChartController as chart">
+    <label
+      >Value
+      <input
+        aria-label="Value"
+        type="range"
+        min="0"
+        max="100"
+        ng-model="chart.model.value"
+    /></label>
+    <output data-testid="chart-value">{{ chart.model.value }}</output>
+    <canvas
+      ng-canvas="chart.renderer"
+      ng-canvas-watch="chart.model.value"
+      aria-label="Value chart"
+    ></canvas>
+  </body>
+</html>

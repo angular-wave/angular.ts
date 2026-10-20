@@ -33,10 +33,12 @@ export type {
   NativeNodeEvent,
   NativeNodeEventSink,
   NativeNodeRect,
+  NativeNodeSavedState,
 } from "./nodes/NativeNodeRegistry.ts";
 export { HarmonyNativeNodeAdapter } from "./nodes/HarmonyNativeNodeAdapter.ts";
 export type {
   HarmonyNativeSurface,
+  HarmonyNativeNode,
   NativeContractResolver,
   NativeRendererResolver,
 } from "./nodes/HarmonyNativeNodeAdapter.ts";

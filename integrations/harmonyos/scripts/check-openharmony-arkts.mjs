@@ -18,6 +18,7 @@ export function defaultSdkRoot(environment = process.env) {
 export async function collectArkTSSources(root = integrationRoot) {
   const sources = [];
   await collect(resolve(root, "entry", "src", "main", "ets"), sources);
+  await collect(resolve(root, "entry", "src", "ohosTest", "ets"), sources);
   await collectModules(resolve(root, "packages"), sources);
   await collectModules(resolve(root, "samples"), sources);
   return sources.sort();

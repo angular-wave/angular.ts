@@ -49,6 +49,29 @@ implements NavigationPlatform {
     return this.#store.resolve(id);
   }
 
+  restore(entries: readonly NavigationEntry[]): void {
+    this._assertOpen();
+    if (
+      entries.length === 0 ||
+      entries[0]?.id !== this.#entries[0]?.id ||
+      new Set(entries.map((entry) => entry.id)).size !== entries.length
+    ) {
+      throw new Error("Invalid HarmonyOS restored destination stack");
+    }
+    const staged: string[] = [];
+    try {
+      for (const entry of entries.slice(1)) {
+        this.#store.stage(entry.id, () => this.#create(entry));
+        staged.push(entry.id);
+      }
+    } catch (error) {
+      for (const id of staged) this.#store.abort(id);
+      throw error;
+    }
+    for (const id of staged) this.#store.commitPush(id);
+    this._replaceEntries(entries);
+  }
+
   async apply(
     operation: "push" | "replace" | "pop" | "modal",
     entries: readonly NavigationEntry[],

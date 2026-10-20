@@ -6,6 +6,38 @@ import type {
   WorkflowCommandContext,
 } from "../../../services/workflow/workflow.ts";
 
+import type {
+  HttpRequestOptions,
+  HttpRequestConfig,
+} from "../../../services/http/http.ts";
+
+const nativeHttpOptions: HttpRequestOptions = {
+  signal: new AbortController().signal,
+  timeout: 5000,
+  credentials: "omit",
+};
+void nativeHttpOptions;
+// @ts-expect-error timeout accepts milliseconds, not cancellation promises
+const promiseTimeout: HttpRequestOptions = { timeout: Promise.resolve() };
+void promiseTimeout;
+// @ts-expect-error use credentials instead of the removed HTTP boolean
+const legacyCredentials: HttpRequestOptions = { withCredentials: true };
+void legacyCredentials;
+const legacyEvents: HttpRequestConfig = {
+  method: "GET",
+  url: "/",
+  // @ts-expect-error completion uses the returned promise
+  eventHandlers: {},
+};
+void legacyEvents;
+const legacyUploadEvents: HttpRequestConfig = {
+  method: "POST",
+  url: "/",
+  // @ts-expect-error Fetch does not expose upload events
+  uploadEventHandlers: {},
+};
+void legacyUploadEvents;
+
 class GameStateService {
   strikeCount = 0;
 }
@@ -87,7 +119,7 @@ module.config({
 module.config({
   $rest: {
     defaults: {
-      withCredentials: false,
+      credentials: "same-origin",
     },
   },
 });
@@ -357,7 +389,7 @@ module.config({
           "X-Mode": "configured",
         },
       },
-      withCredentials: true,
+      credentials: "include",
       xsrfCookieName: "APP-XSRF",
       xsrfHeaderName: "X-APP-XSRF",
       paramSerializer(params) {
@@ -417,7 +449,7 @@ module.config({
       headers: {
         "X-Template": "configured",
       },
-      withCredentials: true,
+      credentials: "include",
       timeout: 1000,
     },
   },
@@ -598,8 +630,8 @@ module.config({ $exceptionHandler: { swallow: true } });
 module.config({ $exceptionHandler: { handler: true } });
 // @ts-expect-error invalid http config field
 module.config({ $http: { timeout: 1000 } });
-// @ts-expect-error http defaults withCredentials must be boolean
-module.config({ $http: { defaults: { withCredentials: "true" } } });
+// @ts-expect-error http defaults credentials must use a Fetch credential mode
+module.config({ $http: { defaults: { credentials: "true" } } });
 // @ts-expect-error http interceptors must be injectable interceptor factories
 module.config({ $http: { interceptors: [42] } });
 // @ts-expect-error http xsrf trusted origins must be strings
@@ -754,7 +786,7 @@ module.config({ $templateCache: { cache: new Map<string, number>() } });
 module.config({ $templateRequest: { options: {} } });
 // @ts-expect-error templateRequest httpOptions must be an object
 module.config({ $templateRequest: { httpOptions: true } });
-// @ts-expect-error templateRequest timeout must be number or Promise
+// @ts-expect-error templateRequest timeout must be milliseconds
 module.config({ $templateRequest: { httpOptions: { timeout: "1000" } } });
 // @ts-expect-error invalid rest config field
 module.config({ $rest: { defaults: "invalid" } });

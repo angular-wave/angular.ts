@@ -252,17 +252,9 @@ export function createHttpDirective(
 
         let intervalId: ReturnType<typeof setInterval> | undefined;
 
-        let resolveDestroy: (() => void) | undefined;
-
-        const destroyPromise = new Promise<void>((resolve) => {
-          resolveDestroy = resolve;
-        });
-
         const destroyController = new AbortController();
 
         scope.on("$destroy", () => {
-          resolveDestroy?.();
-          resolveDestroy = undefined;
           destroyController.abort("scope destroyed");
 
           if (intervalId) clearInterval(intervalId);
@@ -318,7 +310,7 @@ export function createHttpDirective(
             config.responseType = "stream";
           }
 
-          config.timeout = destroyPromise;
+          config.signal = destroyController.signal;
 
           return config;
         }

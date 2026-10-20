@@ -8,9 +8,9 @@ description:
 
 Programmatic views provide a JSX-free alternative to HTML templates. A view is
 an ordinary function that returns real DOM nodes created with typed tag
-factories. It uses
-the normal AngularTS compiler, scope lifecycle, dependency injection, component
-registration, directive registration, and transclusion pipeline.
+factories. It uses the normal AngularTS compiler, scope lifecycle, dependency
+injection, component registration, directive registration, and transclusion
+pipeline.
 
 There is no separate mount API. Register the component or directive on an
 AngularTS module and let the compiler instantiate it from normal markup.
@@ -42,10 +42,10 @@ import {
 } from '@angular-wave/angular.ts';
 ```
 
-Named imports are preferred in ESM applications because bundlers can retain
-only the factories that are used. No-build UMD applications can access tag
-factories through `angular.tags` and helpers through `angular.view`. Keep
-`tags` for namespace proxies; use `tag()` when the element name is dynamic.
+Named imports are preferred in ESM applications because bundlers can retain only
+the factories that are used. No-build UMD applications can access tag factories
+through `angular.tags` and helpers through `angular.view`. Keep `tags` for
+namespace proxies; use `tag()` when the element name is dynamic.
 
 Define the view directly on the component registration:
 
@@ -195,9 +195,10 @@ input(props({ value: () => controller.name }));
 ```
 
 HTML destinations such as `innerHTML` and `srcdoc` pass through the compiler's
-`htmlPolicy`. Configure that policy to sanitize or validate HTML strings;
-the default rejects nonempty strings. Native `TrustedHTML` is supported at HTML
-destinations. See [binding policies]({{< relref "/docs/service/binding-policies" >}}).
+`htmlPolicy`. Configure that policy to sanitize or validate HTML strings; the
+default rejects nonempty strings. Native `TrustedHTML` is supported at HTML
+destinations. See [binding
+policies]({{< relref "/docs/service/binding-policies" >}}).
 
 ## Handle events
 
@@ -256,8 +257,8 @@ ul(
 - The key selector receives the concrete item and must return a unique, stable
   key.
 - The renderer receives a reactive
-  [`ProgrammaticViewReader`](../../../typedoc/types/ProgrammaticViewReader.html) rather than an item
-  snapshot.
+  [`ProgrammaticViewReader`](../../../typedoc/types/ProgrammaticViewReader.html)
+  rather than an item snapshot.
 
 Calling `todo()` reads the current value associated with that key. When a new
 object replaces an old object with the same key, AngularTS preserves its DOM
@@ -274,6 +275,11 @@ Use `tag()` when the HTML tag name is dynamic or cannot use property access:
 ```ts
 const widget = tag('account-summary', { accountId: controller.accountId });
 ```
+
+Named ESM factories and generated integration helpers cover current HTML
+elements. Obsolete helpers such as `applet()`, `blink()`, and `font()` have been
+removed. For existing markup that still requires a legacy element, use the
+generic factory, for example `tag('font', 'Legacy text')`.
 
 Use `tagNS()` or call `tags` with a namespace URI for SVG, MathML, or another
 XML namespace:
@@ -304,7 +310,7 @@ with these members:
 | `controller` | The initialized component controller.                             |
 | `scope`      | The scope that owns reactive bindings and generated DOM.          |
 | `host`       | The component host element.                                       |
-| | `transclude` | The transclusion function when transclusion is enabled.           |
+| `transclude` | The transclusion function when transclusion is enabled.           |
 | `onDestroy`  | Registers view-owned cleanup and returns a cancellation function. |
 
 Directive views receive a

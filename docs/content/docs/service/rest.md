@@ -64,15 +64,22 @@ When an entity class is supplied, response objects are passed through
 ## Request Options
 
 The third factory argument is merged into backend requests. With the default
-HTTP backend, use it for headers, credentials, cache options, transforms, or
-custom param serialization.
+HTTP backend, use it for headers, Fetch credentials, numeric timeouts, native
+cancellation signals, cache options, transforms, or custom param serialization.
 
 ```ts
 const posts = $rest<Post, number>('/api/posts', Post, {
   headers: { 'X-Tenant': tenantId },
-  withCredentials: true,
+  credentials: 'include',
 });
 ```
+
+The factory options apply to every operation on that resource. If a resource
+uses `signal`, aborting it cancels its in-flight HTTP requests and prevents
+later requests from starting with that same signal. Create a new controller and
+resource for a new cancellation lifetime. HTTP backend failures preserve
+`$http`'s `status` and `transportStatus`; see the [$http
+guide]({{< relref "/docs/services/http" >}}).
 
 Pass `backend` when a resource should use a custom backend. The backend receives
 a normalized [`RestRequest`](../../../typedoc/interfaces/RestRequest.html) with
@@ -137,7 +144,7 @@ should use the same backend behavior.
 angular.createModule('app', []).config({
   $rest: {
     defaults: {
-      withCredentials: true,
+      credentials: 'include',
       timeout: 5000,
     },
   },

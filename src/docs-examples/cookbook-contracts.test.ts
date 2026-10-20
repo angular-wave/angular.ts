@@ -50,5 +50,5 @@ test("request control covers stale reads and duplicate writes", async ({
 
   expect(source).toContain("An old search overwrites a newer one");
   expect(source).toContain("make the server idempotent");
-  expect(source).toContain('xhrStatus === "abort"');
+  expect(source).toContain('transportStatus === "abort"');
 });

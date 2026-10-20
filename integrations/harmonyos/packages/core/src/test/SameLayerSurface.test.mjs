@@ -11,6 +11,8 @@ function fixture() {
       update: (snapshot, primitive) => operations.push(["update", embed.domId, snapshot.id, primitive]),
       layout: (rect) => operations.push(["layout", embed.domId, rect]),
       invoke: (method) => `invoked:${method}`,
+      saveState: () => ({ x: 2, y: 40 }),
+      restoreState: (state) => operations.push(["restore", embed.domId, state]),
       postTouchEvent: (event) => event === "accepted",
       dispose: () => operations.push(["dispose", embed.domId]),
     };
@@ -82,4 +84,39 @@ test("coalesces structural notifications within a frame batch", () => {
   value.surface.endBatch();
   assert.equal(changes, 1);
   assert.throws(() => value.surface.endBatch(), /not active/u);
+});
+
+test("keeps controller state across delayed connection and embed recreation", () => {
+  const value = fixture();
+  value.surface.attach(snapshot, "Text", () => {});
+  value.surface.restoreState("title", { x: 1, y: 20 });
+  assert.deepEqual(value.surface.saveState("title"), { x: 1, y: 20 });
+  value.surface.embedCreated(embed);
+  assert.deepEqual(value.operations.at(-1), ["restore", embed.domId, { x: 1, y: 20 }]);
+  value.surface.restoreState("title", { x: 5, y: 60 });
+  assert.deepEqual(value.operations.at(-1), ["restore", embed.domId, { x: 5, y: 60 }]);
+  assert.deepEqual(value.surface.saveState("title"), { x: 2, y: 40 });
+  value.surface.embedDestroyed(embed.domId);
+  value.surface.embedCreated(embed);
+  assert.deepEqual(value.operations.at(-1), ["restore", embed.domId, { x: 2, y: 40 }]);
+});
+
+test("retains restored state when a controller has no state hooks", () => {
+  const surface = new SameLayerSurface(() => ({
+    update() {},
+    layout() {},
+    invoke() {},
+    postTouchEvent() {
+      return false;
+    },
+    dispose() {},
+  }));
+
+  surface.attach(snapshot, "Text", () => {});
+  surface.restoreState("title", { x: 4, y: 8 });
+  surface.embedDestroyed(embed.domId);
+  surface.embedCreated(embed);
+  assert.deepEqual(surface.saveState("title"), { x: 4, y: 8 });
+  surface.embedDestroyed(embed.domId);
+  assert.deepEqual(surface.saveState("title"), { x: 4, y: 8 });
 });

@@ -26,6 +26,34 @@ function fixture(files) {
   };
 }
 
+test("parameterizes generated generic callbacks when conditional factory types erase", () => {
+  const generated = fixture({
+    NgModule: [
+      "package org.angular.ts.ng;",
+      "public class NgModule{",
+      "public native NgModule directive(String name,DirectiveFactoryFn directiveFactory);",
+      "}",
+    ].join("\n"),
+    DirectiveFactoryFn: [
+      "package org.angular.ts.ng;",
+      "@jsinterop.annotations.JsFunction",
+      "public interface DirectiveFactoryFn<TController>{",
+      "Object onInvoke();",
+      "}",
+    ].join("\n"),
+  });
+
+  try {
+    execFileSync(process.execPath, [scriptPath, generated.root]);
+    assert.match(
+      generated.read("NgModule"),
+      /directive\(String name,DirectiveFactoryFn<\?> directiveFactory\)/,
+    );
+  } finally {
+    rmSync(generated.root, { force: true, recursive: true });
+  }
+});
+
 test("restores named callbacks and collection types erased by JsInterop", () => {
   const generated = fixture({
     Directive: [
@@ -183,6 +211,30 @@ test("refines partially typed promises, browser parameters, and public fields", 
       generated.read("ServiceWorkerMessageEvent"),
       /elemental2\.dom\.MessageEvent<TData> getEvent\(\)/,
     );
+  } finally {
+    rmSync(generated.root, { force: true, recursive: true });
+  }
+});
+
+test("keeps native dollar property bindings with ordinary Java accessors", () => {
+  const generated = fixture({
+    CanvasRenderer: [
+      "package org.angular.ts.ng;",
+      "public interface CanvasRenderer{",
+      '@JsProperty(name = "$nonscope")',
+      "boolean is$nonscope();",
+      '@JsProperty(name = "$nonscope")',
+      "void set$nonscope(boolean $nonscope);",
+      "}",
+    ].join("\n"),
+  });
+
+  try {
+    execFileSync(process.execPath, [scriptPath, generated.root]);
+    const source = generated.read("CanvasRenderer");
+    assert.match(source, /@JsProperty\(name = "\$nonscope"\)\s*boolean isNonscope\(\)/);
+    assert.match(source, /@JsProperty\(name = "\$nonscope"\)\s*void setNonscope\(/);
+    assert.doesNotMatch(source, /(?:is|set)\$nonscope\(/);
   } finally {
     rmSync(generated.root, { force: true, recursive: true });
   }

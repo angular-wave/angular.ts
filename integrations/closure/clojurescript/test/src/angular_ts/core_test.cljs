@@ -1,8 +1,20 @@
 (ns angular-ts.core-test
   (:require [angular-ts.core :as ng]
+            [angular-ts.generated :as generated]
             [angular-ts.view :as view]
             [cljs.test :refer-macros [deftest is testing]]
             [goog.object :as gobj]))
+
+(deftest http-facades-read-fetch-options-and-transport-status
+  (let [controller (js/AbortController.)
+        signal (.-signal controller)
+        options #js {:signal signal :timeout 1200 :credentials "omit"}
+        response #js {:transportStatus "abort"}]
+    (is (identical? signal (generated/http-request-options-signal options)))
+    (is (= 1200 (generated/http-request-options-timeout options)))
+    (is (= "omit" (generated/http-request-options-credentials options)))
+    (is (= "abort" (generated/http-response-transport-status response)))
+    (is (= "abort" (generated/rest-response-transport-status response)))))
 
 (deftest get-model-returns-the-runtime-instance-and-propagates-errors
   (let [previous (gobj/get js/angular "getModel")

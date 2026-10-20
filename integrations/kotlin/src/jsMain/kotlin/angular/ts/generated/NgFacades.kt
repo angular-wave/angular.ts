@@ -165,21 +165,24 @@ public external interface Angular {
 }
 
 /**
- * Public AngularTS AnnotatedDirectiveFactory contract exposed through the ng namespace.
+ * Dependency tokens followed by a directive factory.
  */
-public external interface AnnotatedDirectiveFactory
+public external interface AnnotatedDirectiveFactory<TController>
 
 /**
  * Defines a component's configuration object (a simplified directive definition object).
  */
 public external interface Component<TControllerInstance, TScopeInstance, TElement> {
     /**
-     * Define DOM attribute binding to component properties. Component properties are always
-     * bound to the component controller and not to the scope.
+     * Bind DOM attributes to controller properties. Known controller types restrict binding
+     * names to their string keys; untyped controllers allow arbitrary names.
+     * `NgModule.component()` also checks literal `&` bindings against callable properties.
+     * Existing binding modes, aliases, and optional markers are preserved.
      */
     public var bindings: dynamic
     /**
-     * The controller member of ng.Component.
+     * Controller constructor or factory. Its instance type supplies binding names and view
+     * context.
      */
     public var controller: dynamic
     /**
@@ -231,12 +234,15 @@ public external interface Component<TControllerInstance, TScopeInstance, TElemen
  */
 public external interface ComponentDefinition<TControllerInstance, TScopeInstance, TElement> {
     /**
-     * Define DOM attribute binding to component properties. Component properties are always
-     * bound to the component controller and not to the scope.
+     * Bind DOM attributes to controller properties. Known controller types restrict binding
+     * names to their string keys; untyped controllers allow arbitrary names.
+     * `NgModule.component()` also checks literal `&` bindings against callable properties.
+     * Existing binding modes, aliases, and optional markers are preserved.
      */
     public var bindings: dynamic
     /**
-     * The controller member of ng.ComponentDefinition.
+     * Controller constructor or factory. Its instance type supplies binding names and view
+     * context.
      */
     public var controller: dynamic
     /**
@@ -448,7 +454,9 @@ public external interface ClassValue
  */
 public external interface Directive<TController> {
     /**
-     * Whether to bind scope to controller
+     * Bind attributes to controller properties. Known controller types restrict binding names
+     * and require callable properties for `&` callbacks. `true` uses the bindings declared in
+     * `scope`; `false` leaves them on the scope.
      */
     public var bindToController: dynamic
     /**
@@ -531,14 +539,15 @@ public external interface Directive<TController> {
 public external interface DirectiveRestrict
 
 /**
- * Public AngularTS DirectiveFactory contract exposed through the ng namespace.
+ * Plain or dependency-annotated factory, optionally typed by its controller.
  */
-public external interface DirectiveFactory
+public external interface DirectiveFactory<TController>
 
 /**
- * Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace.
+ * Injectable factory returning a directive definition or a link function. Structural
+ * results let registries accept definitions with known controller types.
  */
-public external interface DirectiveFactoryFn {
+public external interface DirectiveFactoryFn<TController> {
     /**
      * Calls the ng.DirectiveFactoryFn function.
      * @param args Value supplied for the args parameter.
@@ -615,9 +624,11 @@ public external interface NgModule {
      */
     public fun appComponent(name: String = definedExternally, options: dynamic = definedExternally): dynamic
     /**
-     * The component member of ng.NgModule.
-     * @param name Value supplied for the name parameter.
-     * @param options Value supplied for the options parameter.
+     * Registers a component, inferring controller properties for binding checks and
+     * programmatic view context. Literal `&` bindings require callable properties; untyped
+     * controllers remain permissive.
+     * @param name Component name normalized from its HTML element name.
+     * @param options Controller, bindings, and one rendering definition.
      */
     public fun component(name: String = definedExternally, options: dynamic = definedExternally): dynamic
     /**
@@ -645,9 +656,11 @@ public external interface NgModule {
      */
     public fun decorator(name: String = definedExternally, decorFn: dynamic = definedExternally): dynamic
     /**
-     * The directive member of ng.NgModule.
-     * @param name Value supplied for the name parameter.
-     * @param directiveFactory Value supplied for the directiveFactory parameter.
+     * Registers a directive factory, checking controller binding names and literal `&`
+     * callbacks against its controller type. With `bindToController: true`, the checks apply
+     * to `scope` bindings. Other scope bindings stay independent.
+     * @param name Directive name normalized from its HTML element or attribute.
+     * @param directiveFactory Plain or dependency-annotated directive factory.
      */
     public fun directive(name: String = definedExternally, directiveFactory: dynamic = definedExternally): dynamic
     /**
@@ -843,9 +856,11 @@ public external interface RouterModule<TRouteMap> {
      */
     public fun appComponent(name: String = definedExternally, options: dynamic = definedExternally): dynamic
     /**
-     * The component member of ng.RouterModule.
-     * @param name Value supplied for the name parameter.
-     * @param options Value supplied for the options parameter.
+     * Registers a component, inferring controller properties for binding checks and
+     * programmatic view context. Literal `&` bindings require callable properties; untyped
+     * controllers remain permissive.
+     * @param name Component name normalized from its HTML element name.
+     * @param options Controller, bindings, and one rendering definition.
      */
     public fun component(name: String = definedExternally, options: dynamic = definedExternally): dynamic
     /**
@@ -873,9 +888,11 @@ public external interface RouterModule<TRouteMap> {
      */
     public fun decorator(name: String = definedExternally, decorFn: dynamic = definedExternally): dynamic
     /**
-     * The directive member of ng.RouterModule.
-     * @param name Value supplied for the name parameter.
-     * @param directiveFactory Value supplied for the directiveFactory parameter.
+     * Registers a directive factory, checking controller binding names and literal `&`
+     * callbacks against its controller type. With `bindToController: true`, the checks apply
+     * to `scope` bindings. Other scope bindings stay independent.
+     * @param name Directive name normalized from its HTML element or attribute.
+     * @param directiveFactory Plain or dependency-annotated directive factory.
      */
     public fun directive(name: String = definedExternally, directiveFactory: dynamic = definedExternally): dynamic
     /**
@@ -2188,6 +2205,117 @@ public external interface HtmlCanvasConfig {
 }
 
 /**
+ * Frame timestamps are in seconds; delta is zero after mounting or resuming.
+ */
+public external interface CanvasFrame {
+    /**
+     * The delta member of ng.CanvasFrame.
+     */
+    public var delta: Double
+    /**
+     * The size member of ng.CanvasFrame.
+     */
+    public var size: dynamic
+    /**
+     * The time member of ng.CanvasFrame.
+     */
+    public var time: Double
+}
+
+/**
+ * Application renderer contract for the optional ng-canvas directive.
+ */
+public external interface CanvasRenderer {
+    /**
+     * Keep native drawing resources outside scope proxies when held on this adapter.
+     */
+    public var `$nonscope`: Boolean
+    /**
+     * Continuous frames are opt-in. Otherwise render only after invalidation.
+     */
+    public var animate: Boolean
+    /**
+     * Native context type. Defaults to 2d.
+     */
+    public var context: dynamic
+    /**
+     * The dispose member of ng.CanvasRenderer.
+     */
+    public fun dispose(): Unit
+    /**
+     * Optional backing-store pixel-ratio cap.
+     */
+    public var maxPixelRatio: Double
+    /**
+     * The mount member of ng.CanvasRenderer.
+     * @param surface Value supplied for the surface parameter.
+     */
+    public fun mount(surface: dynamic = definedExternally): Unit
+    /**
+     * The render member of ng.CanvasRenderer.
+     * @param frame Value supplied for the frame parameter.
+     */
+    public fun render(frame: dynamic = definedExternally): Unit
+    /**
+     * The resize member of ng.CanvasRenderer.
+     * @param size Value supplied for the size parameter.
+     */
+    public fun resize(size: dynamic = definedExternally): Unit
+    /**
+     * The resume member of ng.CanvasRenderer.
+     */
+    public fun resume(): Unit
+    /**
+     * The suspend member of ng.CanvasRenderer.
+     */
+    public fun suspend(): Unit
+}
+
+/**
+ * CSS dimensions and the corresponding canvas backing-store dimensions.
+ */
+public external interface CanvasSize {
+    /**
+     * The height member of ng.CanvasSize.
+     */
+    public var height: Double
+    /**
+     * The pixelHeight member of ng.CanvasSize.
+     */
+    public var pixelHeight: Double
+    /**
+     * The pixelRatio member of ng.CanvasSize.
+     */
+    public var pixelRatio: Double
+    /**
+     * The pixelWidth member of ng.CanvasSize.
+     */
+    public var pixelWidth: Double
+    /**
+     * The width member of ng.CanvasSize.
+     */
+    public var width: Double
+}
+
+/**
+ * Native drawing resources owned by one linked ng-canvas element.
+ */
+public external interface CanvasSurface {
+    /**
+     * The canvas member of ng.CanvasSurface.
+     */
+    public var canvas: dynamic
+    /**
+     * The context member of ng.CanvasSurface.
+     */
+    public var context: dynamic
+    /**
+     * The invalidate member of ng.CanvasSurface.
+     */
+    public fun invalidate(): Unit
+}
+
+/**
  * Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the ng namespace.
  */
 public external interface HtmlCanvasRuntimeSupport {
@@ -2331,7 +2459,10 @@ public external interface HttpParamSerializerService {
  * Runtime surface of the `$http` service. Call the service directly with a full
  * HttpRequestConfig, or use a shorthand method for common HTTP verbs. All methods return
  * an `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects
- * with HttpError for errors.
+ * with HttpError for HTTP or transport failures. Configuration, transform, and interceptor
+ * errors can reject with other error types. Uses Fetch exclusively. Cancel with a native
+ * `AbortSignal`, set a numeric `timeout` for a deadline, and observe completion through
+ * the returned promise. Upload progress events are not available.
  */
 public external interface HttpService {
     /**
@@ -3547,9 +3678,10 @@ public external interface SwapMode
 public external interface TemplateCacheService
 
 /**
- * Downloads a template using $http and, upon success, stores the contents inside of
- * $templateCache. If the HTTP request fails or the response data of the HTTP request is
- * empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true).
+ * Returns cached template text or downloads it through `$http` and stores it in
+ * `$templateCache`. Concurrent requests for the same URL share one promise.
+ * `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures
+ * reject; an empty successful response is returned unchanged.
  */
 public external interface TemplateRequestService {
     /**
@@ -3987,7 +4119,7 @@ public external interface AngularElementOptions<T> {
 /**
  * A controller constructor function used in AngularTS.
  */
-public external interface ControllerConstructor
+public external interface ControllerConstructor<TControllerInstance>
 
 /**
  * Public AngularTS CookieOptions contract exposed through the ng namespace.
@@ -4064,18 +4196,21 @@ public external interface HttpMethod
 
 /**
  * Default request settings configured through `app.config({ $http })` and exposed at
- * runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported
- * here; this shape only includes the fields that the runtime reads from provider-level
- * defaults. https://docs.angularjs.org/api/ng/service/$http#defaults
- * https://docs.angularjs.org/api/ng/service/$http#usage
+ * runtime through `$http.defaults`. Only the settings declared here are read from
+ * service-level defaults. Set `timeout`, `signal`, and `responseType` on individual
+ * requests instead.
  */
 public external interface HttpDefaults {
     /**
-     * Cache used for cacheable requests. `true` enables the default cache.
+     * GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
      */
     public var cache: dynamic
     /**
-     * Default headers merged into each request.
+     * Fetch credential mode. Defaults to `"same-origin"`.
+     */
+    public var credentials: dynamic
+    /**
+     * Default headers grouped by method and merged into each request case-insensitively.
      */
     public var headers: dynamic
     /**
@@ -4090,10 +4225,6 @@ public external interface HttpDefaults {
      * Response body transform pipeline.
      */
     public var transformResponse: dynamic
-    /**
-     * Whether cross-site requests should include credentials by default.
-     */
-    public var withCredentials: Boolean
     /**
      * Cookie name used when reading the XSRF token.
      */
@@ -4122,7 +4253,7 @@ public external interface HttpResponse<T> {
      */
     public fun headers(headerName: String = definedExternally): String
     /**
-     * Numeric HTTP status code. Non-2xx statuses reject the promise.
+     * Numeric HTTP status code, or a non-positive value when no HTTP response exists.
      */
     public var status: Double
     /**
@@ -4133,11 +4264,12 @@ public external interface HttpResponse<T> {
      * Transport completion status. Useful for distinguishing timeout, abort, and network
      * errors.
      */
-    public var xhrStatus: dynamic
+    public var transportStatus: dynamic
 }
 
 /**
- * Final transport status reported by transport completion handlers.
+ * Fetch transport outcome exposed on responses and errors. `complete` includes non-2xx
+ * HTTP responses; `error` indicates a transport or security-policy failure.
  */
 public external interface HttpResponseStatus
 
@@ -6282,24 +6414,26 @@ public external interface NativeWindowStatus {
 }
 
 /**
- * Full request configuration accepted by `$http(...)`. See
- * http://docs.angularjs.org/api/ng/service/$http#usage
+ * Full request configuration accepted by `$http(...)`.
  */
 public external interface HttpRequestConfig {
     /**
-     * Cache used for cacheable requests. `true` enables the default cache.
+     * GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
      */
     public var cache: dynamic
     /**
-     * Request body. Shorthand methods with explicit data set this automatically.
+     * Fetch credential mode. Defaults to `"same-origin"`.
+     */
+    public var credentials: dynamic
+    /**
+     * Request body. Objects and arrays are JSON serialized by default; File, Blob, and
+     * FormData are passed through. For browser-generated content headers, override the default
+     * with `headers: { "Content-Type": undefined }`. Shorthand methods with an explicit body
+     * set this field automatically.
      */
     public var data: dynamic
     /**
-     * Event handlers notified by the underlying transport.
-     */
-    public var eventHandlers: dynamic
-    /**
-     * Default headers merged into each request.
+     * Default headers grouped by method and merged into each request case-insensitively.
      */
     public var headers: dynamic
     /**
@@ -6315,13 +6449,21 @@ public external interface HttpRequestConfig {
      */
     public var paramSerializer: dynamic
     /**
-     * Native fetch response body reader hint.
+     * Response body reader: text (default), json, blob, arraybuffer, document, or stream.
+     * Default response transforms still apply; set `transformResponse: []` to preserve raw
+     * text. Stream responses skip implicit transforms.
      */
     public var responseType: String
     /**
-     * Millisecond timeout, or a promise whose resolution aborts the request.
+     * Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`.
      */
-    public var timeout: dynamic
+    public var signal: dynamic
+    /**
+     * Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero
+     * or negative values disable the timer. Covers response body reading except when
+     * `responseType: "stream"` hands the body to the caller.
+     */
+    public var timeout: Double
     /**
      * Request body transform pipeline.
      */
@@ -6331,17 +6473,9 @@ public external interface HttpRequestConfig {
      */
     public var transformResponse: dynamic
     /**
-     * Upload event handlers. Not used by the fetch transport.
-     */
-    public var uploadEventHandlers: dynamic
-    /**
      * Request URL. Query parameters from `params` are appended to this URL.
      */
     public var url: String
-    /**
-     * Whether cross-site requests should include credentials by default.
-     */
-    public var withCredentials: Boolean
     /**
      * Cookie name used when reading the XSRF token.
      */
@@ -6353,20 +6487,26 @@ public external interface HttpRequestConfig {
 }
 
 /**
- * Request options shared by the `$http` shortcut methods. See
- * http://docs.angularjs.org/api/ng/service/$http#usage
+ * Request options shared by the `$http` shorthand methods.
  */
 public external interface HttpRequestOptions {
     /**
-     * Cache used for cacheable requests. `true` enables the default cache.
+     * GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
      */
     public var cache: dynamic
     /**
-     * Request body. Shorthand methods with explicit data set this automatically.
+     * Fetch credential mode. Defaults to `"same-origin"`.
+     */
+    public var credentials: dynamic
+    /**
+     * Request body. Objects and arrays are JSON serialized by default; File, Blob, and
+     * FormData are passed through. For browser-generated content headers, override the default
+     * with `headers: { "Content-Type": undefined }`. Shorthand methods with an explicit body
+     * set this field automatically.
      */
     public var data: dynamic
     /**
-     * Default headers merged into each request.
+     * Default headers grouped by method and merged into each request case-insensitively.
      */
     public var headers: dynamic
     /**
@@ -6378,13 +6518,21 @@ public external interface HttpRequestOptions {
      */
     public var paramSerializer: dynamic
     /**
-     * Native fetch response body reader hint.
+     * Response body reader: text (default), json, blob, arraybuffer, document, or stream.
+     * Default response transforms still apply; set `transformResponse: []` to preserve raw
+     * text. Stream responses skip implicit transforms.
      */
     public var responseType: String
     /**
-     * Millisecond timeout, or a promise whose resolution aborts the request.
+     * Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`.
      */
-    public var timeout: dynamic
+    public var signal: dynamic
+    /**
+     * Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero
+     * or negative values disable the timer. Covers response body reading except when
+     * `responseType: "stream"` hands the body to the caller.
+     */
+    public var timeout: Double
     /**
      * Request body transform pipeline.
      */
@@ -6393,10 +6541,6 @@ public external interface HttpRequestOptions {
      * Response body transform pipeline.
      */
     public var transformResponse: dynamic
-    /**
-     * Whether cross-site requests should include credentials by default.
-     */
-    public var withCredentials: Boolean
     /**
      * Cookie name used when reading the XSRF token.
      */
@@ -6597,7 +6741,7 @@ public external interface RestResponse<T> {
      */
     public var stale: Boolean
     /**
-     * Numeric HTTP status code. Non-2xx statuses reject the promise.
+     * Numeric HTTP status code, or a non-positive value when no HTTP response exists.
      */
     public var status: Double
     /**
@@ -6608,7 +6752,7 @@ public external interface RestResponse<T> {
      * Transport completion status. Useful for distinguishing timeout, abort, and network
      * errors.
      */
-    public var xhrStatus: dynamic
+    public var transportStatus: dynamic
 }
 
 /**

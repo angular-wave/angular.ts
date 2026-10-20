@@ -1,22 +1,22 @@
 window.angular
-  .createModule("restConfigDemo", [])
+  .createModule('restConfigDemo', [])
   .config({
     $rest: {
       defaults: {
-        withCredentials: true,
+        credentials: 'include',
         timeout: 5000,
       },
     },
   })
   .controller(
-    "RestConfigCtrl",
+    'RestConfigCtrl',
     class {
-      static $inject = ["$http", "$rest"];
+      static $inject = ['$http', '$rest'];
 
       constructor($http, $rest) {
-        this.httpCredentials = $http.defaults.withCredentials;
-        this.users = $rest("/api/users", undefined, {});
-        this.resourceType = typeof this.users.list === "function";
+        this.httpCredentials = $http.defaults.credentials;
+        this.users = $rest('/api/users', undefined, {});
+        this.resourceType = typeof this.users.list === 'function';
       }
     },
   );

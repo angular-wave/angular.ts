@@ -39,6 +39,10 @@
       "types": "./@types/runtime/html-canvas.d.ts",
       "import": "./dist/runtime/html-canvas.js"
     },
+    "./runtime/canvas": {
+      "types": "./@types/runtime/canvas.d.ts",
+      "import": "./dist/runtime/canvas.js"
+    },
     "./runtime/orchestration": {
       "types": "./@types/runtime/orchestration.d.ts",
       "import": "./dist/runtime/orchestration.js"

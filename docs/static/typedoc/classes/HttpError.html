@@ -91,8 +91,11 @@
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
             <p>
-              Error used when <code>$http</code> receives a non-success
-              response.
+              Error for non-2xx responses, transport failures, cancellation,
+              timeouts, and security-policy rejection. Exposes response fields
+              directly and through <code>response</code>. Configuration,
+              transform, and interceptor failures can reject with other error
+              types.
             </p>
           </div>
         </section>
@@ -104,7 +107,7 @@
             </li>
           </ul>
         </section>
-        <section class="tsd-panel tsd-hierarchy" data-refl="2836">
+        <section class="tsd-panel tsd-hierarchy" data-refl="2910">
           <h4>Hierarchy</h4>
           <ul class="tsd-hierarchy">
             <li class="tsd-hierarchy-item">
@@ -263,14 +266,14 @@
                         <use href="../assets/icons.svg#icon-1024"></use></svg
                       ><span>status<wbr />Text</span></a
                     >
-                    <a href="#xhrstatus" class="tsd-index-link"
+                    <a href="#transportstatus" class="tsd-index-link"
                       ><svg
                         class="tsd-kind-icon"
                         viewBox="0 0 24 24"
                         aria-label="Property"
                       >
                         <use href="../assets/icons.svg#icon-1024"></use></svg
-                      ><span>xhr<wbr />Status</span></a
+                      ><span>transport<wbr />Status</span></a
                     >
                   </div>
                 </section>
@@ -651,7 +654,8 @@
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Numeric HTTP status code. Non-2xx statuses reject the promise.
+                  Numeric HTTP status code, or a non-positive value when no HTTP
+                  response exists.
                 </p>
               </div>
               <aside class="tsd-sources">
@@ -697,10 +701,10 @@
               </aside>
             </section>
             <section class="tsd-panel tsd-member">
-              <h3 class="tsd-anchor-link" id="xhrstatus">
-                <span>xhr<wbr />Status</span
+              <h3 class="tsd-anchor-link" id="transportstatus">
+                <span>transport<wbr />Status</span
                 ><a
-                  href="#xhrstatus"
+                  href="#transportstatus"
                   aria-label="Permalink"
                   class="tsd-anchor-icon"
                   ><svg viewBox="0 0 24 24" aria-hidden="true">
@@ -708,7 +712,7 @@
                 ></a>
               </h3>
               <div class="tsd-signature">
-                <span class="tsd-kind-property">xhrStatus</span
+                <span class="tsd-kind-property">transportStatus</span
                 ><span class="tsd-signature-symbol">:</span>
                 <a
                   href="../types/HttpResponseStatus.html"
@@ -726,8 +730,8 @@
                 <p>
                   Implementation of
                   <a href="../interfaces/HttpResponse.html">HttpResponse</a>.<a
-                    href="../interfaces/HttpResponse.html#xhrstatus"
-                    >xhrStatus</a
+                    href="../interfaces/HttpResponse.html#transportstatus"
+                    >transportStatus</a
                   >
                 </p>
               </aside>
@@ -1084,14 +1088,14 @@
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
                     ><span>status<wbr />Text</span></a
-                  ><a href="#xhrstatus"
+                  ><a href="#transportstatus"
                     ><svg
                       class="tsd-kind-icon"
                       viewBox="0 0 24 24"
                       aria-label="Property"
                     >
                       <use href="../assets/icons.svg#icon-1024"></use></svg
-                    ><span>xhr<wbr />Status</span></a
+                    ><span>transport<wbr />Status</span></a
                   >
                 </div>
               </details>

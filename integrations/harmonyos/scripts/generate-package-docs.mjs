@@ -20,7 +20,7 @@ const descriptions = {
   core: [
     "Core",
     "Host AngularTS in ArkWeb and render declared native elements on the ArkUI same-layer surface.",
-    "AngularNativeDestination, AngularNativeWeb",
+    "AngularNativeDestination, AngularNativeWeb, loadAngularNativePage",
   ],
   credentials: [
     "Credentials",

@@ -39,14 +39,18 @@ test("rejects invalid media operations before reaching the player", () => {
   assert.throws(() => handler.invoke("unknown", null), /Unsupported media method/u);
 });
 
-test("releases destination-owned players exactly once", () => {
+test("releases destination-owned players exactly once", async () => {
   let releases = 0;
   const handler = new HarmonyMedia({
     status() {}, load() {}, play() {}, pause() {}, stop() {}, seek() {},
-    release() { releases += 1; },
+    release() {
+      releases += 1;
+      return Promise.reject(new Error("player already released"));
+    },
   });
   handler.close();
   handler.close();
+  await Promise.resolve();
   assert.equal(releases, 1);
   assert.throws(() => handler.invoke("status", null), /disposed/u);
 });

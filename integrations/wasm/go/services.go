@@ -23,13 +23,23 @@ const (
 	HttpAbort    HttpResponseStatus = "abort"
 )
 
+// HttpCredentials selects the native Fetch credential mode.
+type HttpCredentials string
+
+const (
+	HttpCredentialsOmit       HttpCredentials = "omit"
+	HttpCredentialsSameOrigin HttpCredentials = "same-origin"
+	HttpCredentialsInclude    HttpCredentials = "include"
+)
+
 // HttpRequestOptions captures options accepted by AngularTS HTTP shortcut methods.
 type HttpRequestOptions struct {
 	Headers      map[string]string
 	Params       map[string]string
 	TimeoutMS    int
 	ResponseType string
-	Credentials  *bool
+	Credentials  HttpCredentials
+	signal       jsValue
 }
 
 // NewRequestShortcutConfig creates empty HTTP shortcut options.
@@ -67,9 +77,9 @@ func (c HttpRequestOptions) WithResponseType(responseType string) HttpRequestOpt
 	return c
 }
 
-// WithCredentials sets whether cross-site requests include credentials.
-func (c HttpRequestOptions) WithCredentials(withCredentials bool) HttpRequestOptions {
-	c.Credentials = &withCredentials
+// WithCredentials sets the native Fetch credential mode.
+func (c HttpRequestOptions) WithCredentials(credentials HttpCredentials) HttpRequestOptions {
+	c.Credentials = credentials
 	return c
 }
 
@@ -97,10 +107,10 @@ func PostRequest(url string) HttpRequestConfig {
 
 // HttpResponse is a typed AngularTS $http response.
 type HttpResponse[T any] struct {
-	Data       T
-	Status     int
-	StatusText string
-	XHRStatus  HttpResponseStatus
+	Data            T
+	Status          int
+	StatusText      string
+	TransportStatus HttpResponseStatus
 }
 
 // WorkerType selects the browser Worker script mode.

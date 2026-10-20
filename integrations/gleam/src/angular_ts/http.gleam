@@ -12,6 +12,20 @@ pub type HttpMethod {
   Options
 }
 
+pub type HttpCredentials {
+  Omit
+  SameOrigin
+  Include
+}
+
+pub fn credentials_name(credentials: HttpCredentials) -> String {
+  case credentials {
+    Omit -> "omit"
+    SameOrigin -> "same-origin"
+    Include -> "include"
+  }
+}
+
 pub type HttpResponseStatus {
   Complete
   Error
@@ -33,8 +47,9 @@ pub opaque type HttpRequestOptions {
     params: Option(Dynamic),
     data: Option(Dynamic),
     timeout: Option(Int),
+    signal: Option(Dynamic),
     response_type: Option(HttpResponseType),
-    with_credentials: Option(Bool),
+    credentials: Option(HttpCredentials),
     xsrf_header_name: Option(String),
     xsrf_cookie_name: Option(String),
     param_serializer: Option(String),
@@ -86,8 +101,9 @@ pub fn shortcut_config() -> HttpRequestOptions {
     params: None,
     data: None,
     timeout: None,
+    signal: None,
     response_type: None,
-    with_credentials: None,
+    credentials: None,
     xsrf_header_name: None,
     xsrf_cookie_name: None,
     param_serializer: None,
@@ -115,6 +131,13 @@ pub fn with_timeout(
   HttpRequestOptions(..config, timeout: Some(milliseconds))
 }
 
+pub fn with_signal(
+  config: HttpRequestOptions,
+  signal: Dynamic,
+) -> HttpRequestOptions {
+  HttpRequestOptions(..config, signal: Some(signal))
+}
+
 pub fn with_response_type(
   config: HttpRequestOptions,
   response_type: HttpResponseType,
@@ -124,9 +147,9 @@ pub fn with_response_type(
 
 pub fn with_credentials(
   config: HttpRequestOptions,
-  enabled: Bool,
+  credentials: HttpCredentials,
 ) -> HttpRequestOptions {
-  HttpRequestOptions(..config, with_credentials: Some(enabled))
+  HttpRequestOptions(..config, credentials: Some(credentials))
 }
 
 pub fn with_xsrf_header_name(
@@ -180,6 +203,11 @@ pub fn to_js_shortcut_config(config: HttpRequestOptions) -> Dynamic {
     None -> object
   }
 
+  case config.signal {
+    Some(signal) -> unsafe.set_property(object, "signal", signal)
+    None -> object
+  }
+
   case config.response_type {
     Some(response_type) ->
       unsafe.set_string(
@@ -190,9 +218,9 @@ pub fn to_js_shortcut_config(config: HttpRequestOptions) -> Dynamic {
     None -> object
   }
 
-  case config.with_credentials {
-    Some(with_credentials) ->
-      unsafe.set_bool(object, "withCredentials", with_credentials)
+  case config.credentials {
+    Some(credentials) ->
+      unsafe.set_string(object, "credentials", credentials_name(credentials))
     None -> object
   }
 

@@ -142,19 +142,28 @@
             href="#bindings"
             >bindings</a
           ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">Record</span
+          <span class="tsd-signature-type">ControllerBindings</span
           ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-type">NoInfer</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#controller"
             >controller</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">string</span>
-          <span class="tsd-signature-symbol">|</span>
+          ><span class="tsd-signature-symbol">?:</span><br />        <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <span class="tsd-signature-type">string</span><br />        <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
           <a
             href="../types/Injectable.html"
             class="tsd-signature-type tsd-kind-type-alias"
@@ -164,7 +173,32 @@
             href="../types/ControllerConstructor.html"
             class="tsd-signature-type tsd-kind-type-alias"
             >ControllerConstructor</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
           ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">&gt;</span><br />        <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <span class="tsd-signature-symbol">[</span
+          ><span class="tsd-signature-symbol">...</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">,</span>
+          <a
+            href="../types/ControllerConstructor.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >ControllerConstructor</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tcontroller"
+            >TController</a
+          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">]</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#controlleras"
@@ -462,18 +496,26 @@
               <div class="tsd-signature">
                 <span class="tsd-kind-property">bindings</span
                 ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">Record</span
+                <span class="tsd-signature-type">ControllerBindings</span
                 ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">string</span
-                ><span class="tsd-signature-symbol">,</span>
-                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-type">NoInfer</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tcontroller"
+                  >TController</a
+                ><span class="tsd-signature-symbol">&gt;</span
                 ><span class="tsd-signature-symbol">&gt;</span>
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>
-                  Define DOM attribute binding to component properties.
-                  Component properties are always bound to the component
-                  controller and not to the scope.
+                  Bind DOM attributes to controller properties. Known controller
+                  types restrict binding names to their string keys; untyped
+                  controllers allow arbitrary names.
+                  <code>NgModule.component()</code> also checks literal
+                  <code>&amp;</code> bindings against callable properties.
+                  Existing binding modes, aliases, and optional markers are
+                  preserved.
                 </p>
               </div>
             </section>
@@ -490,9 +532,14 @@
               </h3>
               <div class="tsd-signature">
                 <span class="tsd-kind-property">controller</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">string</span>
-                <span class="tsd-signature-symbol">|</span>
+                ><span class="tsd-signature-symbol">?:</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-type">string</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >|</span
+                >
                 <a
                   href="../types/Injectable.html"
                   class="tsd-signature-type tsd-kind-type-alias"
@@ -502,7 +549,38 @@
                   href="../types/ControllerConstructor.html"
                   class="tsd-signature-type tsd-kind-type-alias"
                   >ControllerConstructor</a
-                ><span class="tsd-signature-symbol">&gt;</span>
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tcontroller"
+                  >TController</a
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">&gt;</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-symbol">[</span
+                ><span class="tsd-signature-symbol">...</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">[]</span
+                ><span class="tsd-signature-symbol">,</span>
+                <a
+                  href="../types/ControllerConstructor.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ControllerConstructor</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tcontroller"
+                  >TController</a
+                ><span class="tsd-signature-symbol">&gt;</span
+                ><span class="tsd-signature-symbol">]</span>
+              </div>
+              <div class="tsd-comment tsd-typography">
+                <p>
+                  Controller constructor or factory. Its instance type supplies
+                  binding names and view context.
+                </p>
               </div>
             </section>
             <section class="tsd-panel tsd-member">

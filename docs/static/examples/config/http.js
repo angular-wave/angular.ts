@@ -11,7 +11,7 @@ window.angular
             'X-Mode': 'configured',
           },
         },
-        withCredentials: true,
+        credentials: 'include',
         xsrfCookieName: 'APP-XSRF',
         xsrfHeaderName: 'X-APP-XSRF',
       },
@@ -32,7 +32,7 @@ window.angular
       static $inject = ['$http'];
 
       constructor($http) {
-        this.withCredentials = $http.defaults.withCredentials;
+        this.credentials = $http.defaults.credentials;
         this.xsrfCookieName = $http.defaults.xsrfCookieName;
         this.appHeader = $http.defaults.headers.common['X-App'];
       }

@@ -209,12 +209,13 @@ For search fields, debounce model updates instead of building a timer:
 ## Upload a file
 
 A file input writes its native `FileList` to `ng-model`. Send the selected
-`File` in native `FormData`; do not set `Content-Type` because the browser must
-add the multipart boundary.
+`File` in native `FormData`. Pass `headers: { 'Content-Type': undefined }` to
+`$http.post()` to clear its default JSON header; the browser must add the
+multipart content type and boundary.
 
-The fetch transport supports cancellation through a promise-valued `timeout`,
-but it does not currently expose upload progress. Use [Cancel a file upload and
-handle server rejection]({{< relref "/docs/cookbook/upload-cancel" >}}) for the
+The fetch transport supports cancellation through a native `AbortSignal`, but it
+does not currently expose upload progress. Use [Cancel a file upload and handle
+server rejection]({{< relref "/docs/cookbook/upload-cancel" >}}) for the
 complete controller, cancellation, abort, retry, and server-validation pattern.
 
 ## Failure path

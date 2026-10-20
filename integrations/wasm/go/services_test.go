@@ -85,7 +85,7 @@ func TestWorkerFacadesPreserveRestartAndProtocolMetadata(t *testing.T) {
 }
 
 func TestHTTPRequestFacadesPreserveOptions(t *testing.T) {
-	credentials := true
+	credentials := HttpCredentialsInclude
 	config := GetRequest("/api/todos")
 	config.HttpRequestOptions = NewRequestShortcutConfig().
 		WithHeader("Accept", "application/json").
@@ -106,17 +106,17 @@ func TestHTTPRequestFacadesPreserveOptions(t *testing.T) {
 	if config.TimeoutMS != 1500 || config.ResponseType != "json" {
 		t.Fatalf("unexpected shortcut config: %#v", config.HttpRequestOptions)
 	}
-	if config.Credentials == nil || !*config.Credentials {
-		t.Fatalf("expected credentials flag")
+	if config.Credentials != HttpCredentialsInclude {
+		t.Fatalf("expected Fetch credential mode")
 	}
 
 	response := HttpResponse[string]{
-		Data:       "ok",
-		Status:     200,
-		StatusText: "OK",
-		XHRStatus:  HttpComplete,
+		Data:            "ok",
+		Status:          200,
+		StatusText:      "OK",
+		TransportStatus: HttpComplete,
 	}
-	if response.Data != "ok" || response.XHRStatus != HttpComplete {
+	if response.Data != "ok" || response.TransportStatus != HttpComplete {
 		t.Fatalf("unexpected response: %#v", response)
 	}
 }

@@ -46,14 +46,19 @@ class ArkWebRuntime implements NativeWebRuntime {
   }
 
   async runJavaScript(source: string): Promise<void> {
-    await this.controller.runJavaScript(source);
+    try {
+      await this.controller.runJavaScript(source);
+    } catch {
+      throw new Error("ArkWeb JavaScript execution failed");
+    }
   }
 }
 
 export class AngularNativeJavaScriptProxy {
   private readonly host: AngularNativeWebHost;
   constructor(host: AngularNativeWebHost) {
-    this.host = host;}
+    this.host = host;
+  }
 
   receive(message: string): void {
     this.host.receive(message);
@@ -109,7 +114,11 @@ export class ArkWebDestination {
 
   close(): void {
     this.host.close();
-    this.controller.deleteJavaScriptRegister("AngularNative");
+    try {
+      this.controller.deleteJavaScriptRegister("AngularNative");
+    } catch {
+      // ArkWeb may already have destroyed the registration during teardown.
+    }
   }
 }
 

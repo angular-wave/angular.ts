@@ -13,7 +13,7 @@ Statuses:
 | ng type | AngularTS contract | Scala.js status |
 | --- | --- | --- |
 | `Angular` | Main AngularTS runtime entry point with the full built-in `ng` module configured by default. | manual |
-| `AnnotatedDirectiveFactory` | Public AngularTS AnnotatedDirectiveFactory contract exposed through the ng namespace. | manual |
+| `AnnotatedDirectiveFactory` | Dependency tokens followed by a directive factory. | manual |
 | `Component` | Defines a component's configuration object (a simplified directive definition object). | manual |
 | `ComponentDefinition` | Component registration accepted by `NgModule.component()`. Programmatic and template-based rendering strategies are mutually exclusive. | planned |
 | `ProgrammaticView` | Programmatic real-DOM factory used instead of a template. | planned |
@@ -29,8 +29,8 @@ Statuses:
 | `ClassValue` | Public shape accepted by `ng-class` for class binding expressions. | manual |
 | `Directive` | Defines the structure of an AngularTS directive. | manual |
 | `DirectiveRestrict` | Supported directive matching locations. | manual |
-| `DirectiveFactory` | Public AngularTS DirectiveFactory contract exposed through the ng namespace. | manual |
-| `DirectiveFactoryFn` | Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace. | planned |
+| `DirectiveFactory` | Plain or dependency-annotated factory, optionally typed by its controller. | manual |
+| `DirectiveFactoryFn` | Injectable factory returning a directive definition or a link function. Structural results let registries accept definitions with known controller types. | planned |
 | `DirectiveCompileFn` | A compile function used to prepare directives before linking. | planned |
 | `DirectiveController` | A controller instance or object map used in directives. | planned |
 | `DirectiveLinkFn` | Public AngularTS DirectiveLinkFn contract exposed through the ng namespace. | planned |
@@ -67,6 +67,10 @@ Statuses:
 | `EventBusService` | Application-wide asynchronous publish/subscribe utility. `EventBus` powers `$eventBus` for cross-boundary domain events, browser callbacks, worker messages, realtime messages, and non-Angular integrations. It is intentionally not a state store and should not replace scope events for parent/child scope-tree communication. | manual |
 | `ExceptionHandlerService` | A callback type for handling errors. | manual |
 | `HtmlCanvasConfig` | Declarative config accepted by `NgModule.config({ $htmlCanvas: ... })`. The integration is disabled by default and has no AngularTS fallback. | manual |
+| `CanvasFrame` | Frame timestamps are in seconds; delta is zero after mounting or resuming. | planned |
+| `CanvasRenderer` | Application renderer contract for the optional ng-canvas directive. | planned |
+| `CanvasSize` | CSS dimensions and the corresponding canvas backing-store dimensions. | planned |
+| `CanvasSurface` | Native drawing resources owned by one linked ng-canvas element. | planned |
 | `HtmlCanvasRuntimeSupport` | Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the ng namespace. | planned |
 | `HtmlCanvasService` | Public AngularTS HtmlCanvasService contract exposed through the ng namespace. | planned |
 | `FilterFn` | Public AngularTS FilterFn contract exposed through the ng namespace. | manual |
@@ -75,7 +79,7 @@ Statuses:
 | `EntryFilterItem` | Public AngularTS EntryFilterItem contract exposed through the ng namespace. | manual |
 | `CurrencyFilterOptions` | Public AngularTS CurrencyFilterOptions contract exposed through the ng namespace. | manual |
 | `HttpParamSerializerService` | Function that serializes query params into a URL-encoded string. | manual |
-| `HttpService` | Runtime surface of the `$http` service. Call the service directly with a full HttpRequestConfig, or use a shorthand method for common HTTP verbs. All methods return an `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects with HttpError for errors. | manual |
+| `HttpService` | Runtime surface of the `$http` service. Call the service directly with a full HttpRequestConfig, or use a shorthand method for common HTTP verbs. All methods return an `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects with HttpError for HTTP or transport failures. Configuration, transform, and interceptor errors can reject with other error types. Uses Fetch exclusively. Cancel with a native `AbortSignal`, set a numeric `timeout` for a deadline, and observe completion through the returned promise. Upload progress events are not available. | manual |
 | `InjectorService` | Injector for factories and services | manual |
 | `InjectionTokenMap` | Public injectable contracts keyed by their canonical runtime token. Every single-dollar token exposed by [[PublicInjectionTokens]] must map to a named, documented contract here. Double-dollar framework internals are intentionally excluded. | planned |
 | `Model` | Public AngularTS Model contract exposed through the ng namespace. | planned |
@@ -114,7 +118,7 @@ Statuses:
 | `RealtimeProtocolMessage` | Public AngularTS RealtimeProtocolMessage contract exposed through the ng namespace. | manual |
 | `SwapMode` | Possible values for `data-swap` and realtime protocol `swap` fields. Union type representing all possible DOM insertion modes. | manual |
 | `TemplateCacheService` | Public contract implemented by the `$templateCache` injectable. | manual |
-| `TemplateRequestService` | Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true). | manual |
+| `TemplateRequestService` | Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged. | manual |
 | `TransitionsService` | This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started. | manual |
 | `WorkerService` | Injectable factory for typed managed Web Worker connections. | manual |
 | `AnnotatedFactory` | Dependency-annotated factory array used by AngularTS DI system. Example: ['dep1', 'dep2', (dep1, dep2) => new MyController(dep1, dep2)] | manual |
@@ -133,9 +137,9 @@ Statuses:
 | `ErrorFormattingConfig` | Controls how values embedded in framework error messages are formatted. | manual |
 | `Expression` | A JavaScript expression represented as a string, typically used in interpolation bindings. Example: ```html <span title="{{ attrBinding }}">{{ textBinding }}</span> ``` | manual |
 | `HttpMethod` | HTTP method accepted by HttpRequestConfig.method. | manual |
-| `HttpDefaults` | Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage | manual |
+| `HttpDefaults` | Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Only the settings declared here are read from service-level defaults. Set `timeout`, `signal`, and `responseType` on individual requests instead. | manual |
 | `HttpResponse` | Response object returned by `$http` requests. | manual |
-| `HttpResponseStatus` | Final transport status reported by transport completion handlers. | manual |
+| `HttpResponseStatus` | Fetch transport outcome exposed on responses and errors. `complete` includes non-2xx HTTP responses; `error` indicates a transport or security-policy failure. | manual |
 | `Injectable` | Public AngularTS Injectable contract exposed through the ng namespace. | manual |
 | `ProviderDefinition` | A user-defined service recipe accepted by ng.NgModule.provider. Object recipes define an injectable `get` factory directly. Injectable functions and classes are instantiated first and must produce an object with an injectable `get` factory. | planned |
 | `InterpolationFunction` | Public AngularTS InterpolationFunction contract exposed through the ng namespace. | manual |
@@ -230,8 +234,8 @@ Statuses:
 | `NativeWindowDisplayFeature` | Fold or hinge reported by a foldable native display. | planned |
 | `NativeWindowInsets` | Insets, in density-independent pixels, that native content should avoid. | planned |
 | `NativeWindowStatus` | Current native window metrics, adaptive classes, safe area, and display features. | planned |
-| `HttpRequestConfig` | Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
-| `HttpRequestOptions` | Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage | manual |
+| `HttpRequestConfig` | Full request configuration accepted by `$http(...)`. | manual |
+| `HttpRequestOptions` | Request options shared by the `$http` shorthand methods. | manual |
 | `RestFactory` | Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional entity mapper, and optional backend request defaults. | manual |
 | `RestBackend` | Backend abstraction used by RestService. Implement this interface to route REST operations through `$http`, IndexedDB, the Cache API, a test double, or a composed backend such as CachedRestBackend. | manual |
 | `RestCachePolicy` | Public AngularTS RestCachePolicy contract exposed through the ng namespace. | manual |
@@ -372,6 +376,13 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `BindingPolicyConfig.urlPolicy` | Validates link URLs. The default blocks dangerous schemes. | `url: string` - Value supplied for the url parameter. |
 | `CachedRestBackendOptions.onRevalidate` | Notified after a stale-while-revalidate refresh succeeds. | `event: RestRevalidateEvent<unknown>` - Value supplied for the event parameter. |
 | `CachedRestBackendOptions.policy` | Runtime policy used to choose the read strategy for each cacheable request. | `context: RestCachePolicyContext` - Value supplied for the context parameter. |
+| `CanvasRenderer.dispose` | Invokes the dispose member of ng.CanvasRenderer. | None |
+| `CanvasRenderer.mount` | Invokes the mount member of ng.CanvasRenderer. | `surface: CanvasSurface` - Value supplied for the surface parameter. |
+| `CanvasRenderer.render` | Invokes the render member of ng.CanvasRenderer. | `frame: CanvasFrame` - Value supplied for the frame parameter. |
+| `CanvasRenderer.resize` | Invokes the resize member of ng.CanvasRenderer. | `size: CanvasSize` - Value supplied for the size parameter. |
+| `CanvasRenderer.resume` | Invokes the resume member of ng.CanvasRenderer. | None |
+| `CanvasRenderer.suspend` | Invokes the suspend member of ng.CanvasRenderer. | None |
+| `CanvasSurface.invalidate` | Invokes the invalidate member of ng.CanvasSurface. | None |
 | `Component.view` | Programmatic real-DOM view factory. It runs during linking after controller bindings and \`onInit\`, and is mutually exclusive with template, templateUrl, and replace. | `context: ProgrammaticViewContext<TControllerInstance, undefined, TScopeInstance, TElement>` - Value supplied for the context parameter. |
 | `ComponentDefinition.view` | Invokes the view member of ng.ComponentDefinition. | `context: ProgrammaticViewContext<TControllerInstance, undefined, TScopeInstance, TElement>` - Value supplied for the context parameter. |
 | `Controller.afterRender` | Called after this controller has been linked, AngularTS has applied DOM mutations for the current flush, and the browser has had one animation frame to settle layout. Multiple schedules for the same controller in one flush are coalesced into one call. | None |
@@ -493,12 +504,12 @@ Descriptions, parameter names, and parameter types are generated from the same T
 | `NgModelController.validate` | Runs each of the registered validators (first synchronous validators and then asynchronous validators). If the validity changes to invalid, the model will be set to \`undefined\`, unless \`ngModelOptions.allowInvalid\` is \`true\`. If the validity changes to valid, it will set the model to the last available valid \`modelValue\`, i.e. either the last parsed value or the last value set from the scope. | None |
 | `NgModule.animation` | Invokes the animation member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`animationFactory: NamedInjectable` - Value supplied for the animationFactory parameter. |
 | `NgModule.appComponent` | Register an options-backed application host custom element. The definition is installed when the module runs. The host element is a native custom element backed by an AngularTS child scope. | `name: string` - Custom element tag name.<br>`options: AppComponentOptions<T>` - App component options. |
-| `NgModule.component` | Invokes the component member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`options: ComponentDefinition<TController>` - Value supplied for the options parameter. |
+| `NgModule.component` | Registers a component, inferring controller properties for binding checks and programmatic view context. Literal \`&\` bindings require callable properties; untyped controllers remain permissive. | `name: string` - Component name normalized from its HTML element name.<br>`options: ComponentDefinition<TController>` - Controller, bindings, and one rendering definition. |
 | `NgModule.config` | Declare built-in AngularTS service configuration during the config phase. | `config: AngularConfigMap` - Built-in config map. |
 | `NgModule.constant` | Invokes the constant member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`object: string \| number \| object` - Value supplied for the object parameter. |
-| `NgModule.controller` | The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry. | `name: string` - Controller name<br>`ctlFn: Injectable<ControllerConstructor>` - Controller constructor fn (optionally decorated with DI annotations in the array notation) |
+| `NgModule.controller` | The $controller service is used by Angular to create new controllers. Named controllers are stored in the owning runtime's controller registry. | `name: string` - Controller name<br>`ctlFn: Injectable<ng.ControllerConstructor<Controller>>` - Controller constructor fn (optionally decorated with DI annotations in the array notation) |
 | `NgModule.decorator` | Invokes the decorator member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`decorFn: NamedInjectable` - Value supplied for the decorFn parameter. |
-| `NgModule.directive` | Invokes the directive member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`directiveFactory: DirectiveFactory` - Value supplied for the directiveFactory parameter. |
+| `NgModule.directive` | Registers a directive factory, checking controller binding names and literal \`&\` callbacks against its controller type. With \`bindToController: true\`, the checks apply to \`scope\` bindings. Other scope bindings stay independent. | `name: string` - Directive name normalized from its HTML element or attribute.<br>`directiveFactory: DirectiveRegistrationFactory<TController, TDefinition>` - Plain or dependency-annotated directive factory. |
 | `NgModule.factory` | Invokes the factory member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`providerFunction: NamedInjectable` - Value supplied for the providerFunction parameter. |
 | `NgModule.filter` | Invokes the filter member of ng.NgModule. | `name: string` - Value supplied for the name parameter.<br>`filterFn: FilterFactory` - Value supplied for the filterFn parameter. |
 | `NgModule.lazyState` | Register a lazy router state namespace during module configuration. Lazy route declarations use the same composed router runtime as static module routes. | `prefix: string` - State name prefix to load on demand.<br>`loader: LazyStateLoader` - Loader invoked by the router when a transition targets the prefix. |

@@ -1807,14 +1807,34 @@ impl HttpResponseStatus {
     }
 }
 
+/// Native Fetch credential modes for HTTP requests.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HttpCredentials {
+    Omit,
+    SameOrigin,
+    Include,
+}
+
+impl HttpCredentials {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Omit => "omit",
+            Self::SameOrigin => "same-origin",
+            Self::Include => "include",
+        }
+    }
+}
+
 /// Rust representation of options accepted by AngularTS `$http` shortcut methods.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct HttpRequestOptions {
     headers: Vec<(String, String)>,
     params: Vec<(String, String)>,
     timeout: Option<u32>,
     response_type: Option<String>,
-    with_credentials: Option<bool>,
+    credentials: Option<HttpCredentials>,
+    #[cfg(target_arch = "wasm32")]
+    signal: Option<wasm_bindgen::JsValue>,
 }
 
 impl HttpRequestOptions {
@@ -1847,9 +1867,16 @@ impl HttpRequestOptions {
         self
     }
 
-    /// Sets whether cross-site requests should include credentials.
-    pub fn with_credentials(mut self, with_credentials: bool) -> Self {
-        self.with_credentials = Some(with_credentials);
+    /// Sets the native Fetch credential mode.
+    pub fn with_credentials(mut self, credentials: HttpCredentials) -> Self {
+        self.credentials = Some(credentials);
+        self
+    }
+
+    /// Attaches a native AbortSignal to this request.
+    #[cfg(target_arch = "wasm32")]
+    pub fn with_signal(mut self, signal: wasm_bindgen::JsValue) -> Self {
+        self.signal = Some(signal);
         self
     }
 
@@ -1873,9 +1900,9 @@ impl HttpRequestOptions {
         self.response_type.as_deref()
     }
 
-    /// Optional credentials flag.
-    pub const fn credentials(&self) -> Option<bool> {
-        self.with_credentials
+    /// Optional Fetch credential mode.
+    pub const fn credentials(&self) -> Option<HttpCredentials> {
+        self.credentials
     }
 
     /// Converts this config into the JavaScript object accepted by `$http`.
@@ -1930,12 +1957,16 @@ impl HttpRequestOptions {
             )?;
         }
 
-        if let Some(with_credentials) = self.with_credentials {
+        if let Some(credentials) = self.credentials {
             Reflect::set(
                 config,
-                &JsValue::from_str("withCredentials"),
-                &JsValue::from_bool(with_credentials),
+                &JsValue::from_str("credentials"),
+                &JsValue::from_str(credentials.as_str()),
             )?;
+        }
+
+        if let Some(signal) = &self.signal {
+            Reflect::set(config, &JsValue::from_str("signal"), signal)?;
         }
 
         Ok(())
@@ -1943,7 +1974,7 @@ impl HttpRequestOptions {
 }
 
 /// Minimal Rust representation of an AngularTS `$http` request config.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HttpRequestConfig {
     method: HttpMethod,
     url: String,
@@ -1994,9 +2025,16 @@ impl HttpRequestConfig {
         self
     }
 
-    /// Sets whether cross-site requests should include credentials.
-    pub fn with_credentials(mut self, with_credentials: bool) -> Self {
-        self.shortcut = self.shortcut.with_credentials(with_credentials);
+    /// Sets the native Fetch credential mode.
+    pub fn with_credentials(mut self, credentials: HttpCredentials) -> Self {
+        self.shortcut = self.shortcut.with_credentials(credentials);
+        self
+    }
+
+    /// Attaches a native AbortSignal to this request.
+    #[cfg(target_arch = "wasm32")]
+    pub fn with_signal(mut self, signal: wasm_bindgen::JsValue) -> Self {
+        self.shortcut = self.shortcut.with_signal(signal);
         self
     }
 
@@ -2030,8 +2068,8 @@ impl HttpRequestConfig {
         self.shortcut.response_type_value()
     }
 
-    /// Optional credentials flag.
-    pub const fn credentials(&self) -> Option<bool> {
+    /// Optional Fetch credential mode.
+    pub const fn credentials(&self) -> Option<HttpCredentials> {
         self.shortcut.credentials()
     }
 
@@ -2079,7 +2117,7 @@ pub struct HttpResponse<T> {
     data: T,
     status: u16,
     status_text: String,
-    xhr_status: HttpResponseStatus,
+    transport_status: HttpResponseStatus,
 }
 
 impl<T> HttpResponse<T> {
@@ -2088,13 +2126,13 @@ impl<T> HttpResponse<T> {
         data: T,
         status: u16,
         status_text: impl Into<String>,
-        xhr_status: HttpResponseStatus,
+        transport_status: HttpResponseStatus,
     ) -> Self {
         Self {
             data,
             status,
             status_text: status_text.into(),
-            xhr_status,
+            transport_status,
         }
     }
 
@@ -2114,8 +2152,8 @@ impl<T> HttpResponse<T> {
     }
 
     /// Transport completion status.
-    pub const fn xhr_status(&self) -> HttpResponseStatus {
-        self.xhr_status
+    pub const fn transport_status(&self) -> HttpResponseStatus {
+        self.transport_status
     }
 
     /// Converts a JavaScript AngularTS `$http` response into a typed Rust response.
@@ -2374,13 +2412,18 @@ where
     let status_text = Reflect::get(&value, &JsValue::from_str("statusText"))?
         .as_string()
         .unwrap_or_default();
-    let xhr_status = Reflect::get(&value, &JsValue::from_str("xhrStatus"))?
+    let transport_status = Reflect::get(&value, &JsValue::from_str("transportStatus"))?
         .as_string()
         .as_deref()
         .map(HttpResponseStatus::from_angular)
         .unwrap_or(HttpResponseStatus::Complete);
 
-    Ok(HttpResponse::new(data, status, status_text, xhr_status))
+    Ok(HttpResponse::new(
+        data,
+        status,
+        status_text,
+        transport_status,
+    ))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -3995,7 +4038,7 @@ pub use browser::{
     NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
     NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
     NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
-    NativeNavigationPlatformChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationBridgeChange, NativeNavigationChange, NativeNavigationPlatformChange,
     NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
     NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
     NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,
@@ -4020,7 +4063,7 @@ pub use host::{
     NativeGeolocationStatus, NativeHapticParameters, NativeHapticResult, NativeIntentParameters,
     NativeJsonObject, NativeJsonPrimitive, NativeJsonValue, NativeLifecycleStatus,
     NativeMediaLoadParameters, NativeMediaSeekParameters, NativeMediaStatus,
-    NativeNavigationPlatformChange, NativeNavigationBridgeChange, NativeNavigationChange,
+    NativeNavigationBridgeChange, NativeNavigationChange, NativeNavigationPlatformChange,
     NativeNavigationPopResult, NativeNavigationRouteParameters, NativeNavigationRouteResult,
     NativeNavigationStatus, NativeNavigationTransition, NativeNotificationStatus, NativeOpenResult,
     NativePermissionParameters, NativePermissionStatus, NativePlatformStatus, NativeReplyMessage,
@@ -4100,7 +4143,7 @@ mod tests {
             .param("owner", "Rust")
             .timeout_ms(1500)
             .response_type("json")
-            .with_credentials(true);
+            .with_credentials(HttpCredentials::Include);
         let post = HttpRequestConfig::post("/api/todos");
 
         assert_eq!(get.method(), HttpMethod::Get);
@@ -4113,7 +4156,7 @@ mod tests {
         assert_eq!(get.params(), &[("owner".to_string(), "Rust".to_string())]);
         assert_eq!(get.timeout(), Some(1500));
         assert_eq!(get.response_type_value(), Some("json"));
-        assert_eq!(get.credentials(), Some(true));
+        assert_eq!(get.credentials(), Some(HttpCredentials::Include));
         assert_eq!(post.method(), HttpMethod::Post);
         assert_eq!(post.method().as_str(), "POST");
     }
@@ -4126,7 +4169,7 @@ mod tests {
             .param("owner", "Rust")
             .timeout_ms(250)
             .response_type("text")
-            .with_credentials(false);
+            .with_credentials(HttpCredentials::Omit);
 
         assert_eq!(
             config.headers(),
@@ -4138,7 +4181,7 @@ mod tests {
         );
         assert_eq!(config.timeout(), Some(250));
         assert_eq!(config.response_type_value(), Some("text"));
-        assert_eq!(config.credentials(), Some(false));
+        assert_eq!(config.credentials(), Some(HttpCredentials::Omit));
     }
 
     #[test]
@@ -4148,7 +4191,7 @@ mod tests {
         assert_eq!(response.data(), &"ok");
         assert_eq!(response.status(), 200);
         assert_eq!(response.status_text(), "OK");
-        assert_eq!(response.xhr_status().as_str(), "complete");
+        assert_eq!(response.transport_status().as_str(), "complete");
         assert_eq!(
             HttpResponseStatus::from_angular("timeout"),
             HttpResponseStatus::Timeout

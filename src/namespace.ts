@@ -54,6 +54,12 @@ import type {
   HtmlCanvasService as THtmlCanvasService,
 } from "./services/html-canvas/html-canvas.ts";
 import type {
+  CanvasFrame as TCanvasFrame,
+  CanvasRenderer as TCanvasRenderer,
+  CanvasSize as TCanvasSize,
+  CanvasSurface as TCanvasSurface,
+} from "./directive/canvas/canvas.ts";
+import type {
   FilterFactory as TFilterFactory,
   FilterService as TFilterService,
   FilterFn as TFilterFn,
@@ -388,7 +394,8 @@ declare global {
     // Core types (docs preserved)
     export type Angular = TAngular;
 
-    export type AnnotatedDirectiveFactory = TAnnotatedDirectiveFactory;
+    export type AnnotatedDirectiveFactory<TController = unknown> =
+      TAnnotatedDirectiveFactory<TController>;
 
     export type Component<
       TControllerInstance extends TController = TController,
@@ -439,9 +446,11 @@ declare global {
 
     export type DirectiveRestrict = TDirectiveRestrict;
 
-    export type DirectiveFactory = TDirectiveFactory;
+    export type DirectiveFactory<TController = unknown> =
+      TDirectiveFactory<TController>;
 
-    export type DirectiveFactoryFn = TDirectiveFactoryFn;
+    export type DirectiveFactoryFn<TController = unknown> =
+      TDirectiveFactoryFn<TController>;
 
     export type DirectiveCompileFn = TDirectiveCompileFn;
 
@@ -518,6 +527,10 @@ declare global {
     export type ExceptionHandlerService = TExceptionHandler;
 
     export type HtmlCanvasConfig = THtmlCanvasConfig;
+    export type CanvasFrame = TCanvasFrame;
+    export type CanvasRenderer = TCanvasRenderer;
+    export type CanvasSize = TCanvasSize;
+    export type CanvasSurface = TCanvasSurface;
 
     export type HtmlCanvasRuntimeSupport = THtmlCanvasRuntimeSupport;
 
@@ -642,7 +655,9 @@ declare global {
       T extends object = Record<string, unknown>,
     > = TAngularElementOptions<T>;
 
-    export type ControllerConstructor = TControllerConstructor;
+    export type ControllerConstructor<
+      TControllerInstance extends Controller = Controller,
+    > = TControllerConstructor<TControllerInstance>;
 
     export type CookieOptions = TCookieOptions;
 

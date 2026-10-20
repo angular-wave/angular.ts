@@ -7392,6 +7392,10 @@ const EVENT_NAMES = [
     "mouseover",
     "mouseup",
     "paste",
+    "pointerdown",
+    "pointerup",
+    "pointermove",
+    "pointercancel",
     "submit",
     "touchstart",
     "touchend",
@@ -8641,7 +8645,7 @@ const tags = /* @__PURE__ */ new Proxy(((namespaceUri) => getTagProxy(namespaceU
         return Reflect.get(htmlTags, property);
     },
 });
-/** Direct, tree-shakable factories for every supported HTML element. */
+/** Direct, tree-shakable factories for current HTML elements. Use `tag()` for legacy names. */
 // HTMLElementTagNameMap
 const a = (...args) => createTag(undefined, "a", ...args);
 const abbr = (...args) => createTag(undefined, "abbr", ...args);
@@ -8755,36 +8759,6 @@ const ul = (...args) => createTag(undefined, "ul", ...args);
 const varTag = (...args) => createTag(undefined, "var", ...args);
 const video = (...args) => createTag(undefined, "video", ...args);
 const wbr = (...args) => createTag(undefined, "wbr", ...args);
-// HTMLElementDeprecatedTagNameMap
-const acronym = (...args) => createTag(undefined, "acronym", ...args);
-const applet = (...args) => createTag(undefined, "applet", ...args);
-const basefont = (...args) => createTag(undefined, "basefont", ...args);
-const bgsound = (...args) => createTag(undefined, "bgsound", ...args);
-const big = (...args) => createTag(undefined, "big", ...args);
-const blink = (...args) => createTag(undefined, "blink", ...args);
-const center = (...args) => createTag(undefined, "center", ...args);
-const dir = (...args) => createTag(undefined, "dir", ...args);
-const font = (...args) => createTag(undefined, "font", ...args);
-const frame = (...args) => createTag(undefined, "frame", ...args);
-const frameset = (...args) => createTag(undefined, "frameset", ...args);
-const isindex = (...args) => createTag(undefined, "isindex", ...args);
-const keygen = (...args) => createTag(undefined, "keygen", ...args);
-const listing = (...args) => createTag(undefined, "listing", ...args);
-const marquee = (...args) => createTag(undefined, "marquee", ...args);
-const menuitem = (...args) => createTag(undefined, "menuitem", ...args);
-const multicol = (...args) => createTag(undefined, "multicol", ...args);
-const nextid = (...args) => createTag(undefined, "nextid", ...args);
-const nobr = (...args) => createTag(undefined, "nobr", ...args);
-const noembed = (...args) => createTag(undefined, "noembed", ...args);
-const noframes = (...args) => createTag(undefined, "noframes", ...args);
-const param = (...args) => createTag(undefined, "param", ...args);
-const plaintext = (...args) => createTag(undefined, "plaintext", ...args);
-const rb = (...args) => createTag(undefined, "rb", ...args);
-const rtc = (...args) => createTag(undefined, "rtc", ...args);
-const spacer = (...args) => createTag(undefined, "spacer", ...args);
-const strike = (...args) => createTag(undefined, "strike", ...args);
-const tt = (...args) => createTag(undefined, "tt", ...args);
-const xmp = (...args) => createTag(undefined, "xmp", ...args);
 function uniqueRecords(nodes) {
     const records = [];
     const seen = new Set();
@@ -15247,11 +15221,6 @@ class NgModule {
         this._runBlocks.push(block);
         return this;
     }
-    /**
-     * @param {string} name
-     * @param {ng.ComponentDefinition} options
-     * @returns {NgModule}
-     */
     component(name, options) {
         validate(isString, name, "name");
         validate(isDefined, options, "object");
@@ -15307,11 +15276,6 @@ class NgModule {
         this._configBlocks.push(registerDecorator(name, decorFn));
         return this;
     }
-    /**
-     * @param {string} name
-     * @param {ng.Injectable<(...args: unknown[]) => unknown>} directiveFactory
-     * @returns {NgModule}
-     */
     directive(name, directiveFactory) {
         validate(isString, name, "name");
         validateRequired(directiveFactory, "directiveFactory");
@@ -23642,7 +23606,12 @@ function mergeHttpHeaderDefaults(current, next) {
     }
     return merged;
 }
-/** Error used when `$http` receives a non-success response. */
+/**
+ * Error for non-2xx responses, transport failures, cancellation, timeouts, and
+ * security-policy rejection. Exposes response fields directly and through
+ * `response`. Configuration, transform, and interceptor failures can reject
+ * with other error types.
+ */
 class HttpError extends Error {
     constructor(response) {
         super(`$http request failed with status ${String(response.status)}${response.statusText ? ` ${response.statusText}` : ""}`);
@@ -23653,7 +23622,7 @@ class HttpError extends Error {
         this.headers = response.headers;
         this.config = response.config;
         this.statusText = response.statusText;
-        this.xhrStatus = response.xhrStatus;
+        this.transportStatus = response.transportStatus;
     }
 }
 /**
@@ -23908,12 +23877,12 @@ function createHttpRuntimeConfiguration() {
      */
     const interceptors = [];
     /**
-     * Array containing URLs whose origins are trusted to receive the XSRF token. See the
-     * See the `$http` service documentation for XSRF security considerations.
+     * Additional origins trusted to receive the XSRF token. The current origin
+     * is always trusted. This does not enable CORS or change Fetch credentials.
      *
      * **Note:** An "origin" consists of the [URI scheme](https://en.wikipedia.org/wiki/URI_scheme),
      * the [hostname](https://en.wikipedia.org/wiki/Hostname) and the
-     * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking). For `http:` and
+     * [port number](https://en.wikipedia.org/wiki/Port_(computer_networking)). For `http:` and
      * `https:`, the port number can be omitted when using the default ports (80 and 443 respectively).
      * Examples: `http://example.com`, `https://api.example.com:9876`
      *
@@ -24091,16 +24060,16 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                 });
             }
             const providerDefaults = defaults;
-            if (isUndefined(configParam.withCredentials) &&
-                !isUndefined(providerDefaults.withCredentials)) {
-                configParam.withCredentials = providerDefaults.withCredentials;
+            if (isUndefined(configParam.credentials) &&
+                !isUndefined(providerDefaults.credentials)) {
+                configParam.credentials = providerDefaults.credentials;
             }
             const securityContext = {
                 operation: "request",
                 transport: "http",
                 method: configParam.method,
                 url: configParam.url,
-                credentials: configParam.withCredentials ? "include" : "same-origin",
+                credentials: configParam.credentials ?? "same-origin",
                 headers: securityHeaders,
                 hasBody: !isUndefined(reqData),
             };
@@ -24112,7 +24081,7 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                     headers: headersGetter({}),
                     config: configParam,
                     statusText: securityDecision.reason ?? "Request denied by security policy",
-                    xhrStatus: "error",
+                    transportStatus: "error",
                 };
                 return Promise.reject(new HttpError(rejectedResponse));
             }
@@ -24123,7 +24092,7 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                     headers: headersGetter({}),
                     config: configParam,
                     statusText: securityDecision.reason ?? "Request redirected by security policy",
-                    xhrStatus: "error",
+                    transportStatus: "error",
                 };
                 return Promise.reject(new HttpError(rejectedResponse));
             }
@@ -24142,7 +24111,9 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                 });
             }
             if (credentials.withCredentials !== undefined) {
-                configParam.withCredentials = credentials.withCredentials;
+                configParam.credentials = credentials.withCredentials
+                    ? "include"
+                    : "same-origin";
             }
         }
         /** Applies response transforms and rejects responses outside the success range. */
@@ -24173,9 +24144,7 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
     $http.patch = createShortMethodWithData("PATCH");
     /**
      * Exposes the live configured HTTP defaults.
-     * It allows configuration of default headers, `withCredentials`, and request/response transforms.
-     *
-     * See "Setting HTTP Headers" and "Transforming Requests and Responses" sections above.
+     * It allows configuration of default headers, `credentials`, and request/response transforms.
      */
     $http.defaults = defaults;
     return $http;
@@ -24287,31 +24256,11 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                     reqHeaders[xsrfHeaderName] = xsrfValue;
                 }
             }
-            http(config.method, url, reqData, done, reqHeaders, config.timeout, config.withCredentials, config.responseType, createEventHandlers(config.eventHandlers), createEventHandlers(config.uploadEventHandlers), $stream);
+            http(config.method, url, reqData, done, reqHeaders, config.timeout, config.credentials, config.responseType, config.signal, $stream);
         }
         return promise;
-        /** Wraps raw transport event handlers with function/object listener support. */
-        function createEventHandlers(eventHandlers) {
-            if (eventHandlers) {
-                const handlers = {};
-                entries(eventHandlers).forEach(([key, eventHandler]) => {
-                    handlers[key] = function (event) {
-                        if (isFunction(eventHandler)) {
-                            eventHandler(event);
-                        }
-                        else if (typeof eventHandler === "object") {
-                            eventHandler.handleEvent(event);
-                        }
-                    };
-                });
-                return handlers;
-            }
-            else {
-                return {};
-            }
-        }
         /** Handles low-level transport completion, updates cache state, and settles the raw `$http` promise. */
-        function done(status, response, headersString, statusText, xhrStatus) {
+        function done(status, response, headersString, statusText, transportStatus) {
             if (cache) {
                 if (isSuccess(status)) {
                     cache.set(url, [
@@ -24319,7 +24268,7 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                         response,
                         parseHeaders(headersString),
                         statusText,
-                        xhrStatus,
+                        transportStatus,
                     ]);
                 }
                 else {
@@ -24327,11 +24276,11 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                     cache.delete(url);
                 }
             }
-            resolvePromise(response, status, headersString, statusText, xhrStatus);
+            resolvePromise(response, status, headersString, statusText, transportStatus);
         }
         /** Resolves or rejects the raw `$http` promise from a low-level transport callback payload. */
-        function resolvePromise(response, status, headers, statusText, xhrStatus) {
-            // status: HTTP response status code, 0, -1 (aborted by timeout / promise)
+        function resolvePromise(response, status, headers, statusText, transportStatus) {
+            // status: HTTP response status code, 0, -1 (aborted by timeout / signal)
             status = status >= -1 ? status : 0;
             (isSuccess(status) ? resolve : reject)({
                 data: response,
@@ -24339,12 +24288,12 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
                 headers: headersGetter(headers ?? ""),
                 config,
                 statusText,
-                xhrStatus,
+                transportStatus,
             });
         }
         /** Settles the raw `$http` promise from a cached or intercepted response object. */
         function resolvePromiseWithResult(result) {
-            resolvePromise(result.data, result.status, shallowCopy(result.headers()), result.statusText, result.xhrStatus);
+            resolvePromise(result.data, result.status, shallowCopy(result.headers()), result.statusText, result.transportStatus);
         }
         /** Removes the finished request config from `$http.pendingRequests`. */
         function removePendingReq() {
@@ -24362,23 +24311,25 @@ function createHttpService($injector, $cookie, $security, $stream, configuration
     }
 }
 /**
- * Sends a low-level fetch request using AngularTS-compatible callback and timeout semantics.
+ * Sends a low-level fetch request with native cancellation and numeric timeouts.
  *
  * @param method - The HTTP method (for example, `"GET"` or `"POST"`).
  * @param [url] - The request URL. Defaults to the current page URL.
  * @param [post] - Optional request body.
  * @param [callback] - Completion callback invoked when the request settles.
  * @param [headers] - Request headers to apply before sending.
- * @param [timeout] - Timeout in milliseconds or a cancellable promise.
- * @param [withCredentials] - Whether to send credentials with the request.
+ * @param [timeout] - Timeout in milliseconds.
+ * @param [credentials] - Fetch credential mode, defaulting to `"same-origin"`.
  * @param [responseType] - The response body reader hint.
- * @param [eventHandlers] - Event listeners notified by the fetch transport.
- * @param [uploadEventHandlers] - Currently ignored by the fetch transport.
+ * @param [signal] - Native request cancellation signal.
  * @param [streamService] - Optional stream reader used by `$http` for text-like responses.
  */
-function http(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers, streamService) {
+function http(method, url, post, callback, headers, timeout, credentials, responseType, signal, streamService) {
     url = url ?? trimEmptyHash(window.location.href);
     const abortController = new AbortController();
+    const requestSignal = signal
+        ? AbortSignal.any([signal, abortController.signal])
+        : abortController.signal;
     let abortReason = "abort";
     let timeoutId;
     const requestHeaders = new Headers();
@@ -24393,52 +24344,37 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
     const init = {
         method: upperMethod,
         headers: requestHeaders,
-        signal: abortController.signal,
-        credentials: withCredentials ? "include" : "same-origin",
+        signal: requestSignal,
+        credentials: credentials ?? "same-origin",
     };
     if (!isUndefined(post) && upperMethod !== "GET" && upperMethod !== "HEAD") {
         init.body = normalizeFetchBody(post);
     }
     if (isNumber(timeout) && timeout > 0) {
         timeoutId = setTimeout(() => {
-            timeoutRequest("timeout");
+            if (!requestSignal.aborted) {
+                abortReason = "timeout";
+                abortController.abort();
+            }
         }, timeout);
     }
-    else if (isPromiseLike(timeout)) {
-        void timeout.then(() => {
-            timeoutRequest("abort");
-            return undefined;
-        });
+    if (requestSignal.aborted) {
+        completeRequest(-1, null, null, "", "abort");
+        return;
     }
     void (async () => {
         try {
             const response = await fetch(url, init);
             const status = response.status || 0;
-            try {
-                const body = await responseBody(response, responseType, streamService);
-                notifyEvent("load", eventHandlers);
-                completeRequest(status, body, responseHeadersString(response.headers), response.statusText || "", "complete");
-            }
-            catch {
-                notifyEvent("error", eventHandlers);
-                completeRequest(-1, null, null, "", "error");
-            }
+            const body = await responseBody(response, responseType, streamService);
+            completeRequest(status, body, responseHeadersString(response.headers), response.statusText || "", "complete");
         }
         catch (error) {
-            if (isObject(error) && "name" in error && error.name === "AbortError") {
-                notifyEvent(abortReason, eventHandlers);
-                completeRequest(-1, null, null, "", abortReason);
-                return;
-            }
-            notifyEvent("error", eventHandlers);
-            completeRequest(-1, null, null, "", "error");
+            const aborted = requestSignal.aborted ||
+                (isObject(error) && "name" in error && error.name === "AbortError");
+            completeRequest(-1, null, null, "", aborted ? abortReason : "error");
         }
     })();
-    /** Aborts the underlying fetch due to timeout expiry or external cancellation. */
-    function timeoutRequest(reason) {
-        abortReason = reason;
-        abortController.abort();
-    }
     /**
      * Finalizes the request, clears timeout state, and notifies the caller.
      *
@@ -24446,14 +24382,14 @@ function http(method, url, post, callback, headers, timeout, withCredentials, re
      * @param response - Parsed or raw response payload from the server.
      * @param headersString - Raw response headers as a string.
      * @param statusText - HTTP status text returned by the server.
-     * @param xhrStatus - Final transport status reported for the request.
+     * @param transportStatus - Final transport status reported for the request.
      */
-    function completeRequest(status, response, headersString, statusText, xhrStatus) {
+    function completeRequest(status, response, headersString, statusText, transportStatus) {
         if (isDefined(timeoutId)) {
             clearTimeout(timeoutId);
         }
         if (callback) {
-            callback(status, response, headersString, statusText, xhrStatus);
+            callback(status, response, headersString, statusText, transportStatus);
         }
     }
 }
@@ -24462,6 +24398,7 @@ function normalizeFetchBody(post) {
     if (post === null)
         return null;
     if (isString(post) ||
+        isFile(post) ||
         isBlob(post) ||
         isFormData(post) ||
         isInstanceOf(post, URLSearchParams) ||
@@ -24507,21 +24444,6 @@ function responseHeadersString(headers) {
         headerLines.push(`${key}: ${value}`);
     });
     return headerLines.join("\n");
-}
-/** Notifies configured transport event handlers for compatibility. */
-function notifyEvent(eventName, eventHandlers) {
-    if (!eventHandlers)
-        return;
-    const handler = eventHandlers[eventName];
-    if (!handler)
-        return;
-    const event = new Event(eventName);
-    if (isFunction(handler)) {
-        handler(event);
-    }
-    else if (typeof handler === "object") {
-        handler.handleEvent(event);
-    }
 }
 
 /**
@@ -25015,14 +24937,8 @@ function createHttpDirective(method, attrName) {
                 }
                 let throttled = false;
                 let intervalId;
-                let resolveDestroy;
-                const destroyPromise = new Promise((resolve) => {
-                    resolveDestroy = resolve;
-                });
                 const destroyController = new AbortController();
                 scope.on("$destroy", () => {
-                    resolveDestroy?.();
-                    resolveDestroy = undefined;
                     destroyController.abort("scope destroyed");
                     if (intervalId)
                         clearInterval(intervalId);
@@ -25062,7 +24978,7 @@ function createHttpDirective(method, attrName) {
                         hasAttr("responseStream")) {
                         config.responseType = "stream";
                     }
-                    config.timeout = destroyPromise;
+                    config.signal = destroyController.signal;
                     return config;
                 }
                 function dispatchSseEvent(name, detail) {
@@ -27530,19 +27446,18 @@ function ngOptionsDirective($compile, $parse) {
         const match = NG_OPTIONS_REGEXP.exec(optionsExp);
         if (!match) {
             throw ngOptionsError("iexp", "Expected expression in form of " +
-                "'_select_ (as _label_)? for (_key_,)?_value_ in _collection_'" +
+                "'_select_ (as _label_)? (group by _group_)? " +
+                "(disable when _condition_)? for _value_ in _collection_' " +
+                "(or 'for (_key_, _value_) in _collection_')" +
                 " but got '{0}'. Element: {1}", optionsExp, startingTag(selectElement));
         }
-        const [, selectAsExpression, displayExpression, , , valueAlias, keyName, itemAlias,] = match;
+        const [, valueExpression, labelExpression, groupExpression, disabledExpression, valueAlias, keyName, itemAlias, collectionExpression,] = match;
         const valueName = valueAlias || itemAlias;
-        const selectAs = match[0].includes(" as ") && selectAsExpression;
-        const valueFn = $parse(displayExpression ? selectAsExpression : valueName);
-        const selectAsFn = selectAs && $parse(selectAs);
-        const viewValueFn = selectAsFn || valueFn;
-        const displayFn = $parse(match[2] || match[1]);
-        const groupByFn = $parse(match[3] || "");
-        const disableWhenFn = $parse(match[4] || "");
-        const valuesFn = $parse(match[8]);
+        const viewValueFn = $parse(labelExpression ? valueExpression : valueName);
+        const displayFn = $parse(labelExpression || valueExpression);
+        const groupByFn = $parse(groupExpression || "");
+        const disableWhenFn = $parse(disabledExpression || "");
+        const valuesFn = $parse(collectionExpression);
         const locals = {};
         const getLocals = keyName
             ? (value, key) => {
@@ -27555,7 +27470,7 @@ function ngOptionsDirective($compile, $parse) {
                 return locals;
             };
         return {
-            _getWatchables: match[8],
+            _getWatchables: collectionExpression,
             /** @internal */
             _getOptions() {
                 const optionItems = [];
@@ -41562,7 +41477,7 @@ class RestService {
      *
      * @param id - Resource identifier appended to the base URL.
      * @param item - Request body to send.
-     * @returns The updated entity, raw value, or `null` when the request fails.
+     * @returns The updated entity, raw value, or `null` for an empty response.
      * @throws Error when `id` is null or undefined.
      */
     async update(id, item) {
@@ -45196,4 +45111,4 @@ const nativeCapabilities = {
 const angular = new Angular();
 scheduleAutoBootstrap(angular, document, window);
 
-export { AngularRuntime, a, abbr, acronym, address, afterRender, angular, applet, area, article, aside, attrs, audio, b, base, basefont, bdi, bdo, bgsound, big, blink, blockquote, body, br, button, canvas, caption, center, cite, code, col, colgroup, createAngular, data, datalist, dd, defineWorkflow, del, details, dfn, dialog, dir, div, dl, dt, each, em, embed, event, fieldset, figcaption, figure, font, footer, form, frame, frameset, h1, h2, h3, h4, h5, h6, head, header, hgroup, hr, html, i, iframe, img, input, ins, isindex, kbd, keygen, label, legend, li, link, listing, main, map, mark, marquee, menu, menuitem, meta, meter, multicol, nativeCapabilities, nav, nextid, nobr, noembed, noframes, noscript, object, ol, optgroup, option, output, p, param, picture, plaintext, pre, progress, props, q, queueAfterRender, rb, rp, rt, rtc, ruby, s, samp, script, search, section, select, slot, small, source, spacer, span, strike, strong, style, sub, summary, sup, table, tag, tagNS, tags, tbody, td, template, textarea, tfoot, th, thead, time, title, tr, track, tt, u, ul, varTag, video, wbr, xmp };
+export { AngularRuntime, a, abbr, address, afterRender, angular, area, article, aside, attrs, audio, b, base, bdi, bdo, blockquote, body, br, button, canvas, caption, cite, code, col, colgroup, createAngular, data, datalist, dd, defineWorkflow, del, details, dfn, dialog, div, dl, dt, each, em, embed, event, fieldset, figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, head, header, hgroup, hr, html, i, iframe, img, input, ins, kbd, label, legend, li, link, main, map, mark, menu, meta, meter, nativeCapabilities, nav, noscript, object, ol, optgroup, option, output, p, picture, pre, progress, props, q, queueAfterRender, rp, rt, ruby, s, samp, script, search, section, select, slot, small, source, span, strong, style, sub, summary, sup, table, tag, tagNS, tags, tbody, td, template, textarea, tfoot, th, thead, time, title, tr, track, u, ul, varTag, video, wbr };

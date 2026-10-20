@@ -213,6 +213,14 @@ with interpolation.
 > **Note:** Always include the CSS rule `[ng-cloak] { display: none; }` in your
 > stylesheet when using `ng-cloak`.
 
+## Native canvas rendering
+
+The optional `canvasModule` adds `ng-canvas` for native Canvas 2D and WebGL
+renderers. It owns backing-store sizing, redraw scheduling, view retention, and
+teardown. Application adapters provide the drawing behavior. See
+[ng-canvas]({{< relref "/docs/directive/canvas" >}}) for installation and
+examples.
+
 ## Web Workers and WebAssembly
 
 ### `ng-worker`
@@ -383,25 +391,29 @@ angular.createModule('app', []).config({
 AngularTS generates event directives for all common DOM events. They all follow
 the `ng-<eventname>="expression"` pattern:
 
-| Directive       | DOM event           |
-| --------------- | ------------------- |
-| `ng-click`      | `click`             |
-| `ng-dblclick`   | `dblclick`          |
-| `ng-focus`      | `focus`             |
-| `ng-blur`       | `blur`              |
-| `ng-keydown`    | `keydown`           |
-| `ng-keyup`      | `keyup`             |
-| `ng-mouseenter` | `mouseenter`        |
-| `ng-mouseleave` | `mouseleave`        |
-| `ng-mousemove`  | `mousemove`         |
-| `ng-mouseover`  | `mouseover`         |
-| `ng-mousedown`  | `mousedown`         |
-| `ng-mouseup`    | `mouseup`           |
-| `ng-submit`     | `submit` (on forms) |
-| `ng-cut`        | `cut`               |
-| `ng-copy`       | `copy`              |
-| `ng-paste`      | `paste`             |
-| `ng-load`       | `load`              |
+| Directive          | DOM event           |
+| ------------------ | ------------------- |
+| `ng-click`         | `click`             |
+| `ng-dblclick`      | `dblclick`          |
+| `ng-focus`         | `focus`             |
+| `ng-blur`          | `blur`              |
+| `ng-keydown`       | `keydown`           |
+| `ng-keyup`         | `keyup`             |
+| `ng-mouseenter`    | `mouseenter`        |
+| `ng-mouseleave`    | `mouseleave`        |
+| `ng-mousemove`     | `mousemove`         |
+| `ng-mouseover`     | `mouseover`         |
+| `ng-mousedown`     | `mousedown`         |
+| `ng-mouseup`       | `mouseup`           |
+| `ng-pointerdown`   | `pointerdown`       |
+| `ng-pointerup`     | `pointerup`         |
+| `ng-pointermove`   | `pointermove`       |
+| `ng-pointercancel` | `pointercancel`     |
+| `ng-submit`        | `submit` (on forms) |
+| `ng-cut`           | `cut`               |
+| `ng-copy`          | `copy`              |
+| `ng-paste`         | `paste`             |
+| `ng-load`          | `load`              |
 
 The expression is evaluated in the current scope. `$event` refers to the native
 DOM event object:

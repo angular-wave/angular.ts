@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+- Added controller binding type checks to directive registration, including
+  `bindToController` maps and `scope` bindings with `bindToController: true`.
+  Inferred controllers validate binding names and callable `&` properties;
+  independent scope bindings and existing binding syntax remain supported.
+
+- Simplified `ng-options` value parsing and fixed object selections when a
+  collection, grouping, or disabled expression contains `" as "`. Preserved
+  value mapping, grouping, disabled options, object iteration, and multiple
+  selection; documented ordinary `ng-repeat`/`ng-value` options for simple lists.
+
+- Component registration now infers controller types to check binding names and
+  callback properties. Preserved HTML binding syntax, optional bindings,
+  attribute aliases, and function-valued inputs, with typed callback locals in
+  controller code and programmatic views.
+
+- **Breaking:** Removed 29 obsolete named HTML factories, including `applet`,
+  `blink`, and `font`, from ESM exports and all generated language integrations.
+  Use generic `tag()` for legacy element names.
+
+- Added the opt-in `canvasModule` and `ng-canvas` directive for native canvas
+  sizing, redraw scheduling, retained-view suspension, and teardown. Added
+  pointer event bindings, an interactive chart example, and the Flappy Bird
+  concept with a reactive session machine and persisted preferences.
+
+- **Breaking:** Modernized `$http` around Fetch: use native `signal` cancellation,
+  numeric `timeout`, and `credentials` modes. Renamed response and error
+  `xhrStatus` to `transportStatus`; removed `eventHandlers` and
+  `uploadEventHandlers`. Updated HTTP directives, documentation, and language
+  bindings, and fixed cancellation during response-body reads.
+
 - Updated compiler and interpolation terminology for binding policies, including
   the `bindingContext` parameter, documentation, examples, and language bindings.
 

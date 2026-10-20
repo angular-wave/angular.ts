@@ -93,7 +93,9 @@ export function ngOptionsDirective(
       throw ngOptionsError(
         "iexp",
         "Expected expression in form of " +
-          "'_select_ (as _label_)? for (_key_,)?_value_ in _collection_'" +
+          "'_select_ (as _label_)? (group by _group_)? " +
+          "(disable when _condition_)? for _value_ in _collection_' " +
+          "(or 'for (_key_, _value_) in _collection_')" +
           " but got '{0}'. Element: {1}",
         optionsExp,
         startingTag(selectElement),
@@ -102,32 +104,27 @@ export function ngOptionsDirective(
 
     const [
       ,
-      selectAsExpression,
-      displayExpression,
-      ,
-      ,
+      valueExpression,
+      labelExpression,
+      groupExpression,
+      disabledExpression,
       valueAlias,
       keyName,
       itemAlias,
+      collectionExpression,
     ] = match;
 
     const valueName = valueAlias || itemAlias;
 
-    const selectAs = match[0].includes(" as ") && selectAsExpression;
+    const viewValueFn = $parse(labelExpression ? valueExpression : valueName);
 
-    const valueFn = $parse(displayExpression ? selectAsExpression : valueName);
+    const displayFn = $parse(labelExpression || valueExpression);
 
-    const selectAsFn = selectAs && $parse(selectAs);
+    const groupByFn = $parse(groupExpression || "");
 
-    const viewValueFn = selectAsFn || valueFn;
+    const disableWhenFn = $parse(disabledExpression || "");
 
-    const displayFn = $parse(match[2] || match[1]);
-
-    const groupByFn = $parse(match[3] || "");
-
-    const disableWhenFn = $parse(match[4] || "");
-
-    const valuesFn = $parse(match[8]);
+    const valuesFn = $parse(collectionExpression);
 
     const locals: Record<string, unknown> = {};
 
@@ -145,7 +142,7 @@ export function ngOptionsDirective(
         };
 
     return {
-      _getWatchables: match[8],
+      _getWatchables: collectionExpression,
       /** @internal */
       _getOptions() {
         const optionItems: OptionItem[] = [];

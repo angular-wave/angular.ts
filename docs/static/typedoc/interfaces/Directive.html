@@ -145,11 +145,13 @@
           ><span class="tsd-signature-symbol">?:</span>
           <span class="tsd-signature-type">boolean</span>
           <span class="tsd-signature-symbol">|</span>
-          <span class="tsd-signature-type">Record</span
+          <span class="tsd-signature-type">ControllerBindings</span
           ><span class="tsd-signature-symbol">&lt;</span
-          ><span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">,</span>
-          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-type">NoInfer</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><a class="tsd-signature-type tsd-kind-type-parameter" href="#tctrl"
+            >TCtrl</a
+          ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">&gt;</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
@@ -190,19 +192,158 @@
             class="tsd-kind-property"
             href="#controller"
             >controller</a
-          ><span class="tsd-signature-symbol">?:</span>
-          <span class="tsd-signature-type">string</span>
-          <span class="tsd-signature-symbol">|</span>
+          ><span class="tsd-signature-symbol">?:</span><br />        <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <span class="tsd-signature-type">string</span><br />        <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
           <a
             href="../types/Injectable.html"
             class="tsd-signature-type tsd-kind-type-alias"
             >Injectable</a
-          ><span class="tsd-signature-symbol">&lt;</span
-          ><a
+          ><span class="tsd-signature-symbol">&lt;</span><br />            <a
             href="../types/ControllerConstructor.html"
             class="tsd-signature-type tsd-kind-type-alias"
             >ControllerConstructor</a
-          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><br />                <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tctrl"
+            >TCtrl</a
+          >
+          <span class="tsd-signature-symbol">&amp;</span>
+          <span class="tsd-signature-type">object</span>
+          <span class="tsd-signature-symbol">&amp;</span>
+          <span class="tsd-signature-symbol">{</span
+          ><br />                    <span class="tsd-kind-property"
+            >afterRender</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property">name</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >onChanges</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">(</span
+          ><span class="tsd-kind-parameter">changes</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="../types/OnChangesObject.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >OnChangesObject</a
+          ><span class="tsd-signature-symbol">)</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >onDestroy</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >onInit</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >postLink</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                <span class="tsd-signature-symbol">}</span
+          ><span class="tsd-signature-symbol">,</span><br />            <span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          ><br />        <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-symbol">[</span><br />            <span
+            class="tsd-signature-symbol"
+            >...</span
+          ><span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">[]</span
+          ><span class="tsd-signature-symbol">,</span><br />            <a
+            href="../types/ControllerConstructor.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >ControllerConstructor</a
+          ><span class="tsd-signature-symbol">&lt;</span
+          ><br />                <a
+            class="tsd-signature-type tsd-kind-type-parameter"
+            href="#tctrl"
+            >TCtrl</a
+          >
+          <span class="tsd-signature-symbol">&amp;</span>
+          <span class="tsd-signature-type">object</span>
+          <span class="tsd-signature-symbol">&amp;</span>
+          <span class="tsd-signature-symbol">{</span
+          ><br />                    <span class="tsd-kind-property"
+            >afterRender</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property">name</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-type">string</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >onChanges</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">(</span
+          ><span class="tsd-kind-parameter">changes</span
+          ><span class="tsd-signature-symbol">:</span>
+          <a
+            href="../types/OnChangesObject.html"
+            class="tsd-signature-type tsd-kind-type-alias"
+            >OnChangesObject</a
+          ><span class="tsd-signature-symbol">)</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >onDestroy</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >onInit</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                    <span class="tsd-kind-property"
+            >postLink</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <span class="tsd-signature-symbol">()</span>
+          <span class="tsd-signature-symbol">=&gt;</span>
+          <span class="tsd-signature-type">void</span
+          ><span class="tsd-signature-symbol">;</span
+          ><br />                <span class="tsd-signature-symbol">}</span
+          ><span class="tsd-signature-symbol">,</span><br />            <span
+            class="tsd-signature-symbol"
+            >&gt;</span
+          ><span class="tsd-signature-symbol">,</span><br />        <span
+            class="tsd-signature-symbol"
+            >]</span
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#controlleras"
@@ -221,19 +362,20 @@
             >link</a
           ><span class="tsd-signature-symbol">?:</span>
           <a
-            href="DirectivePrePost.html"
-            class="tsd-signature-type tsd-kind-interface"
-            >DirectivePrePost</a
-          >
-          <span class="tsd-signature-symbol">|</span>
-          <a
             href="../types/DirectiveLinkFn.html"
             class="tsd-signature-type tsd-kind-type-alias"
             >DirectiveLinkFn</a
           ><span class="tsd-signature-symbol">&lt;</span
           ><a class="tsd-signature-type tsd-kind-type-parameter" href="#tctrl"
             >TCtrl</a
-          ><span class="tsd-signature-symbol">&gt;</span
+          ><span class="tsd-signature-symbol">&gt;</span><br />    <span
+            class="tsd-signature-symbol"
+            >|</span
+          >
+          <a
+            href="DirectivePrePost.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >DirectivePrePost</a
           ><span class="tsd-signature-symbol">;</span><br />    <a
             class="tsd-kind-property"
             href="#name"
@@ -645,15 +787,25 @@
                 ><span class="tsd-signature-symbol">?:</span>
                 <span class="tsd-signature-type">boolean</span>
                 <span class="tsd-signature-symbol">|</span>
-                <span class="tsd-signature-type">Record</span
+                <span class="tsd-signature-type">ControllerBindings</span
                 ><span class="tsd-signature-symbol">&lt;</span
-                ><span class="tsd-signature-type">string</span
-                ><span class="tsd-signature-symbol">,</span>
-                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-type">NoInfer</span
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tctrl"
+                  >TCtrl</a
+                ><span class="tsd-signature-symbol">&gt;</span
                 ><span class="tsd-signature-symbol">&gt;</span>
               </div>
               <div class="tsd-comment tsd-typography">
-                <p>Whether to bind scope to controller</p>
+                <p>
+                  Bind attributes to controller properties. Known controller
+                  types restrict binding names and require callable properties
+                  for <code>&amp;</code> callbacks. <code>true</code> uses the
+                  bindings declared in <code>scope</code>;
+                  <code>false</code> leaves them on the scope.
+                </p>
               </div>
             </section>
             <section class="tsd-panel tsd-member">
@@ -718,19 +870,161 @@
               </h3>
               <div class="tsd-signature">
                 <span class="tsd-kind-property">controller</span
-                ><span class="tsd-signature-symbol">?:</span>
-                <span class="tsd-signature-type">string</span>
-                <span class="tsd-signature-symbol">|</span>
+                ><span class="tsd-signature-symbol">?:</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >|</span
+                >
+                <span class="tsd-signature-type">string</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >|</span
+                >
                 <a
                   href="../types/Injectable.html"
                   class="tsd-signature-type tsd-kind-type-alias"
                   >Injectable</a
-                ><span class="tsd-signature-symbol">&lt;</span
-                ><a
+                ><span class="tsd-signature-symbol">&lt;</span><br />        <a
                   href="../types/ControllerConstructor.html"
                   class="tsd-signature-type tsd-kind-type-alias"
                   >ControllerConstructor</a
-                ><span class="tsd-signature-symbol">&gt;</span>
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />            <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tctrl"
+                  >TCtrl</a
+                >
+                <span class="tsd-signature-symbol">&amp;</span>
+                <span class="tsd-signature-type">object</span>
+                <span class="tsd-signature-symbol">&amp;</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                <span class="tsd-kind-property"
+                  >afterRender</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >name</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >onChanges</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">changes</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/OnChangesObject.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >OnChangesObject</a
+                ><span class="tsd-signature-symbol">)</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >onDestroy</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >onInit</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >postLink</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">}</span
+                ><span class="tsd-signature-symbol">,</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">,</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><br />    <span class="tsd-signature-symbol">|</span>
+                <span class="tsd-signature-symbol">[</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >...</span
+                ><span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">[]</span
+                ><span class="tsd-signature-symbol">,</span><br />        <a
+                  href="../types/ControllerConstructor.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >ControllerConstructor</a
+                ><span class="tsd-signature-symbol">&lt;</span
+                ><br />            <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tctrl"
+                  >TCtrl</a
+                >
+                <span class="tsd-signature-symbol">&amp;</span>
+                <span class="tsd-signature-type">object</span>
+                <span class="tsd-signature-symbol">&amp;</span>
+                <span class="tsd-signature-symbol">{</span
+                ><br />                <span class="tsd-kind-property"
+                  >afterRender</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >name</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-type">string</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >onChanges</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">(</span
+                ><span class="tsd-kind-parameter">changes</span
+                ><span class="tsd-signature-symbol">:</span>
+                <a
+                  href="../types/OnChangesObject.html"
+                  class="tsd-signature-type tsd-kind-type-alias"
+                  >OnChangesObject</a
+                ><span class="tsd-signature-symbol">)</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >onDestroy</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >onInit</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />                <span class="tsd-kind-property"
+                  >postLink</span
+                ><span class="tsd-signature-symbol">?:</span>
+                <span class="tsd-signature-symbol">()</span>
+                <span class="tsd-signature-symbol">=&gt;</span>
+                <span class="tsd-signature-type">void</span
+                ><span class="tsd-signature-symbol">;</span
+                ><br />            <span class="tsd-signature-symbol">}</span
+                ><span class="tsd-signature-symbol">,</span><br />        <span
+                  class="tsd-signature-symbol"
+                  >&gt;</span
+                ><span class="tsd-signature-symbol">,</span><br />    <span
+                  class="tsd-signature-symbol"
+                  >]</span
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Controller constructor or injectable string name</p>
@@ -786,12 +1080,6 @@
                 <span class="tsd-kind-property">link</span
                 ><span class="tsd-signature-symbol">?:</span>
                 <a
-                  href="DirectivePrePost.html"
-                  class="tsd-signature-type tsd-kind-interface"
-                  >DirectivePrePost</a
-                >
-                <span class="tsd-signature-symbol">|</span>
-                <a
                   href="../types/DirectiveLinkFn.html"
                   class="tsd-signature-type tsd-kind-type-alias"
                   >DirectiveLinkFn</a
@@ -801,6 +1089,12 @@
                   href="#tctrl"
                   >TCtrl</a
                 ><span class="tsd-signature-symbol">&gt;</span>
+                <span class="tsd-signature-symbol">|</span>
+                <a
+                  href="DirectivePrePost.html"
+                  class="tsd-signature-type tsd-kind-interface"
+                  >DirectivePrePost</a
+                >
               </div>
               <div class="tsd-comment tsd-typography">
                 <p>Link function(s) executed during linking</p>

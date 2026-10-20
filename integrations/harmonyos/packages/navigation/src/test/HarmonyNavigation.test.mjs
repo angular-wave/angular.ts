@@ -70,6 +70,7 @@ test("rejects unsafe locations and calls after disposal", async () => {
     "https://[/path",
     "https://[127.0.0.1]/path",
     "https://[::1]suffix/path",
+    "//attacker.test/path",
   ]) {
     await assert.rejects(navigation.invoke("external", { url }), (error) =>
       error.code === "invalid_params" || error.code === "unauthorized"
@@ -113,13 +114,24 @@ test("does not system-pop the root destination", async () => {
 
 test("applies route operations to an ArkUI path stack", async () => {
   const calls = [];
+  const activeMutations = [];
+  let platform;
   const stack = {
-    pushPath: (info, animated) => calls.push(["push", info, animated]),
-    replacePath: (info, animated) => calls.push(["replace", info, animated]),
-    pop: (animated) => calls.push(["pop", animated]),
+    pushPath: (info, animated) => {
+      activeMutations.push(platform.isApplying("push"));
+      calls.push(["push", info, animated]);
+    },
+    replacePath: (info, animated) => {
+      activeMutations.push(platform.isApplying("replace"));
+      calls.push(["replace", info, animated]);
+    },
+    pop: (animated) => {
+      activeMutations.push(platform.isApplying("pop"));
+      calls.push(["pop", animated]);
+    },
   };
   const external = [];
-  const platform = new HarmonyNavPathPlatform(stack, (location) => external.push(location));
+  platform = new HarmonyNavPathPlatform(stack, (location) => external.push(location));
   const entry = {
     id: "one",
     location: "/one",
@@ -128,15 +140,31 @@ test("applies route operations to an ArkUI path stack", async () => {
     state: {},
   };
   platform.apply("push", [entry], "cover");
+  platform.apply("modal", [entry], "slide");
   platform.apply("replace", [entry], "none");
   platform.apply("pop", [], "slide");
   await platform.openExternal("https://example.test/");
   assert.deepEqual(calls.map((call) => [call[0], call.at(-1)]), [
     ["push", true],
+    ["push", true],
     ["replace", false],
     ["pop", true],
   ]);
+  assert.deepEqual(activeMutations, [true, true, true, true]);
+  assert.equal(platform.isApplying("push"), false);
+  assert.equal(platform.isApplying("replace"), false);
+  assert.equal(platform.isApplying("pop"), false);
   assert.equal(navigationEntry(calls[0][1].param), entry);
   assert.deepEqual(external, ["https://example.test/"]);
   assert.throws(() => navigationEntry({}), /do not contain/u);
+
+  const failing = new HarmonyNavPathPlatform({
+    pushPath() {
+      throw new Error("stack failed");
+    },
+    replacePath() {},
+    pop() {},
+  }, () => {});
+  assert.throws(() => failing.apply("push", [entry], "slide"), /stack failed/u);
+  assert.equal(failing.isApplying("push"), false);
 });

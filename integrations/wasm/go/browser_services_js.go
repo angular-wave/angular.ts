@@ -258,6 +258,12 @@ func (c WorkerConfig) WithDecoder(decoder js.Func) WorkerConfig {
 	return c
 }
 
+// WithSignal attaches a native AbortSignal to an HTTP request.
+func (c HttpRequestOptions) WithSignal(signal js.Value) HttpRequestOptions {
+	c.signal = signal
+	return c
+}
+
 // WithSignal attaches an AbortSignal to a correlated request.
 func (c WorkerRequestOptions) WithSignal(signal js.Value) WorkerRequestOptions {
 	c.signal = signal
@@ -387,10 +393,14 @@ func requestShortcutToJS(config HttpRequestOptions) js.Value {
 	if config.ResponseType != "" {
 		value["responseType"] = config.ResponseType
 	}
-	if config.Credentials != nil {
-		value["withCredentials"] = *config.Credentials
+	if config.Credentials != "" {
+		value["credentials"] = string(config.Credentials)
 	}
-	return toJS(value)
+	result := toJS(value)
+	if !config.signal.IsUndefined() && !config.signal.IsNull() {
+		result.Set("signal", config.signal)
+	}
+	return result
 }
 
 func requestConfigToJS(config HttpRequestConfig) js.Value {
@@ -410,10 +420,14 @@ func requestConfigToJS(config HttpRequestConfig) js.Value {
 	if config.ResponseType != "" {
 		value["responseType"] = config.ResponseType
 	}
-	if config.Credentials != nil {
-		value["withCredentials"] = *config.Credentials
+	if config.Credentials != "" {
+		value["credentials"] = string(config.Credentials)
 	}
-	return toJS(value)
+	result := toJS(value)
+	if !config.signal.IsUndefined() && !config.signal.IsNull() {
+		result.Set("signal", config.signal)
+	}
+	return result
 }
 
 func cookieOptionsToJS(options CookieOptions) js.Value {

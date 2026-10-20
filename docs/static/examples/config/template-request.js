@@ -6,7 +6,7 @@ window.angular
         headers: {
           'X-Template': 'configured',
         },
-        withCredentials: true,
+        credentials: 'include',
       },
     },
   })
@@ -17,9 +17,11 @@ window.angular
 
       constructor($templateRequest) {
         this.template = 'Loading...';
-        $templateRequest('./template-request-fragment.html').then((template) => {
-          this.template = template;
-        });
+        $templateRequest('./template-request-fragment.html').then(
+          (template) => {
+            this.template = template;
+          },
+        );
       }
     },
   );

@@ -32,6 +32,7 @@ import {
   navigationEntry,
 } from "./HarmonyNavPathPlatform.ts";
 import { openHarmonyExternalLocation } from "./HarmonyExternalNavigation.ets";
+import { harmonyNavigationRecovery } from "./HarmonyNavigationRecovery.ts";
 
 const DESTINATION_NAME = "angular-native";
 
@@ -94,18 +95,24 @@ export class AngularNativeNavigationController {
 
   private readonly context: common.UIAbilityContext;
   private readonly rootLocation: string;
+  private readonly rootSource: string | Resource | undefined;
   private readonly nativeControllerFactory: ArkUISameLayerControllerFactory | undefined;
   private readonly reference = new NavigationReference();
+  private readonly pathPlatform: HarmonyNavPathPlatform;
   private readonly destinations: HarmonyDestinationPlatform<AngularNativeDestination>;
   private readonly motionTargets: Map<string, NavigationMotionTarget> = new Map();
+  private readonly releaseRecovery: () => void;
 
   constructor(
     context: common.UIAbilityContext,
     initialLocation: string,
     nativeControllerFactory?: ArkUISameLayerControllerFactory,
+    recoveryKey = "default",
+    rootSource?: string | Resource,
   ) {
     this.context = context;
     this.rootLocation = safeApplicationLocation(initialLocation);
+    this.rootSource = rootSource;
     this.nativeControllerFactory = nativeControllerFactory;
     const root: NavigationEntry = {
       id: "root",
@@ -114,8 +121,9 @@ export class AngularNativeNavigationController {
       transition: "none",
       state: {},
     };
-    const rootDestination = this.createDestination(root);
-    const pathPlatform = new HarmonyNavPathPlatform(
+    const restored = harmonyNavigationRecovery.claim(recoveryKey, root);
+    const rootDestination = this.createDestination(restored[0] as NavigationEntry);
+    this.pathPlatform = new HarmonyNavPathPlatform(
       this.stack,
       (location) => openHarmonyExternalLocation(this.context, location),
       DESTINATION_NAME,
@@ -123,7 +131,7 @@ export class AngularNativeNavigationController {
     this.destinations = new HarmonyDestinationPlatform(
       root,
       rootDestination,
-      pathPlatform,
+      this.pathPlatform,
       (entry) => this.createDestination(entry),
     );
     this.navigation = new HarmonyNavigation(
@@ -131,12 +139,32 @@ export class AngularNativeNavigationController {
       (data) => this.emitNavigationChange(data),
     );
     this.reference.attach(this.navigation);
-    this.navigation.restore([root]);
-    const rootPath: AngularNativePathInfo = {
-      name: DESTINATION_NAME,
-      param: { entry: root },
-    };
-    this.stack.pushPath(rootPath, false);
+    this.destinations.restore(restored);
+    for (const entry of restored) {
+      this.destination(entry).restoreState(
+        harmonyNavigationRecovery.takeNativeState(recoveryKey, entry.id),
+      );
+    }
+    this.navigation.restore(restored);
+    for (const entry of restored) {
+      const path: AngularNativePathInfo = {
+        name: DESTINATION_NAME,
+        param: { entry },
+      };
+      this.stack.pushPath(path, false);
+    }
+    this.stack.setInterception({
+      willShow: (
+        _from: NavDestinationContext | string,
+        _to: NavDestinationContext | string,
+        operation: NavigationOperation,
+      ): void => this._handleStackWillShow(operation),
+    });
+    this.releaseRecovery = harmonyNavigationRecovery.register(
+      recoveryKey,
+      () => this.destinations.entries,
+      (entry) => this.destination(entry).saveState(),
+    );
   }
 
   destination(entry: NavigationEntry): AngularNativeDestination {
@@ -180,6 +208,7 @@ export class AngularNativeNavigationController {
   }
 
   close(): void {
+    this.releaseRecovery();
     this.navigation.close();
     this.destinations.close();
   }
@@ -189,6 +218,7 @@ export class AngularNativeNavigationController {
     const system = new HarmonySystemCapabilities(this.context, location);
     const options: AngularNativeDestinationOptions = {
       nativeControllerFactory: this.nativeControllerFactory,
+      source: entry.id === "root" ? this.rootSource : undefined,
     };
     return new AngularNativeDestination(
       location,
@@ -200,6 +230,19 @@ export class AngularNativeNavigationController {
   private emitNavigationChange(data: Readonly<Record<string, ESObject>>): void {
     const destination = this.destination(this.destinations.current);
     destination.web.host.emitEvent("navigation", "change", data);
+  }
+
+  /** @internal */
+
+  private _handleStackWillShow(operation: NavigationOperation): void {
+    if (
+      operation !== NavigationOperation.POP ||
+      this.pathPlatform.isApplying("pop") ||
+      !this.destinations.systemPop()
+    ) {
+      return;
+    }
+    this.navigation.systemPop();
   }
 }
 
@@ -260,6 +303,8 @@ struct AngularNativeNavDestination {
 export struct AngularNativeNavigation {
   @Require @Prop initialLocation: string;
   @Prop nativeControllerFactory: ArkUISameLayerControllerFactory | undefined = undefined;
+  @Prop recoveryKey: string = "default";
+  @Prop source: string | Resource | undefined = undefined;
 
   private controller: AngularNativeNavigationController | undefined;
 
@@ -268,6 +313,8 @@ export struct AngularNativeNavigation {
       this.getUIContext().getHostContext() as common.UIAbilityContext,
       this.initialLocation,
       this.nativeControllerFactory,
+      this.recoveryKey,
+      this.source,
     );
   }
 

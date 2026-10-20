@@ -6,8 +6,8 @@
 /// Main AngularTS runtime entry point with the full built-in `ng` module configured by default.
 pub type Angular
 
-/// Public AngularTS AnnotatedDirectiveFactory contract exposed through the ng namespace.
-pub type AnnotatedDirectiveFactory
+/// Dependency tokens followed by a directive factory.
+pub type AnnotatedDirectiveFactory(a)
 
 /// Defines a component's configuration object (a simplified directive definition object).
 pub type Component(a, b, c)
@@ -62,11 +62,12 @@ pub type Directive(a)
 /// Supported directive matching locations.
 pub type DirectiveRestrict
 
-/// Public AngularTS DirectiveFactory contract exposed through the ng namespace.
-pub type DirectiveFactory
+/// Plain or dependency-annotated factory, optionally typed by its controller.
+pub type DirectiveFactory(a)
 
-/// Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace.
-pub type DirectiveFactoryFn
+/// Injectable factory returning a directive definition or a link function. Structural results let
+/// registries accept definitions with known controller types.
+pub type DirectiveFactoryFn(a)
 
 /// A compile function used to prepare directives before linking.
 pub type DirectiveCompileFn
@@ -197,6 +198,18 @@ pub type ExceptionHandlerService
 /// disabled by default and has no AngularTS fallback.
 pub type HtmlCanvasConfig
 
+/// Frame timestamps are in seconds; delta is zero after mounting or resuming.
+pub type CanvasFrame
+
+/// Application renderer contract for the optional ng-canvas directive.
+pub type CanvasRenderer
+
+/// CSS dimensions and the corresponding canvas backing-store dimensions.
+pub type CanvasSize
+
+/// Native drawing resources owned by one linked ng-canvas element.
+pub type CanvasSurface
+
 /// Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the ng namespace.
 pub type HtmlCanvasRuntimeSupport
 
@@ -224,7 +237,10 @@ pub type HttpParamSerializerService
 /// Runtime surface of the `$http` service. Call the service directly with a full HttpRequestConfig,
 /// or use a shorthand method for common HTTP verbs. All methods return an
 /// `Promise<HttpResponse<T>>` that resolves for successful 2xx responses and rejects with HttpError
-/// for errors.
+/// for HTTP or transport failures. Configuration, transform, and interceptor errors can reject with
+/// other error types. Uses Fetch exclusively. Cancel with a native `AbortSignal`, set a numeric
+/// `timeout` for a deadline, and observe completion through the returned promise. Upload progress
+/// events are not available.
 pub type HttpService
 
 /// Injector for factories and services
@@ -349,9 +365,10 @@ pub type SwapMode
 /// Public contract implemented by the `$templateCache` injectable.
 pub type TemplateCacheService
 
-/// Downloads a template using $http and, upon success, stores the contents inside of
-/// $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then
-/// a $compile error will be thrown (unless {ignoreRequestError} is set to true).
+/// Returns cached template text or downloads it through `$http` and stores it in `$templateCache`.
+/// Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates
+/// or rewrites the URL before lookup. HTTP failures reject; an empty successful response is
+/// returned unchanged.
 pub type TemplateRequestService
 
 /// This interface specifies the api for registering Transition Hooks. Both the
@@ -391,7 +408,7 @@ pub type AngularElementModuleOptions
 pub type AngularElementOptions(a)
 
 /// A controller constructor function used in AngularTS.
-pub type ControllerConstructor
+pub type ControllerConstructor(a)
 
 /// Public AngularTS CookieOptions contract exposed through the ng namespace.
 pub type CookieOptions
@@ -413,16 +430,15 @@ pub type Expression
 pub type HttpMethod
 
 /// Default request settings configured through `app.config({ $http })` and exposed at runtime
-/// through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape
-/// only includes the fields that the runtime reads from provider-level defaults.
-/// https://docs.angularjs.org/api/ng/service/$http#defaults
-/// https://docs.angularjs.org/api/ng/service/$http#usage
+/// through `$http.defaults`. Only the settings declared here are read from service-level defaults.
+/// Set `timeout`, `signal`, and `responseType` on individual requests instead.
 pub type HttpDefaults
 
 /// Response object returned by `$http` requests.
 pub type HttpResponse(a)
 
-/// Final transport status reported by transport completion handlers.
+/// Fetch transport outcome exposed on responses and errors. `complete` includes non-2xx HTTP
+/// responses; `error` indicates a transport or security-policy failure.
 pub type HttpResponseStatus
 
 /// Public AngularTS Injectable contract exposed through the ng namespace.
@@ -710,12 +726,10 @@ pub type NativeWindowInsets
 /// Current native window metrics, adaptive classes, safe area, and display features.
 pub type NativeWindowStatus
 
-/// Full request configuration accepted by `$http(...)`. See
-/// http://docs.angularjs.org/api/ng/service/$http#usage
+/// Full request configuration accepted by `$http(...)`.
 pub type HttpRequestConfig
 
-/// Request options shared by the `$http` shortcut methods. See
-/// http://docs.angularjs.org/api/ng/service/$http#usage
+/// Request options shared by the `$http` shorthand methods.
 pub type HttpRequestOptions
 
 /// Factory service exposed as `$rest`. Creates a typed RestService for a base URL, optional entity

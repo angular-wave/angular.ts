@@ -923,7 +923,27 @@ function refineMethods(
               rest,
             );
 
-          if (replacementType === "Object") return parameterSource;
+          if (replacementType === "Object") {
+            const rawType = parameterSource.match(
+              /^\s*([A-Za-z_$][\w$]*)\s+[A-Za-z_$][\w$]*\s*$/,
+            )?.[1];
+            const callbackAlias = rawType && generatedTypes.has(rawType)
+              ? aliasesByName.get(rawType)
+              : undefined;
+            const arity = callbackAlias?.typeParameters?.length ?? 0;
+
+            if (
+              arity > 0 &&
+              checker.getTypeAtLocation(callbackAlias.name).getCallSignatures().length > 0
+            ) {
+              return replaceJavaParameterType(
+                parameterSource,
+                `${rawType}<${Array(arity).fill("?").join(",")}>`,
+              );
+            }
+
+            return parameterSource;
+          }
 
           return replaceJavaParameterType(parameterSource, replacementType);
         });
@@ -1060,6 +1080,14 @@ for (const alias of aliases) {
     signature,
     methodRefined,
   );
+
+  // Keep native property names in @JsProperty while exposing ordinary Java accessors.
+  if (alias.name.text !== "InjectionTokenMap") {
+    refined = refined.replace(
+      /(@JsProperty\(name = "\$([A-Za-z][A-Za-z0-9_]*)"\)\s*[^\n]*?\b)(get|is|set)\$\2(?=\()/g,
+      (_, declaration, name, prefix) => `${declaration}${prefix}${upperFirst(name)}`,
+    );
+  }
 
   if (alias.name.text === "Component") {
     refined = refined

@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_test_desc",
+      "value": "AngularTS Native device tests"
+    },
+    {
+      "name": "TestAbility_desc",
+      "value": "Runs AngularTS Native device tests"
+    },
+    {
+      "name": "TestAbility_label",
+      "value": "AngularTS Native tests"
+    }
+  ]
+}

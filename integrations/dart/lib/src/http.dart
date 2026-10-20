@@ -1,5 +1,7 @@
 import 'dart:js_interop';
 
+import 'package:web/web.dart';
+
 import 'unsafe.dart' as unsafe;
 
 /// Supported http method values.
@@ -28,6 +30,23 @@ enum HttpMethod {
   const HttpMethod(this.value);
 
   /// Registers an AngularTS value.
+  final String value;
+}
+
+/// Native Fetch credential modes.
+enum HttpCredentials {
+  /// Exclude browser credentials.
+  omit('omit'),
+
+  /// Include credentials for same-origin requests.
+  sameOrigin('same-origin'),
+
+  /// Include credentials for cross-origin requests as well.
+  include('include');
+
+  const HttpCredentials(this.value);
+
+  /// Fetch option value.
   final String value;
 }
 
@@ -145,7 +164,7 @@ final class HttpDefaults {
     this.headers,
     this.xsrfHeaderName,
     this.xsrfCookieName,
-    this.withCredentials,
+    this.credentials,
     this.paramSerializer,
   });
 
@@ -167,8 +186,8 @@ final class HttpDefaults {
   /// The xsrf cookie name.
   final String? xsrfCookieName;
 
-  /// The with credentials.
-  final bool? withCredentials;
+  /// Fetch credential mode.
+  final HttpCredentials? credentials;
 
   /// The param serializer.
   final Object? paramSerializer;
@@ -181,7 +200,7 @@ final class HttpDefaults {
         if (headers != null) 'headers': headers!.toMap(),
         if (xsrfHeaderName != null) 'xsrfHeaderName': xsrfHeaderName,
         if (xsrfCookieName != null) 'xsrfCookieName': xsrfCookieName,
-        if (withCredentials != null) 'withCredentials': withCredentials,
+        if (credentials != null) 'credentials': credentials!.value,
         if (paramSerializer != null) 'paramSerializer': paramSerializer,
       };
 }
@@ -197,11 +216,12 @@ final class HttpRequestOptions implements unsafe.JsConvertible {
     this.headers,
     this.xsrfHeaderName,
     this.xsrfCookieName,
-    this.withCredentials,
+    this.credentials,
     this.paramSerializer,
     this.params,
     this.data,
     this.timeout,
+    this.signal,
     this.responseType,
   });
 
@@ -226,8 +246,8 @@ final class HttpRequestOptions implements unsafe.JsConvertible {
   /// The xsrf cookie name.
   final String? xsrfCookieName;
 
-  /// The with credentials.
-  final bool? withCredentials;
+  /// Fetch credential mode.
+  final HttpCredentials? credentials;
 
   /// The param serializer.
   final Object? paramSerializer;
@@ -239,7 +259,10 @@ final class HttpRequestOptions implements unsafe.JsConvertible {
   final Object? data;
 
   /// The timeout.
-  final Object? timeout;
+  final int? timeout;
+
+  /// Native request cancellation signal.
+  final AbortSignal? signal;
 
   /// The response type.
   final HttpResponseType? responseType;
@@ -253,11 +276,12 @@ final class HttpRequestOptions implements unsafe.JsConvertible {
         if (headers != null) 'headers': headers!.toMap(),
         if (xsrfHeaderName != null) 'xsrfHeaderName': xsrfHeaderName,
         if (xsrfCookieName != null) 'xsrfCookieName': xsrfCookieName,
-        if (withCredentials != null) 'withCredentials': withCredentials,
+        if (credentials != null) 'credentials': credentials!.value,
         if (paramSerializer != null) 'paramSerializer': paramSerializer,
         if (params != null) 'params': params,
         if (data != null) 'data': data,
         if (timeout != null) 'timeout': timeout,
+        if (signal != null) 'signal': signal,
         if (responseType != null) 'responseType': responseType!.value,
       };
 
@@ -278,14 +302,13 @@ final class HttpRequestConfig implements unsafe.JsConvertible {
     this.headers,
     this.xsrfHeaderName,
     this.xsrfCookieName,
-    this.withCredentials,
+    this.credentials,
     this.paramSerializer,
     this.params,
     this.data,
     this.timeout,
+    this.signal,
     this.responseType,
-    this.eventHandlers,
-    this.uploadEventHandlers,
   });
 
   /// The method.
@@ -315,8 +338,8 @@ final class HttpRequestConfig implements unsafe.JsConvertible {
   /// The xsrf cookie name.
   final String? xsrfCookieName;
 
-  /// The with credentials.
-  final bool? withCredentials;
+  /// Fetch credential mode.
+  final HttpCredentials? credentials;
 
   /// The param serializer.
   final Object? paramSerializer;
@@ -328,16 +351,13 @@ final class HttpRequestConfig implements unsafe.JsConvertible {
   final Object? data;
 
   /// The timeout.
-  final Object? timeout;
+  final int? timeout;
+
+  /// Native request cancellation signal.
+  final AbortSignal? signal;
 
   /// The response type.
   final HttpResponseType? responseType;
-
-  /// The event handlers.
-  final Map<String, JSFunction>? eventHandlers;
-
-  /// The upload event handlers.
-  final Map<String, JSFunction>? uploadEventHandlers;
 
   /// The to js object.
   JSObject toJsObject() {
@@ -349,17 +369,15 @@ final class HttpRequestConfig implements unsafe.JsConvertible {
       if (headers != null) 'headers': headers!.toMap(),
       if (xsrfHeaderName != null) 'xsrfHeaderName': xsrfHeaderName,
       if (xsrfCookieName != null) 'xsrfCookieName': xsrfCookieName,
-      if (withCredentials != null) 'withCredentials': withCredentials,
+      if (credentials != null) 'credentials': credentials!.value,
       if (paramSerializer != null) 'paramSerializer': paramSerializer,
       if (params != null) 'params': params,
       if (data != null) 'data': data,
       if (timeout != null) 'timeout': timeout,
+      if (signal != null) 'signal': signal,
       if (responseType != null) 'responseType': responseType!.value,
       'method': method.value,
       'url': url,
-      if (eventHandlers != null) 'eventHandlers': eventHandlers,
-      if (uploadEventHandlers != null)
-        'uploadEventHandlers': uploadEventHandlers,
     });
   }
 
@@ -376,7 +394,7 @@ final class HttpResponse<T> {
     required this.headers,
     required this.config,
     required this.statusText,
-    required this.xhrStatus,
+    required this.transportStatus,
   });
 
   /// The data.
@@ -394,8 +412,8 @@ final class HttpResponse<T> {
   /// The status text.
   final String statusText;
 
-  /// The xhr status.
-  final HttpResponseStatus xhrStatus;
+  /// Transport completion status.
+  final HttpResponseStatus transportStatus;
 }
 
 /// Represents http interceptor.

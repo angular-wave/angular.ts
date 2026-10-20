@@ -55,6 +55,69 @@ interface UploadProgress {
   readonly total: number | null;
 }
 
+interface PlatformCapabilityResult {
+  readonly platform: string;
+  readonly sdk: number;
+  readonly package: string;
+  readonly darkMode: boolean;
+}
+
+interface ClipboardContentResult {
+  readonly text: string | null;
+}
+
+interface ClipboardWriteResult {
+  readonly written: boolean;
+}
+
+interface OpenedResult {
+  readonly opened: boolean;
+  readonly uri?: string;
+}
+
+interface HapticResult {
+  readonly performed: boolean;
+}
+
+interface NotificationStatusResult {
+  readonly available: boolean;
+  readonly granted: boolean;
+  readonly permission: string | null;
+}
+
+interface GeolocationStatusResult {
+  readonly available: boolean;
+  readonly granted: boolean;
+  readonly accuracy: string | null;
+  readonly permission: string;
+}
+
+interface BiometricStatusResult {
+  readonly available: boolean;
+  readonly enrolled: boolean;
+  readonly permission: string | null;
+}
+
+interface CameraStatusResult {
+  readonly available: boolean;
+  readonly granted: boolean;
+  readonly permission: string;
+}
+
+interface CameraCaptureResult {
+  readonly uri: string;
+  readonly name: string;
+  readonly size: number;
+  readonly type: string;
+}
+
+interface UploadResult {
+  readonly status: number;
+  readonly body: Object | string | number | boolean | null;
+  readonly name: string;
+  readonly type: string;
+}
+
 class UploadHeaders {
   Accept: string = "application/json";
 }
@@ -106,7 +169,7 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     parameters: Readonly<Record<string, ESObject>>,
     context: NativeBridgeInvocationContext,
     emit: CapabilityEmitter,
-  ): ESObject | Promise<ESObject> {
+  ): Object | Promise<Object> {
     switch (target) {
       case "platform": return this.platform(method);
       case "permissions": return this.permissions(method, parameters);
@@ -152,95 +215,130 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     this.lifecycleEmitter?.("change", lifecycleStatus(state));
   }
 
-  private platform(method: string): ESObject {
+  private platform(method: string): Object {
     requireMethod(method, "status", "platform");
-    return {
+    const result: PlatformCapabilityResult = {
       platform: "harmonyos",
       sdk: deviceInfo.sdkApiVersion,
       package: this.context.applicationInfo.name,
       darkMode: this.context.resourceManager.getConfigurationSync().colorMode === resourceManager.ColorMode.DARK,
     };
+    return result;
   }
 
   private async permissions(
     method: string,
     parameters: Readonly<Record<string, ESObject>>,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     const permission = requiredString(parameters, "permission") as Permissions;
     const manager = abilityAccessCtrl.createAtManager();
-    if (method === "status") {
-      const status = await manager.checkAccessToken(
-        this.context.applicationInfo.accessTokenId,
-        permission,
-      );
-      return permissionStatus(permission, status === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED);
+    if (method !== "status") requireMethod(method, "request", "permissions");
+    try {
+      if (method === "status") {
+        const status = await manager.checkAccessToken(
+          this.context.applicationInfo.accessTokenId,
+          permission,
+        );
+        return permissionStatus(permission, status === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED);
+      }
+      const result = await manager.requestPermissionsFromUser(this.context, [permission]);
+      return permissionStatus(permission, result.authResults[0] === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED);
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS permission service failed");
     }
-    requireMethod(method, "request", "permissions");
-    const result = await manager.requestPermissionsFromUser(this.context, [permission]);
-    return permissionStatus(permission, result.authResults[0] === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED);
   }
 
   private async clipboard(
     method: string,
     parameters: Readonly<Record<string, ESObject>>,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     const board = pasteboard.getSystemPasteboard();
     if (method === "read") {
-      if (!(await board.hasData())) return { text: null };
-      return { text: (await board.getData()).getPrimaryText() };
+      try {
+        if (!(await board.hasData())) {
+          const empty: ClipboardContentResult = { text: null };
+          return empty;
+        }
+        const content: ClipboardContentResult = {
+          text: (await board.getData()).getPrimaryText(),
+        };
+        return content;
+      } catch {
+        throw new NativeBridgeFailure("unavailable", "HarmonyOS clipboard read failed");
+      }
     }
     requireMethod(method, "write", "clipboard");
     const text = requiredString(parameters, "text");
-    await board.setData(pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text));
-    return { written: true };
+    try {
+      await board.setData(pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text));
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS clipboard write failed");
+    }
+    const result: ClipboardWriteResult = { written: true };
+    return result;
   }
 
   private async share(
     method: string,
     parameters: Readonly<Record<string, ESObject>>,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     requireMethod(method, "share", "sharing");
     const text = requiredString(parameters, "text");
-    await this.context.startAbility({
-      action: "ohos.want.action.sendData",
-      type: "text/plain",
-      parameters: { "ability.params.stream": text },
-    });
-    return { opened: true };
+    try {
+      await this.context.startAbility({
+        action: "ohos.want.action.sendData",
+        type: "text/plain",
+        parameters: { "ability.params.stream": text },
+      });
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS sharing service failed");
+    }
+    const result: OpenedResult = { opened: true };
+    return result;
   }
 
   private async intent(
     method: string,
     parameters: Readonly<Record<string, ESObject>>,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     requireMethod(method, "open", "intents");
     const uri = safeExternalUri(requiredString(parameters, "url"));
-    await this.context.startAbility({ action: "ohos.want.action.viewData", uri });
-    return { opened: true, uri };
+    try {
+      await this.context.startAbility({ action: "ohos.want.action.viewData", uri });
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS could not open the intent");
+    }
+    const result: OpenedResult = { opened: true, uri };
+    return result;
   }
 
   private async haptics(
     method: string,
     parameters: Readonly<Record<string, ESObject>>,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     requireMethod(method, "perform", "haptics");
     const style = optionalString(parameters, "style", "click");
     const duration = style === "longPress" ? 60 : style === "keyboard" ? 12 : 30;
     if (!["click", "keyboard", "longPress"].includes(style)) {
       throw new NativeBridgeFailure("invalid_params", "haptics style is invalid");
     }
-    await vibrator.startVibration(
-      { type: "time", duration },
-      { usage: "touch" },
-    );
-    return { performed: true };
+    try {
+      await vibrator.startVibration(
+        { type: "time", duration },
+        { usage: "touch" },
+      );
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS haptics service failed");
+    }
+    const result: HapticResult = { performed: true };
+    return result;
   }
 
   private async connectivity(
     method: string,
     emit: CapabilityEmitter,
     context: NativeBridgeInvocationContext,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     if (method === "status") return this.networkStatus();
     if (method === "unwatch") {
       this.closeTarget("connectivity");
@@ -271,7 +369,7 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     }
   }
 
-  private lifecycle(method: string, emit: CapabilityEmitter): ESObject {
+  private lifecycle(method: string, emit: CapabilityEmitter): Object {
     if (method === "status") return lifecycleStatus(this.lifecycleState);
     if (method === "watch") {
       this.lifecycleEmitter = emit;
@@ -289,77 +387,101 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     return lifecycleStatus(this.lifecycleState);
   }
 
-  private async window(method: string, emit: CapabilityEmitter): Promise<ESObject> {
+  private async window(method: string, emit: CapabilityEmitter): Promise<Object> {
     if (method !== "status" && method !== "watch") {
       if (method !== "unwatch") {
         throw new NativeBridgeFailure("unknown_method", `Unsupported window method: ${method}`);
       }
     }
-    const value = await window.getLastWindow(this.context);
-    const properties = value.getWindowProperties();
-    if (method === "unwatch") {
-      this.closeTarget("window");
-    } else if (method === "watch") {
-      this.closeTarget("window");
-      const listener = (size: window.Size): void => {
-        emit("change", windowStatus(size.width, size.height));
-      };
-      value.on("windowSizeChange", listener);
-      this.windowInstance = value;
-      this.windowListener = listener;
+    try {
+      const value = await window.getLastWindow(this.context);
+      const properties = value.getWindowProperties();
+      if (method === "unwatch") {
+        this.closeTarget("window");
+      } else if (method === "watch") {
+        this.closeTarget("window");
+        const listener = (size: window.Size): void => {
+          emit("change", windowStatus(size.width, size.height));
+        };
+        value.on("windowSizeChange", listener);
+        this.windowInstance = value;
+        this.windowListener = listener;
+      }
+      return windowStatus(properties.windowRect.width, properties.windowRect.height);
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS window service failed");
     }
-    return windowStatus(properties.windowRect.width, properties.windowRect.height);
   }
 
-  private async notifications(method: string): Promise<ESObject> {
+  private async notifications(method: string): Promise<Object> {
     if (method === "status") {
-      return {
-        available: true,
-        granted: await notificationManager.isNotificationEnabled(),
-        permission: null,
-      };
+      try {
+        const result: NotificationStatusResult = {
+          available: true,
+          granted: await notificationManager.isNotificationEnabled(),
+          permission: null,
+        };
+        return result;
+      } catch {
+        throw new NativeBridgeFailure("unavailable", "HarmonyOS notification status failed");
+      }
     }
     requireMethod(method, "open-settings", "notifications");
-    await notificationManager.openNotificationSettings(this.context);
-    return { opened: true };
+    try {
+      await notificationManager.openNotificationSettings(this.context);
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS notification settings failed");
+    }
+    const result: OpenedResult = { opened: true };
+    return result;
   }
 
   private async geolocation(
     method: string,
     parameters: Readonly<Record<string, ESObject>>,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     if (method === "status") {
       const permission: Permissions = "ohos.permission.LOCATION";
-      const status = await abilityAccessCtrl.createAtManager().checkAccessToken(
-        this.context.applicationInfo.accessTokenId,
-        permission,
-      );
-      const granted = status === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
-      return {
-        available: geoLocationManager.isLocationEnabled(),
-        granted,
-        accuracy: granted ? "fine" : null,
-        permission,
-      };
+      try {
+        const status = await abilityAccessCtrl.createAtManager().checkAccessToken(
+          this.context.applicationInfo.accessTokenId,
+          permission,
+        );
+        const granted = status === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED;
+        const result: GeolocationStatusResult = {
+          available: geoLocationManager.isLocationEnabled(),
+          granted,
+          accuracy: granted ? "fine" : null,
+          permission,
+        };
+        return result;
+      } catch {
+        throw new NativeBridgeFailure("unavailable", "HarmonyOS location status failed");
+      }
     }
     requireMethod(method, "current", "geolocation");
-    const location = await geoLocationManager.getCurrentLocation({
-      priority: geoLocationManager.LocationRequestPriority.FIRST_FIX,
-      scenario: geoLocationManager.LocationRequestScenario.UNSET,
-      maxAccuracy: optionalNumber(parameters, "maximumAge", 0, 0),
-    });
-    return geolocationPosition({
-      latitude: location.latitude,
-      longitude: location.longitude,
-      altitude: location.altitude,
-      accuracy: location.accuracy,
-      speed: location.speed,
-      heading: location.direction,
-      timestamp: location.timeStamp,
-    });
+    const maximumAge = optionalNumber(parameters, "maximumAge", 0, 0);
+    try {
+      const location = await geoLocationManager.getCurrentLocation({
+        priority: geoLocationManager.LocationRequestPriority.FIRST_FIX,
+        scenario: geoLocationManager.LocationRequestScenario.UNSET,
+        maxAccuracy: maximumAge,
+      });
+      return geolocationPosition({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        altitude: location.altitude,
+        accuracy: location.accuracy,
+        speed: location.speed,
+        heading: location.direction,
+        timestamp: location.timeStamp,
+      });
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS location request failed");
+    }
   }
 
-  private biometrics(method: string): ESObject {
+  private biometrics(method: string): Object {
     requireMethod(method, "status", "biometrics");
     let fingerprint = false;
     let face = false;
@@ -378,33 +500,48 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
       face = true;
     } catch {}
     const enrolled = fingerprint || face;
-    return { available: enrolled, enrolled, permission: null };
+    const result: BiometricStatusResult = {
+      available: enrolled,
+      enrolled,
+      permission: null,
+    };
+    return result;
   }
 
-  private async camera(method: string): Promise<ESObject> {
+  private async camera(method: string): Promise<Object> {
     if (method === "status") {
       const permission: Permissions = "ohos.permission.CAMERA";
-      const status = await abilityAccessCtrl.createAtManager().checkAccessToken(
-        this.context.applicationInfo.accessTokenId,
-        permission,
-      );
-      return {
-        available: true,
-        granted: status === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED,
-        permission,
-      };
+      try {
+        const status = await abilityAccessCtrl.createAtManager().checkAccessToken(
+          this.context.applicationInfo.accessTokenId,
+          permission,
+        );
+        const result: CameraStatusResult = {
+          available: true,
+          granted: status === abilityAccessCtrl.GrantStatus.PERMISSION_GRANTED,
+          permission,
+        };
+        return result;
+      } catch {
+        throw new NativeBridgeFailure("unavailable", "HarmonyOS camera status failed");
+      }
     }
     requireMethod(method, "capture", "camera");
-    const result = await cameraPicker.pick(this.context, [cameraPicker.PickerMediaType.PHOTO], {
-      cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK,
-    });
-    const details = await fileIo.stat(result.resultUri);
-    return {
-      uri: result.resultUri,
-      name: fileName(result.resultUri) ?? "capture.jpg",
-      size: details.size,
-      type: "image/jpeg",
-    };
+    try {
+      const result = await cameraPicker.pick(this.context, [cameraPicker.PickerMediaType.PHOTO], {
+        cameraPosition: camera.CameraPosition.CAMERA_POSITION_BACK,
+      });
+      const details = await fileIo.stat(result.resultUri);
+      const capture: CameraCaptureResult = {
+        uri: result.resultUri,
+        name: fileName(result.resultUri) ?? "capture.jpg",
+        size: details.size,
+        type: "image/jpeg",
+      };
+      return capture;
+    } catch {
+      throw new NativeBridgeFailure("unavailable", "HarmonyOS camera capture failed");
+    }
   }
 
   private async files(
@@ -412,7 +549,7 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     parameters: Readonly<Record<string, ESObject>>,
     invocation: NativeBridgeInvocationContext,
     emit: CapabilityEmitter,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     if (method === "status") return fileStatus(true);
     if (method === "upload") {
       return this.upload(parameters, invocation, emit);
@@ -437,7 +574,7 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     parameters: Readonly<Record<string, ESObject>>,
     invocation: NativeBridgeInvocationContext,
     emit: CapabilityEmitter,
-  ): Promise<ESObject> {
+  ): Promise<Object> {
     const uri = safeFileUri(requiredString(parameters, "uri"));
     const url = this.sameOriginUrl(requiredString(parameters, "url"));
     const field = optionalName(parameters, "field", "file");
@@ -475,7 +612,7 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
       files,
       data: formData,
     };
-    const task = await request.uploadFile(this.context, config);
+    const task = await createUploadTask(this.context, config);
     invocation.onCancel(() => { void task.delete(); });
     task.on("progress", (sent: number, total: number) => {
       const progress: UploadProgress = { uploadId, sent, total: total >= 0 ? total : null };
@@ -492,12 +629,13 @@ export class HarmonySystemCapabilities implements HarmonyCapabilityPlatform {
     if (state === undefined || state.responseCode < 200 || state.responseCode > 299) {
       throw new NativeBridgeFailure("unavailable", "File upload failed");
     }
-    return {
+    const result: UploadResult = {
       status: state.responseCode,
       body: parseResponse(state.message),
       name,
       type,
     };
+    return result;
   }
 
   private sameOriginUrl(value: string): string {
@@ -644,6 +782,17 @@ function parseResponse(value: string): ESObject {
     return JSON.parse(value);
   } catch {
     return value;
+  }
+}
+
+async function createUploadTask(
+  context: common.UIAbilityContext,
+  config: request.UploadConfig,
+): Promise<request.UploadTask> {
+  try {
+    return await request.uploadFile(context, config);
+  } catch {
+    throw new NativeBridgeFailure("unavailable", "HarmonyOS file upload could not start");
   }
 }
 

@@ -29,6 +29,10 @@
     "js/ng.BindingContext"
     "js/ng.BindingPolicyConfig"
     "js/ng.CachedRestBackendOptions"
+    "js/ng.CanvasFrame"
+    "js/ng.CanvasRenderer"
+    "js/ng.CanvasSize"
+    "js/ng.CanvasSurface"
     "js/ng.ClassMap"
     "js/ng.ClassValue"
     "js/ng.CompileService"
@@ -333,6 +337,10 @@
      "js/ng.BindingContext" "The destination-specific policy required by a DOM binding."
      "js/ng.BindingPolicyConfig" "Policy callbacks accepted by `$compile` configuration."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
+     "js/ng.CanvasFrame" "Frame timestamps are in seconds; delta is zero after mounting or resuming."
+     "js/ng.CanvasRenderer" "Application renderer contract for the optional ng-canvas directive."
+     "js/ng.CanvasSize" "CSS dimensions and the corresponding canvas backing-store dimensions."
+     "js/ng.CanvasSurface" "Native drawing resources owned by one linked ng-canvas element."
      "js/ng.ClassMap" "Boolean class map consumed by `ng-class`. Each key is a CSS class name. Truthy values add the class; `false`, `null`, and `undefined` remove it."
      "js/ng.ClassValue" "Public shape accepted by `ng-class` for class binding expressions."
      "js/ng.CompileService" "Entry point for the `$compile` service."
@@ -341,7 +349,7 @@
      "js/ng.ConnectionConfig" "Public AngularTS ConnectionConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ConnectionEvent" "Public AngularTS ConnectionEvent contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Controller" "AngularTS component lifecycle interface. Directive controllers have a well-defined lifecycle. Each controller can implement \"lifecycle hooks\". These are methods that will be called by Angular at certain points in the life cycle of the directive. https://docs.angularjs.org/api/ng/service/$compile#life-cycle-hooks https://docs.angularjs.org/guide/component"
-     "js/ng.ControllerConstructor" "A controller constructor function used in AngularTS."
+     "js/ng.ControllerConstructor" "Public AngularTS ControllerConstructor contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ControllerService" "Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CookieOptions" "Public AngularTS CookieOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.CookieService" "High-level API for reading, writing, serializing, and removing browser cookies through the injectable `$cookie` service."
@@ -375,13 +383,13 @@
      "js/ng.HtmlCanvasRuntimeSupport" "Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HtmlCanvasService" "Public AngularTS HtmlCanvasService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HtmlPolicy" "Sanitizes HTML or throws to reject it before it reaches an HTML binding."
-     "js/ng.HttpDefaults" "Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage"
+     "js/ng.HttpDefaults" "Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Only the settings declared here are read from service-level defaults. Set `timeout`, `signal`, and `responseType` on individual requests instead."
      "js/ng.HttpMethod" "Public AngularTS HttpMethod contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.HttpParamSerializerService" "Function that serializes query params into a URL-encoded string."
-     "js/ng.HttpRequestConfig" "Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage"
-     "js/ng.HttpRequestOptions" "Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage"
+     "js/ng.HttpRequestConfig" "Full request configuration accepted by `$http(...)`."
+     "js/ng.HttpRequestOptions" "Request options shared by the `$http` shorthand methods."
      "js/ng.HttpResponse" "Public AngularTS HttpResponse contract exposed through the global ng namespace for Closure-annotated applications."
-     "js/ng.HttpResponseStatus" "Final transport status reported by transport completion handlers."
+     "js/ng.HttpResponseStatus" "Fetch transport outcome exposed on responses and errors. `complete` includes non-2xx HTTP responses; `error` indicates a transport or security-policy failure."
      "js/ng.HttpService" "Runtime `$http` service contract for full request configs, HTTP verb shortcuts, defaults, and pending request tracking."
      "js/ng.Injectable" "AngularTS dependency-injectable function or dependency-annotated factory array."
      "js/ng.InjectionTokenMap" "Public injectable contracts keyed by their canonical runtime token. Every single-dollar token exposed by [[PublicInjectionTokens]] must map to a named, documented contract here. Double-dollar framework internals are intentionally excluded."
@@ -549,7 +557,7 @@
      "js/ng.StreamService" "Public AngularTS StreamService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SwapMode" "Public AngularTS SwapMode contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TemplateCacheService" "Public contract implemented by the `$templateCache` injectable."
-     "js/ng.TemplateRequestService" "Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true)."
+     "js/ng.TemplateRequestService" "Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged."
      "js/ng.TranscludeFn" "A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive."
      "js/ng.Transition" "Public AngularTS Transition contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TransitionRouteContract" "Public AngularTS TransitionRouteContract contract exposed through the global ng namespace for Closure-annotated applications."
@@ -654,6 +662,8 @@
     "animation-handle-finish"
     "animation-handle-pause"
     "animation-handle-play"
+    "canvas-renderer-render"
+    "canvas-surface-invalidate"
     "cookie-service-get"
     "cookie-service-get-all"
     "cookie-service-put"
@@ -755,6 +765,7 @@
     "router-module-app-component"
     "router-module-component"
     "router-module-config"
+    "router-module-directive"
     "router-module-router"
     "router-module-web-component"
     "scope-broadcast"
@@ -901,6 +912,20 @@
     "cached-rest-backend-options-cache"
     "cached-rest-backend-options-network"
     "cached-rest-backend-options-strategy"
+    "canvas-frame-delta"
+    "canvas-frame-size"
+    "canvas-frame-time"
+    "canvas-renderer-animate"
+    "canvas-renderer-context"
+    "canvas-renderer-max-pixel-ratio"
+    "canvas-renderer-nonscope"
+    "canvas-size-height"
+    "canvas-size-pixel-height"
+    "canvas-size-pixel-ratio"
+    "canvas-size-pixel-width"
+    "canvas-size-width"
+    "canvas-surface-canvas"
+    "canvas-surface-context"
     "component-bindings"
     "component-controller-as"
     "component-definition-bindings"
@@ -965,30 +990,32 @@
     "html-canvas-service-enabled"
     "html-canvas-service-support"
     "html-canvas-service-supported"
+    "http-defaults-credentials"
     "http-defaults-headers"
-    "http-defaults-with-credentials"
     "http-defaults-xsrf-cookie-name"
     "http-defaults-xsrf-header-name"
-    "http-request-config-event-handlers"
+    "http-request-config-credentials"
     "http-request-config-headers"
     "http-request-config-method"
     "http-request-config-params"
     "http-request-config-response-type"
-    "http-request-config-upload-event-handlers"
+    "http-request-config-signal"
+    "http-request-config-timeout"
     "http-request-config-url"
-    "http-request-config-with-credentials"
     "http-request-config-xsrf-cookie-name"
     "http-request-config-xsrf-header-name"
+    "http-request-options-credentials"
     "http-request-options-headers"
     "http-request-options-params"
     "http-request-options-response-type"
-    "http-request-options-with-credentials"
+    "http-request-options-signal"
+    "http-request-options-timeout"
     "http-request-options-xsrf-cookie-name"
     "http-request-options-xsrf-header-name"
     "http-response-config"
     "http-response-status"
     "http-response-status-text"
-    "http-response-xhr-status"
+    "http-response-transport-status"
     "http-service-defaults"
     "http-service-pending-requests"
     "injection-token-map-angular"
@@ -1301,7 +1328,7 @@
     "rest-response-stale"
     "rest-response-status"
     "rest-response-status-text"
-    "rest-response-xhr-status"
+    "rest-response-transport-status"
     "rest-revalidate-event-key"
     "rest-revalidate-event-request"
     "rest-revalidate-event-response"
@@ -1716,6 +1743,16 @@
   [^js/ng.AnimationHandle target]
   (.play target))
 
+(defn canvas-renderer-render
+  "Public CanvasRenderer.render member exposed by the AngularTS namespace contract.\n\nParams:\n- frame: {!ng.CanvasFrame} Value supplied for the frame parameter.\n\nReturns: {void}"
+  [^js/ng.CanvasRenderer target ^js/ng.CanvasFrame frame]
+  (.render target frame))
+
+(defn canvas-surface-invalidate
+  "Public CanvasSurface.invalidate member exposed by the AngularTS namespace contract.\n\nReturns: {void}"
+  [^js/ng.CanvasSurface target]
+  (.invalidate target))
+
 (defn cookie-service-get
   "Retrieves a raw cookie value.\n\nParams:\n- key: {string} Cookie name to read.\n\nReturns: {(null|string)}"
   ^string [^js/ng.CookieService target ^string key]
@@ -2115,7 +2152,7 @@
   (.appComponent target name options))
 
 (defn ng-module-component
-  "Public NgModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!Object} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
+  "Registers a component, inferring controller properties for binding checks and programmatic view context. Literal `&` bindings require callable properties; untyped controllers remain permissive.\n\nParams:\n- name: {string} Component name normalized from its HTML element name.\n- options: {!Object} Controller, bindings, and one rendering definition.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/Object options]
   (.component target name options))
 
@@ -2135,7 +2172,7 @@
   (.decorator target name decorFn))
 
 (defn ng-module-directive
-  "Public NgModule.directive member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- directiveFactory: {!ng.DirectiveFactory} Value supplied for the directiveFactory parameter.\n\nReturns: {!ng.NgModule}"
+  "Registers a directive factory, checking controller binding names and literal `&` callbacks against its controller type. With `bindToController: true`, the checks apply to `scope` bindings. Other scope bindings stay independent.\n\nParams:\n- name: {string} Directive name normalized from its HTML element or attribute.\n- directiveFactory: {!ng.DirectiveFactory} Plain or dependency-annotated directive factory.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.NgModule target ^string name ^js/ng.DirectiveFactory directiveFactory]
   (.directive target name directiveFactory))
 
@@ -2272,7 +2309,7 @@
   (.appComponent target name options))
 
 (defn router-module-component
-  "Public RouterModule.component member exposed by the AngularTS namespace contract.\n\nParams:\n- name: {string} Value supplied for the name parameter.\n- options: {!Object} Value supplied for the options parameter.\n\nReturns: {!ng.NgModule}"
+  "Registers a component, inferring controller properties for binding checks and programmatic view context. Literal `&` bindings require callable properties; untyped controllers remain permissive.\n\nParams:\n- name: {string} Component name normalized from its HTML element name.\n- options: {!Object} Controller, bindings, and one rendering definition.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/Object options]
   (.component target name options))
 
@@ -2280,6 +2317,11 @@
   "Declare built-in AngularTS service configuration during the config phase.\n\nParams:\n- config: {!Object} Built-in config map.\n\nReturns: {!ng.NgModule}"
   ^js/ng.NgModule [^js/ng.RouterModule target ^js/Object config]
   (.config target config))
+
+(defn router-module-directive
+  "Registers a directive factory, checking controller binding names and literal `&` callbacks against its controller type. With `bindToController: true`, the checks apply to `scope` bindings. Other scope bindings stay independent.\n\nParams:\n- name: {string} Directive name normalized from its HTML element or attribute.\n- directiveFactory: {!ng.DirectiveFactory} Plain or dependency-annotated directive factory.\n\nReturns: {!ng.NgModule}"
+  ^js/ng.NgModule [^js/ng.RouterModule target ^string name ^js/ng.DirectiveFactory directiveFactory]
+  (.directive target name directiveFactory))
 
 (defn router-module-router
   "Register a router tree while preserving this module's route map.\n\nParams:\n- declaration: {!Object} Value supplied for the declaration parameter.\n\nReturns: {!Object}"
@@ -3032,8 +3074,78 @@
   ^string [^js/ng.CachedRestBackendOptions target]
   (.-strategy target))
 
+(defn canvas-frame-delta
+  "Public CanvasFrame.delta member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasFrame target]
+  (.-delta target))
+
+(defn canvas-frame-size
+  "Public CanvasFrame.size member exposed by the AngularTS namespace contract.\n\nType: {!ng.CanvasSize}"
+  ^js/ng.CanvasSize [^js/ng.CanvasFrame target]
+  (.-size target))
+
+(defn canvas-frame-time
+  "Public CanvasFrame.time member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasFrame target]
+  (.-time target))
+
+(defn canvas-renderer-animate
+  "Continuous frames are opt-in. Otherwise render only after invalidation.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.CanvasRenderer target]
+  (.-animate target))
+
+(defn canvas-renderer-context
+  "Native context type. Defaults to 2d.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.CanvasRenderer target]
+  (.-context target))
+
+(defn canvas-renderer-max-pixel-ratio
+  "Optional backing-store pixel-ratio cap.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.CanvasRenderer target]
+  (.-maxPixelRatio target))
+
+(defn canvas-renderer-nonscope
+  "Keep native drawing resources outside scope proxies when held on this adapter.\n\nType: {(boolean|undefined)}"
+  ^boolean [^js/ng.CanvasRenderer target]
+  (.-$nonscope target))
+
+(defn canvas-size-height
+  "Public CanvasSize.height member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasSize target]
+  (.-height target))
+
+(defn canvas-size-pixel-height
+  "Public CanvasSize.pixelHeight member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasSize target]
+  (.-pixelHeight target))
+
+(defn canvas-size-pixel-ratio
+  "Public CanvasSize.pixelRatio member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasSize target]
+  (.-pixelRatio target))
+
+(defn canvas-size-pixel-width
+  "Public CanvasSize.pixelWidth member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasSize target]
+  (.-pixelWidth target))
+
+(defn canvas-size-width
+  "Public CanvasSize.width member exposed by the AngularTS namespace contract.\n\nType: {number}"
+  ^number [^js/ng.CanvasSize target]
+  (.-width target))
+
+(defn canvas-surface-canvas
+  "Public CanvasSurface.canvas member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.CanvasSurface target]
+  (.-canvas target))
+
+(defn canvas-surface-context
+  "Public CanvasSurface.context member exposed by the AngularTS namespace contract.\n\nType: {!Object}"
+  ^js/Object [^js/ng.CanvasSurface target]
+  (.-context target))
+
 (defn component-bindings
-  "Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.\n\nType: {(!Object<string, string>|undefined)}"
+  "Bind DOM attributes to controller properties. Known controller types restrict binding names to their string keys; untyped controllers allow arbitrary names. `NgModule.component()` also checks literal `&` bindings against callable properties. Existing binding modes, aliases, and optional markers are preserved.\n\nType: {(!Object<string, string>|undefined)}"
   ^js/Object [^js/ng.Component target]
   (.-bindings target))
 
@@ -3043,7 +3155,7 @@
   (.-controllerAs target))
 
 (defn component-definition-bindings
-  "Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.\n\nType: {(!Object<string, string>|undefined)}"
+  "Bind DOM attributes to controller properties. Known controller types restrict binding names to their string keys; untyped controllers allow arbitrary names. `NgModule.component()` also checks literal `&` bindings against callable properties. Existing binding modes, aliases, and optional markers are preserved.\n\nType: {(!Object<string, string>|undefined)}"
   ^js/Object [^js/ng.ComponentDefinition target]
   (.-bindings target))
 
@@ -3352,15 +3464,15 @@
   ^boolean [^js/ng.HtmlCanvasService target]
   (.-supported target))
 
+(defn http-defaults-credentials
+  "Fetch credential mode. Defaults to `\"same-origin\"`.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.HttpDefaults target]
+  (.-credentials target))
+
 (defn http-defaults-headers
-  "Default headers merged into each request.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}"
+  "Default headers grouped by method and merged into each request case-insensitively.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}"
   ^js/Object [^js/ng.HttpDefaults target]
   (.-headers target))
-
-(defn http-defaults-with-credentials
-  "Whether cross-site requests should include credentials by default.\n\nType: {(boolean|undefined)}"
-  ^boolean [^js/ng.HttpDefaults target]
-  (.-withCredentials target))
 
 (defn http-defaults-xsrf-cookie-name
   "Cookie name used when reading the XSRF token.\n\nType: {(string|undefined)}"
@@ -3372,13 +3484,13 @@
   ^string [^js/ng.HttpDefaults target]
   (.-xsrfHeaderName target))
 
-(defn http-request-config-event-handlers
-  "Event handlers notified by the underlying transport.\n\nType: {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}"
-  ^js/Object [^js/ng.HttpRequestConfig target]
-  (.-eventHandlers target))
+(defn http-request-config-credentials
+  "Fetch credential mode. Defaults to `\"same-origin\"`.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.HttpRequestConfig target]
+  (.-credentials target))
 
 (defn http-request-config-headers
-  "Default headers merged into each request.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}"
+  "Default headers grouped by method and merged into each request case-insensitively.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}"
   ^js/Object [^js/ng.HttpRequestConfig target]
   (.-headers target))
 
@@ -3393,24 +3505,24 @@
   (.-params target))
 
 (defn http-request-config-response-type
-  "Native fetch response body reader hint.\n\nType: {(string|undefined)}"
+  "Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default response transforms still apply; set `transformResponse: []` to preserve raw text. Stream responses skip implicit transforms.\n\nType: {(string|undefined)}"
   ^string [^js/ng.HttpRequestConfig target]
   (.-responseType target))
 
-(defn http-request-config-upload-event-handlers
-  "Upload event handlers. Not used by the fetch transport.\n\nType: {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}"
-  ^js/Object [^js/ng.HttpRequestConfig target]
-  (.-uploadEventHandlers target))
+(defn http-request-config-signal
+  "Native cancellation signal. Aborting it rejects with `transportStatus: \"abort\"`.\n\nType: {(!AbortSignal|undefined)}"
+  ^js/AbortSignal [^js/ng.HttpRequestConfig target]
+  (.-signal target))
+
+(defn http-request-config-timeout
+  "Timeout in milliseconds. Positive values abort with `transportStatus: \"timeout\"`; zero or negative values disable the timer. Covers response body reading except when `responseType: \"stream\"` hands the body to the caller.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.HttpRequestConfig target]
+  (.-timeout target))
 
 (defn http-request-config-url
   "Request URL. Query parameters from `params` are appended to this URL.\n\nType: {string}"
   ^string [^js/ng.HttpRequestConfig target]
   (.-url target))
-
-(defn http-request-config-with-credentials
-  "Whether cross-site requests should include credentials by default.\n\nType: {(boolean|undefined)}"
-  ^boolean [^js/ng.HttpRequestConfig target]
-  (.-withCredentials target))
 
 (defn http-request-config-xsrf-cookie-name
   "Cookie name used when reading the XSRF token.\n\nType: {(string|undefined)}"
@@ -3422,8 +3534,13 @@
   ^string [^js/ng.HttpRequestConfig target]
   (.-xsrfHeaderName target))
 
+(defn http-request-options-credentials
+  "Fetch credential mode. Defaults to `\"same-origin\"`.\n\nType: {(string|undefined)}"
+  ^string [^js/ng.HttpRequestOptions target]
+  (.-credentials target))
+
 (defn http-request-options-headers
-  "Default headers merged into each request.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}"
+  "Default headers grouped by method and merged into each request case-insensitively.\n\nType: {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}"
   ^js/Object [^js/ng.HttpRequestOptions target]
   (.-headers target))
 
@@ -3433,14 +3550,19 @@
   (.-params target))
 
 (defn http-request-options-response-type
-  "Native fetch response body reader hint.\n\nType: {(string|undefined)}"
+  "Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default response transforms still apply; set `transformResponse: []` to preserve raw text. Stream responses skip implicit transforms.\n\nType: {(string|undefined)}"
   ^string [^js/ng.HttpRequestOptions target]
   (.-responseType target))
 
-(defn http-request-options-with-credentials
-  "Whether cross-site requests should include credentials by default.\n\nType: {(boolean|undefined)}"
-  ^boolean [^js/ng.HttpRequestOptions target]
-  (.-withCredentials target))
+(defn http-request-options-signal
+  "Native cancellation signal. Aborting it rejects with `transportStatus: \"abort\"`.\n\nType: {(!AbortSignal|undefined)}"
+  ^js/AbortSignal [^js/ng.HttpRequestOptions target]
+  (.-signal target))
+
+(defn http-request-options-timeout
+  "Timeout in milliseconds. Positive values abort with `transportStatus: \"timeout\"`; zero or negative values disable the timer. Covers response body reading except when `responseType: \"stream\"` hands the body to the caller.\n\nType: {(number|undefined)}"
+  ^number [^js/ng.HttpRequestOptions target]
+  (.-timeout target))
 
 (defn http-request-options-xsrf-cookie-name
   "Cookie name used when reading the XSRF token.\n\nType: {(string|undefined)}"
@@ -3458,7 +3580,7 @@
   (.-config target))
 
 (defn http-response-status
-  "Numeric HTTP status code. Non-2xx statuses reject the promise.\n\nType: {number}"
+  "Numeric HTTP status code, or a non-positive value when no HTTP response exists.\n\nType: {number}"
   ^number [^js/ng.HttpResponse target]
   (.-status target))
 
@@ -3467,10 +3589,10 @@
   ^string [^js/ng.HttpResponse target]
   (.-statusText target))
 
-(defn http-response-xhr-status
+(defn http-response-transport-status
   "Transport completion status. Useful for distinguishing timeout, abort, and network errors.\n\nType: {string}"
   ^string [^js/ng.HttpResponse target]
-  (.-xhrStatus target))
+  (.-transportStatus target))
 
 (defn http-service-defaults
   "Live runtime defaults initialized from app-level `$http` configuration.\n\nType: {!ng.HttpDefaults}"
@@ -5023,7 +5145,7 @@
   (.-stale target))
 
 (defn rest-response-status
-  "Numeric HTTP status code. Non-2xx statuses reject the promise.\n\nType: {(number|undefined)}"
+  "Numeric HTTP status code, or a non-positive value when no HTTP response exists.\n\nType: {(number|undefined)}"
   ^number [^js/ng.RestResponse target]
   (.-status target))
 
@@ -5032,10 +5154,10 @@
   ^string [^js/ng.RestResponse target]
   (.-statusText target))
 
-(defn rest-response-xhr-status
+(defn rest-response-transport-status
   "Transport completion status. Useful for distinguishing timeout, abort, and network errors.\n\nType: {(string|undefined)}"
   ^string [^js/ng.RestResponse target]
-  (.-xhrStatus target))
+  (.-transportStatus target))
 
 (defn rest-revalidate-event-key
   "Cache key that was refreshed.\n\nType: {string}"

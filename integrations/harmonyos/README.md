@@ -79,6 +79,13 @@ make -C integrations/harmonyos/samples/pulse compile
 Pass a reachable `pulseUrl` Want parameter on physical or cloud devices. The
 default `http://127.0.0.1:4175/` requires device-to-host port forwarding.
 
+Pulse extends `AngularNativeNavigationAbility`, so HarmonyOS process recovery
+recreates its AngularTS destination stack and restores native `scroll`, `list`,
+`grid`, and `pull-to-refresh` positions. Applications with more than one
+`AngularNativeNavigation` must assign each component a stable `recoveryKey`.
+Recovery omits arbitrary route state, form data, and credentials; pages reload
+private data from the server.
+
 `make -C integrations/harmonyos release-check` compiles every HAR and HAP and
 installs the packed HARs into clean consumers. It is the build gate, not
 permission to publish.
@@ -101,17 +108,48 @@ installs the built HAP, runs the native suites, and writes
 schema version 2 and identify the exact `GITHUB_SHA` and workflow
 `device_name`. It must report:
 
-- a physical or cloud phone, tablet, foldable, or 2-in-1 on API 20 or newer;
+- a physical or cloud phone, tablet, foldable, or 2-in-1 on API 26 or newer;
 - no failed or skipped tests;
 - the exact passed native-element and capability names from the shared
   catalogs, with no missing, extra, duplicate, or failed contracts;
 - zero accessibility violations and performance failures;
+- at least five performance iterations within the cold-start, first-reveal,
+  bridge, navigation, scrolling, and memory budgets in
+  `config/performance-budgets.json`;
+- zero live destinations, watchers, overlays, media players, maps, file handles,
+  and native nodes after each device suite;
 - non-empty JUnit, accessibility, and performance reports;
 - non-empty phone and tablet screenshots.
 
 Paths in `results.json` are relative to the device-results directory. The
 validator rejects absolute paths and parent traversal. See
 `scripts/validate-device-results.test.mjs` for a complete executable fixture.
+
+### Run the tracked device tests
+
+The repository ships a Hypium test HAP that starts the proof application,
+waits for its native ArkUI controls, enters a name, activates the native
+button, verifies the bridge-driven result, and confirms that native state
+survives an ability background and foreground cycle. This does not simulate
+process death; recovery evidence must still come from the signed device or
+cloud run. Build it with the same API 26 toolchain used for release:
+
+```sh
+make -C integrations/harmonyos device-test-build
+```
+
+Configure HarmonyOS signing so the main and `ohosTest` HAPs are signed, connect
+one device through `hdc`, then run:
+
+```sh
+make -C integrations/harmonyos device-test-run
+```
+
+Set `HARMONY_MAIN_HAP` and `HARMONY_TEST_HAP` when the signed packages are not
+under the normal `entry/build` output directory. The runner rejects zero or
+multiple devices, unsigned packages, missing Hypium summaries, ignored tests,
+and any failed test. It writes the raw log and parsed result to
+`build/device-results/` for the release evidence adapter.
 
 The clean-consumer check installs all eight built HAR files into a temporary
 application and compiles it without resolving source packages from this

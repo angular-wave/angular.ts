@@ -269,9 +269,9 @@ export type ProviderDefinition =
 /**
  * A controller constructor function used in AngularTS.
  */
-export type ControllerConstructor =
-  | (new (...args: Dynamic[]) => Controller)
-  | ((...args: Dynamic[]) => undefined | Controller);
+export type ControllerConstructor<TController extends Controller = Controller> =
+  | (new (...args: Dynamic[]) => TController)
+  | ((...args: Dynamic[]) => undefined | TController);
 
 /**
  * Describes the changes in component bindings during `onChanges`.
@@ -453,15 +453,38 @@ export type ProgrammaticView<
   ): ProgrammaticViewChild;
 }["bivarianceHack"];
 
-/**
- * Defines a component's configuration object (a simplified directive definition object).
- */
+type ControllerBindingWhitespace = " " | "\t" | "\n" | "\r" | "\f" | "\v";
+
+type ControllerBindingDeclaration<TMode extends string> =
+  | `${TMode}${string}`
+  | `${ControllerBindingWhitespace}${string}${TMode}${string}`;
+
+type ControllerBindings<TController> = Controller extends TController
+  ? Record<string, string>
+  : {
+      [Name in Extract<keyof TController, string>]?:
+        | ControllerBindingDeclaration<"@" | "<" | "=">
+        | ([NonNullable<TController[Name]>] extends [never]
+            ? never
+            : NonNullable<TController[Name]> extends (
+                  ...args: never[]
+                ) => unknown
+              ? ControllerBindingDeclaration<"&">
+              : never);
+    };
+
+/** Defines a component's configuration object (a simplified directive definition object). */
 export interface Component<
   TController extends Controller = Controller,
   TScope extends ng.Scope = ng.Scope,
   TElement extends HTMLElement = HTMLElement,
 > {
-  controller?: string | Injectable<ControllerConstructor> | undefined;
+  /** Controller constructor or factory. Its instance type supplies binding names and view context. */
+  controller?:
+    | string
+    | Injectable<ControllerConstructor<TController>>
+    | [...string[], ControllerConstructor<TController>]
+    | undefined;
   /**
    * An identifier name for a reference to the controller. If present, the controller will be published to its scope under
    * the specified name. If not present, this will default to '$ctrl'.
@@ -489,10 +512,12 @@ export interface Component<
    */
   view?: ProgrammaticView<TController, undefined, TScope, TElement> | undefined;
   /**
-   * Define DOM attribute binding to component properties. Component properties are always bound to the component
-   * controller and not to the scope.
+   * Bind DOM attributes to controller properties. Known controller types restrict
+   * binding names to their string keys; untyped controllers allow arbitrary names.
+   * `NgModule.component()` also checks literal `&` bindings against callable
+   * properties. Existing binding modes, aliases, and optional markers are preserved.
    */
-  bindings?: Record<string, string> | undefined;
+  bindings?: ControllerBindings<NoInfer<TController>> | undefined;
   /**
    * Replaces the generated component host element with the component template.
    */
@@ -623,11 +648,18 @@ export interface Directive<
    */
   view?: ProgrammaticView<TCtrl, TRequired, TScope, TElement>;
   /** Controller constructor or injectable string name */
-  controller?: string | Injectable<ControllerConstructor>;
+  controller?:
+    | string
+    | Injectable<ControllerConstructor<TCtrl & Controller>>
+    | [...string[], ControllerConstructor<TCtrl & Controller>];
   /** Alias name for the controller in templates */
   controllerAs?: string;
-  /** Whether to bind scope to controller */
-  bindToController?: boolean | Record<string, string>;
+  /**
+   * Bind attributes to controller properties. Known controller types restrict
+   * binding names and require callable properties for `&` callbacks.
+   * `true` uses the bindings declared in `scope`; `false` leaves them on the scope.
+   */
+  bindToController?: boolean | ControllerBindings<NoInfer<TCtrl>>;
   /** Link function(s) executed during linking */
   link?: DirectiveLinkFn<TCtrl> | DirectivePrePost;
   /** Priority of the directive */
@@ -657,13 +689,24 @@ export interface Directive<
   }["bivarianceHack"];
 }
 
-export type DirectiveFactoryFn = (
+/**
+ * Injectable factory returning a directive definition or a link function.
+ * Structural results let registries accept definitions with known controller types.
+ */
+export type DirectiveFactoryFn<TController = unknown> = (
   ...args: never[]
-) => Directive | DirectiveLinkFn<unknown>;
+) => Omit<Directive<TController>, never> | DirectiveLinkFn<TController>;
 
-export type AnnotatedDirectiveFactory = (string | DirectiveFactoryFn)[];
+/** Dependency tokens followed by a directive factory. */
+export type AnnotatedDirectiveFactory<TController = unknown> = (
+  | string
+  | DirectiveFactoryFn<TController>
+)[];
 
-export type DirectiveFactory = DirectiveFactoryFn | AnnotatedDirectiveFactory;
+/** Plain or dependency-annotated factory, optionally typed by its controller. */
+export type DirectiveFactory<TController = unknown> =
+  | DirectiveFactoryFn<TController>
+  | AnnotatedDirectiveFactory<TController>;
 
 /**
  * Represents advanced transclusion functions used in directives.

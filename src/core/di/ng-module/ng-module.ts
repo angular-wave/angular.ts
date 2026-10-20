@@ -50,6 +50,7 @@ import { FilterRegistry } from "../../filter/filter.ts";
 import { validate, validateRequired } from "../../../shared/validate.ts";
 import type {
   ComponentDefinition,
+  ControllerConstructor,
   Constructor,
   Injectable,
   ProviderDefinition,
@@ -153,6 +154,168 @@ export type ModuleConfigFn = Injectable<(...args: never[]) => unknown>;
 export type NamedInjectable = Injectable<(...args: never[]) => unknown>;
 
 export type NamedConstructorInjectable = Injectable<Constructor>;
+
+type TrimBindingStart<T extends string> =
+  T extends `${" " | "\t" | "\n" | "\r" | "\f" | "\v"}${infer Rest}`
+    ? TrimBindingStart<Rest>
+    : T;
+
+type CheckedControllerBindings<
+  TController,
+  TBindings extends Record<string, string>,
+> = ng.Controller extends TController
+  ? TBindings
+  : {
+      [Name in keyof TBindings]: Name extends keyof TController
+        ? string extends TBindings[Name]
+          ? TBindings[Name]
+          : Extract<
+                TrimBindingStart<TBindings[Name]>,
+                `&${string}`
+              > extends never
+            ? TBindings[Name]
+            : [NonNullable<TController[Name]>] extends [never]
+              ? never
+              : NonNullable<TController[Name]> extends (
+                    ...args: never[]
+                  ) => unknown
+                ? TBindings[Name]
+                : never
+        : never;
+    };
+
+type ControllerRecipe =
+  | string
+  | Injectable<ControllerConstructor>
+  | [...string[], ControllerConstructor];
+
+type ControllerInstanceFromRecipe<TRecipe> = TRecipe extends readonly [
+  ...unknown[],
+  infer TController,
+]
+  ? ControllerInstanceFromRecipe<TController>
+  : TRecipe extends new (...args: never[]) => infer TInstance
+    ? TInstance extends ng.Controller
+      ? TInstance
+      : ng.Controller
+    : TRecipe extends (...args: never[]) => infer TInstance
+      ? Exclude<TInstance, undefined> extends ng.Controller
+        ? Exclude<TInstance, undefined>
+        : ng.Controller
+      : ng.Controller;
+
+type ComponentRenderingOptions<TDefinition> = TDefinition extends unknown
+  ? Omit<TDefinition, "bindings" | "controller">
+  : never;
+
+type DirectiveRegistration<TController> = Omit<
+  ng.Directive<TController>,
+  "bindToController" | "scope"
+> &
+  (ng.Controller extends TController
+    ? Pick<ng.Directive<TController>, "bindToController" | "scope">
+    :
+        | {
+            bindToController: true;
+            scope?:
+              | boolean
+              | Exclude<ng.Directive<TController>["bindToController"], boolean>;
+          }
+        | {
+            bindToController?: Exclude<
+              ng.Directive<TController>["bindToController"],
+              true
+            >;
+            scope?: ng.Directive["scope"];
+          });
+
+type DirectiveRegistrationFactory<TController, TDefinition = unknown> =
+  | ((
+      ...args: never[]
+    ) => TDefinition &
+      (DirectiveRegistration<TController> | ng.DirectiveLinkFn<TController>) &
+      CheckedDirectiveDefinition<NoInfer<TDefinition>>)
+  | (
+      | string
+      | ((
+          ...args: never[]
+        ) => TDefinition &
+          (
+            | DirectiveRegistration<TController>
+            | ng.DirectiveLinkFn<TController>
+          ) &
+          CheckedDirectiveDefinition<NoInfer<TDefinition>>)
+    )[];
+
+type CheckedDirectiveDefinition<TDefinition> = TDefinition extends {
+  controller: infer TRecipe;
+}
+  ? TDefinition & {
+      bindToController?: TDefinition extends {
+        bindToController: infer TBindings;
+      }
+        ? TBindings extends Record<string, string>
+          ? CheckedControllerBindings<
+              ControllerInstanceFromRecipe<TRecipe>,
+              TBindings
+            >
+          : TBindings
+        : unknown;
+      scope?: TDefinition extends {
+        bindToController: true;
+        scope: infer TScope;
+      }
+        ? TScope extends Record<string, string>
+          ? CheckedControllerBindings<
+              ControllerInstanceFromRecipe<TRecipe>,
+              TScope
+            >
+          : TScope
+        : unknown;
+    }
+  : TDefinition;
+
+type InferredDirectiveRegistration<
+  TRecipe extends ControllerRecipe,
+  TBindings extends boolean | Record<string, string>,
+  TScope extends boolean | Record<string, string>,
+> = Omit<
+  ng.Directive<ControllerInstanceFromRecipe<TRecipe>>,
+  "controller" | "bindToController" | "scope"
+> & {
+  controller: TRecipe;
+  bindToController?: TBindings &
+    (TBindings extends Record<string, string>
+      ? CheckedControllerBindings<
+          ControllerInstanceFromRecipe<TRecipe>,
+          NoInfer<TBindings>
+        >
+      : unknown);
+  scope?: TScope &
+    (TBindings extends true
+      ? TScope extends Record<string, string>
+        ? CheckedControllerBindings<
+            ControllerInstanceFromRecipe<TRecipe>,
+            NoInfer<TScope>
+          >
+        : unknown
+      : unknown);
+};
+
+type InferredDirectiveFactory<
+  TRecipe extends ControllerRecipe,
+  TBindings extends boolean | Record<string, string>,
+  TScope extends boolean | Record<string, string>,
+> =
+  | ((
+      ...args: never[]
+    ) => InferredDirectiveRegistration<TRecipe, TBindings, TScope>)
+  | (
+      | string
+      | ((
+          ...args: never[]
+        ) => InferredDirectiveRegistration<TRecipe, TBindings, TScope>)
+    )[];
 
 export type NamedServiceInjectable =
   | NamedConstructorInjectable
@@ -1110,21 +1273,42 @@ export class NgModule {
   }
 
   /**
-   * @param {string} name
-   * @param {ng.ComponentDefinition} options
-   * @returns {NgModule}
+   * Registers a component, inferring controller properties for binding checks
+   * and programmatic view context. Literal `&` bindings require callable
+   * properties; untyped controllers remain permissive.
+   *
+   * @param name - Component name normalized from its HTML element name.
+   * @param options - Controller, bindings, and one rendering definition.
+   * @returns This module for chained registrations.
    */
   component<TController extends ng.Controller = ng.Controller>(
     name: string,
     options: ComponentDefinition<TController>,
-  ): this {
+  ): this;
+  component<
+    const TRecipe extends ControllerRecipe,
+    const TBindings extends Record<string, string>,
+  >(
+    name: string,
+    options: ComponentRenderingOptions<
+      ComponentDefinition<ControllerInstanceFromRecipe<TRecipe>>
+    > & {
+      controller: TRecipe;
+      bindings?: TBindings &
+        CheckedControllerBindings<
+          ControllerInstanceFromRecipe<TRecipe>,
+          TBindings
+        >;
+    },
+  ): this;
+  component(name: string, options: ng.Component): this {
     validate(isString, name, "name");
     validate(isDefined, options, "object");
 
     this._invokeQueue.push([
       this._compileRegistry,
       "component",
-      [name, options as ng.Component],
+      [name, options],
     ]);
 
     return this;
@@ -1184,10 +1368,26 @@ export class NgModule {
   }
 
   /**
-   * @param {string} name
-   * @param {ng.Injectable<(...args: unknown[]) => unknown>} directiveFactory
-   * @returns {NgModule}
+   * Registers a directive factory, checking controller binding names and literal
+   * `&` callbacks against its controller type. With `bindToController: true`,
+   * the checks apply to `scope` bindings. Other scope bindings stay independent.
+   *
+   * @param name - Directive name normalized from its HTML element or attribute.
+   * @param directiveFactory - Plain or dependency-annotated directive factory.
+   * @returns This module for chained registrations.
    */
+  directive<TController = unknown, const TDefinition = unknown>(
+    name: string,
+    directiveFactory: DirectiveRegistrationFactory<TController, TDefinition>,
+  ): this;
+  directive<
+    const TRecipe extends ControllerRecipe,
+    const TBindings extends boolean | Record<string, string>,
+    const TScope extends boolean | Record<string, string>,
+  >(
+    name: string,
+    directiveFactory: InferredDirectiveFactory<TRecipe, TBindings, TScope>,
+  ): this;
   directive(name: string, directiveFactory: ng.DirectiveFactory): this {
     validate(isString, name, "name");
     validateRequired(directiveFactory, "directiveFactory");

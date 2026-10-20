@@ -24,6 +24,8 @@ export interface SameLayerController {
     method: string,
     argumentsValue: Readonly<Record<string, unknown>>,
   ): unknown | Promise<unknown>;
+  saveState?(): Readonly<Record<string, unknown>> | undefined;
+  restoreState?(state: Readonly<Record<string, unknown>>): void;
   postTouchEvent(event: unknown): boolean;
   dispose(): void;
 }
@@ -41,6 +43,7 @@ interface ComponentEntry {
   readonly emit: NativeComponentEventEmitter;
   controller: SameLayerController | null;
   rect: NativeNodeRect | null;
+  restoredState: Readonly<Record<string, unknown>> | undefined;
 }
 
 export class SameLayerSurface implements HarmonyNativeSurface {
@@ -77,6 +80,7 @@ export class SameLayerSurface implements HarmonyNativeSurface {
       emit,
       controller: null,
       rect: null,
+      restoredState: undefined,
     };
     this.components.set(snapshot.id, entry);
     if (snapshot.embedId !== null) {
@@ -106,6 +110,17 @@ export class SameLayerSurface implements HarmonyNativeSurface {
   ): unknown | Promise<unknown> {
     const controller = this._requireComponent(id).controller;
     return controller?.invoke(method, argumentsValue);
+  }
+
+  saveState(id: string): Readonly<Record<string, unknown>> | undefined {
+    const entry = this._requireComponent(id);
+    return entry.controller?.saveState?.() ?? entry.restoredState;
+  }
+
+  restoreState(id: string, state: Readonly<Record<string, unknown>>): void {
+    const entry = this._requireComponent(id);
+    entry.restoredState = state;
+    entry.controller?.restoreState?.(state);
   }
 
   detach(id: string): void {
@@ -152,6 +167,7 @@ export class SameLayerSurface implements HarmonyNativeSurface {
     const componentId = this.componentByEmbed.get(domId);
     if (componentId === undefined) return;
     const entry = this._requireComponent(componentId);
+    entry.restoredState = entry.controller?.saveState?.() ?? entry.restoredState;
     entry.controller?.dispose();
     entry.controller = null;
     this._markChanged();
@@ -191,6 +207,9 @@ export class SameLayerSurface implements HarmonyNativeSurface {
     entry.controller.layout(
       entry.rect ?? { x: 0, y: 0, width: embed.width, height: embed.height },
     );
+    if (entry.restoredState !== undefined) {
+      entry.controller.restoreState?.(entry.restoredState);
+    }
   }
 
   /** @internal */

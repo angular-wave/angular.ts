@@ -185,7 +185,7 @@ class RestService {
      *
      * @param id - Resource identifier appended to the base URL.
      * @param item - Request body to send.
-     * @returns The updated entity, raw value, or `null` when the request fails.
+     * @returns The updated entity, raw value, or `null` for an empty response.
      * @throws Error when `id` is null or undefined.
      */
     async update(id, item) {

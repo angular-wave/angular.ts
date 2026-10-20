@@ -1,9 +1,4 @@
-import {
-  AngularNativeDestination,
-  AngularNativeWeb,
-  HarmonySystemCapabilities,
-} from "@angular-wave/angular-native-harmony-core";
-import { common } from "@kit.AbilityKit";
+import { AngularNativeNavigation } from "@angular-wave/angular-native-harmony-navigation";
 
 const PROOF_LOCATION =
   "resource://rawfile/proof.html";
@@ -11,22 +6,11 @@ const PROOF_LOCATION =
 @Entry
 @Component
 struct Index {
-  private readonly context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-  private readonly destination = new AngularNativeDestination(
-    PROOF_LOCATION,
-    new HarmonySystemCapabilities(this.context, PROOF_LOCATION),
-    { source: $rawfile("proof.html") },
-  );
-
-  aboutToDisappear(): void {
-    this.destination.close();
-  }
-
   build() {
     Stack() {
-      AngularNativeWeb({
-        destination: this.destination.web,
-        nativeSurface: this.destination.nativeSurface,
+      AngularNativeNavigation({
+        initialLocation: PROOF_LOCATION,
+        source: $rawfile("proof.html"),
       })
     }
     .width("100%")

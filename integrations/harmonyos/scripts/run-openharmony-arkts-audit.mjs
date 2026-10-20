@@ -147,6 +147,32 @@ async function stageProject(stagingRoot) {
 }
 `,
   );
+  await writeFile(
+    join(
+      stagingRoot,
+      "entry",
+      "src",
+      "ohosTest",
+      "ets",
+      "test",
+      "Hypium.d.ts",
+    ),
+    `declare module "@ohos/hypium" {
+  type TestBody = () => void | Promise<void>;
+  interface Expectation {
+    assertEqual(expected: ESObject): void;
+  }
+  interface HypiumRunner {
+    hypiumTest(delegator: object, argumentsValue: object, suite: () => void): void;
+  }
+  const Hypium: HypiumRunner;
+  function describe(name: string, body: TestBody): void;
+  function expect(value: ESObject): Expectation;
+  function it(name: string, filter: number, body: TestBody): void;
+  export { Hypium, describe, expect, it };
+}
+`,
+  );
   await stageTypeScriptInterop(stagingRoot);
 
   const namespaceRoot = join(stagingRoot, "oh_modules", "@angular-wave");

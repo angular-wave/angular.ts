@@ -5,8 +5,12 @@ export async function openHarmonyExternalLocation(
   context: common.UIAbilityContext,
   location: string,
 ): Promise<void> {
-  await context.startAbility({
-    action: "ohos.want.action.viewData",
-    uri: location,
-  });
+  try {
+    await context.startAbility({
+      action: "ohos.want.action.viewData",
+      uri: location,
+    });
+  } catch {
+    throw new Error("HarmonyOS could not open the external location");
+  }
 }

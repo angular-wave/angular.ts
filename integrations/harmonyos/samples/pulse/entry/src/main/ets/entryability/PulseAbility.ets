@@ -1,9 +1,12 @@
-import { AbilityConstant, UIAbility, Want } from "@kit.AbilityKit";
+import { AbilityConstant, Want } from "@kit.AbilityKit";
 import { window } from "@kit.ArkUI";
+import { loadAngularNativePage } from "@angular-wave/angular-native-harmony-core";
+import { AngularNativeNavigationAbility } from "@angular-wave/angular-native-harmony-navigation";
 import { pulseLocation } from "../PulseLocation.ts";
 
-export default class PulseAbility extends UIAbility {
-  onCreate(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
+export default class PulseAbility extends AngularNativeNavigationAbility {
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    super.onCreate(want, launchParam);
     AppStorage.setOrCreate(
       "pulseLocation",
       pulseLocation(want.parameters?.pulseUrl),
@@ -11,6 +14,6 @@ export default class PulseAbility extends UIAbility {
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    windowStage.loadContent("pages/Index");
+    loadAngularNativePage(windowStage, "pages/Index");
   }
 }

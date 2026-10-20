@@ -2,6 +2,7 @@
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { addElementDisposer, dealoc } from "../../shared/dom.ts";
+import * as viewFactories from "./programmatic-view.ts";
 import {
   attrs,
   each,
@@ -66,6 +67,18 @@ describe("programmatic view API", () => {
     expect(
       Reflect.get(tags("http://www.w3.org/2000/svg"), "then"),
     ).toBeUndefined();
+  });
+
+  it("creates legacy elements through tag without obsolete named exports", () => {
+    for (const name of ["applet", "blink", "font"]) {
+      expect(Object.hasOwn(viewFactories, name)).toBeFalse();
+
+      const element = tag(name, attrs({ "data-legacy": name }), "content");
+
+      expect(element.localName).toBe(name);
+      expect(element.getAttribute("data-legacy")).toBe(name);
+      expect(element.textContent).toBe("content");
+    }
   });
 
   it("supports cancellable element-owned cleanup", () => {

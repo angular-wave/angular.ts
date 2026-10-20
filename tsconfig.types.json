@@ -17,6 +17,7 @@
     "src/runtime/event-bus.ts",
     "src/runtime/animation.ts",
     "src/runtime/html-canvas.ts",
+    "src/runtime/canvas.ts",
     "src/runtime/index.ts",
     "src/runtime/orchestration.ts",
     "src/runtime/storage.ts",

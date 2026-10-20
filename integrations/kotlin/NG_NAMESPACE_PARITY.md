@@ -45,6 +45,10 @@ part of the Kotlin public facade.
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | generated |
 | `AriaConfig` | generated |
+| `CanvasFrame` | generated |
+| `CanvasRenderer` | generated |
+| `CanvasSize` | generated |
+| `CanvasSurface` | generated |
 | `ClassMap` | generated |
 | `ClassValue` | generated |
 | `Component` | generated |

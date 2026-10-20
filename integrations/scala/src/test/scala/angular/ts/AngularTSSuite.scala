@@ -402,7 +402,7 @@ class AngularTSSuite extends munit.FunSuite:
       headers = headers,
       params = params,
       responseType = "json",
-      withCredentials = true,
+      credentials = HttpCredentials.Include,
     ).toJS.asInstanceOf[js.Dynamic]
 
     assertEquals(config.selectDynamic("method").asInstanceOf[String], "GET")
@@ -413,7 +413,7 @@ class AngularTSSuite extends munit.FunSuite:
     )
     assertEquals(config.selectDynamic("params").selectDynamic("page").asInstanceOf[Int], 2)
     assertEquals(config.selectDynamic("responseType").asInstanceOf[String], "json")
-    assertEquals(config.selectDynamic("withCredentials").asInstanceOf[Boolean], true)
+    assertEquals(config.selectDynamic("credentials").asInstanceOf[String], "include")
 
   test("http shortcut config builder emits request option object"):
     val config = HttpRequestOptions(
@@ -426,6 +426,27 @@ class AngularTSSuite extends munit.FunSuite:
       "yes",
     )
     assertEquals(config.selectDynamic("timeout").asInstanceOf[Double], 2500.0)
+
+  test("http fetch options preserve native signals and credential strings"):
+    val signal = js.Dynamic.literal(aborted = false).asInstanceOf[dom.AbortSignal]
+    for mode <- HttpCredentials.values do
+      val options = HttpRequestOptions(
+        signal = signal,
+        timeout = 1200.0,
+        credentials = mode,
+      ).toJS.asInstanceOf[js.Dynamic]
+      assert(options.selectDynamic("signal") eq signal)
+      assertEquals(options.selectDynamic("timeout").asInstanceOf[Double], 1200.0)
+      assertEquals(options.selectDynamic("credentials").asInstanceOf[String], mode.value)
+      assert(js.isUndefined(options.selectDynamic("withCredentials")))
+      assert(js.isUndefined(options.selectDynamic("eventHandlers")))
+      assert(js.isUndefined(options.selectDynamic("uploadEventHandlers")))
+
+    val defaults = js.Dynamic.literal().asInstanceOf[HttpDefaults]
+    defaults.credentials = HttpCredentials.Omit.value
+    assertEquals(defaults.asInstanceOf[js.Dynamic].selectDynamic("credentials").asInstanceOf[String], "omit")
+    val response = js.Dynamic.literal(transportStatus = "abort").asInstanceOf[HttpResponse[String]]
+    assertEquals(response.transportStatus, "abort")
 
   test("filter entry item and currency options preserve runtime shapes"):
     val entry = EntryFilterItem("name", "Ada").asInstanceOf[js.Dynamic]

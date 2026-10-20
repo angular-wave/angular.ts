@@ -851,6 +851,14 @@
                     ></a>
                   </div>
                   <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Registers a component, inferring controller properties
+                        for binding checks and programmatic view context.
+                        Literal <code>&amp;</code> bindings require callable
+                        properties; untyped controllers remain permissive.
+                      </p>
+                    </div>
                     <section class="tsd-panel">
                       <h4>Type Parameters</h4>
                       <ul class="tsd-type-parameter-list">
@@ -883,6 +891,12 @@
                             ><span class="tsd-kind-parameter">name</span>:
                             <span class="tsd-signature-type">string</span></span
                           >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Component name normalized from its HTML element
+                              name.
+                            </p>
+                          </div>
                         </li>
                         <li>
                           <span
@@ -900,12 +914,807 @@
                               >&gt;</span
                             ></span
                           >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Controller, bindings, and one rendering
+                              definition.
+                            </p>
+                          </div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">this</span>
                     </h4>
+                    <p>This module for chained registrations.</p>
+                  </div>
+                </li>
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="component-2">
+                    <span class="tsd-kind-call-signature">component</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />    <span class="tsd-signature-keyword">const</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">ControllerRecipe</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-signature-keyword"
+                      >const</span
+                    >
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttbindings"
+                      >TBindings</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >options</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    (<br />        <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />            <span class="tsd-signature-type"
+                      >Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />                <a
+                      href="../interfaces/Component.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >Component</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type"
+                      >ControllerInstanceFromRecipe</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      href="Scope.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">HTMLElement</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                <span class="tsd-signature-type"
+                      >&quot;replace&quot;</span
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">&quot;view&quot;</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">&quot;template&quot;</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type"
+                      >&quot;templateUrl&quot;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >&gt;</span
+                    >
+                    <span class="tsd-signature-symbol">&amp;</span>
+                    <span class="tsd-signature-symbol">{</span
+                    ><br />                <span class="tsd-kind-property"
+                      >replace</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >template</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >templateUrl</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >view</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-symbol">(</span
+                    ><br />                    <span class="tsd-kind-parameter"
+                      >context</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      href="../interfaces/ProgrammaticViewContext.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >ProgrammaticViewContext</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />                        <span
+                      class="tsd-signature-type"
+                      >ControllerInstanceFromRecipe</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                        <span
+                      class="tsd-signature-type"
+                      >undefined</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                        <a
+                      href="Scope.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                        <span
+                      class="tsd-signature-type"
+                      >HTMLElement</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                    <span
+                      class="tsd-signature-symbol"
+                      >&gt;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                <span class="tsd-signature-symbol"
+                      >)</span
+                    >
+                    <span class="tsd-signature-symbol">=&gt;</span>
+                    <a
+                      href="../types/ProgrammaticViewChild.html"
+                      class="tsd-signature-type tsd-kind-type-alias"
+                      >ProgrammaticViewChild</a
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >}</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <span class="tsd-signature-type"
+                      >&quot;controller&quot;</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >|</span
+                    >
+                    <span class="tsd-signature-type">&quot;bindings&quot;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />        <span class="tsd-signature-symbol">&gt;</span
+                    ><br />        <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />            <span class="tsd-signature-type"
+                      >Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />                <a
+                      href="../interfaces/Component.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >Component</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type"
+                      >ControllerInstanceFromRecipe</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      href="Scope.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">HTMLElement</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                <span class="tsd-signature-type"
+                      >&quot;replace&quot;</span
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">&quot;view&quot;</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">&quot;template&quot;</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type"
+                      >&quot;templateUrl&quot;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >&gt;</span
+                    >
+                    <span class="tsd-signature-symbol">&amp;</span>
+                    <span class="tsd-signature-symbol">{</span
+                    ><br />                <span class="tsd-kind-property"
+                      >replace</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">boolean</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >template</span
+                    ><span class="tsd-signature-symbol">?:</span> string |
+                    Injectable&lt;(...args: never[]) =&gt; string&gt; |
+                    undefined<span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >templateUrl</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >view</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >}</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <span class="tsd-signature-type"
+                      >&quot;controller&quot;</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >|</span
+                    >
+                    <span class="tsd-signature-type">&quot;bindings&quot;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />        <span class="tsd-signature-symbol">&gt;</span
+                    ><br />        <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />            <span class="tsd-signature-type"
+                      >Omit</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />                <a
+                      href="../interfaces/Component.html"
+                      class="tsd-signature-type tsd-kind-interface"
+                      >Component</a
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type"
+                      >ControllerInstanceFromRecipe</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      href="Scope.html"
+                      class="tsd-signature-type tsd-kind-class"
+                      >Scope</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">HTMLElement</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />                <span class="tsd-signature-type"
+                      >&quot;replace&quot;</span
+                    >
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">&quot;view&quot;</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">&quot;template&quot;</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type"
+                      >&quot;templateUrl&quot;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >&gt;</span
+                    >
+                    <span class="tsd-signature-symbol">&amp;</span>
+                    <span class="tsd-signature-symbol">{</span
+                    ><br />                <span class="tsd-kind-property"
+                      >replace</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">boolean</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >template</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >templateUrl</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">NonNullable</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />                    (string | Injectable&lt;(...args:
+                    never[]) =&gt; string&gt; | undefined)<span
+                      class="tsd-signature-symbol"
+                      >,</span
+                    ><br />                <span class="tsd-signature-symbol"
+                      >&gt;</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />                <span class="tsd-kind-property"
+                      >view</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <span class="tsd-signature-type">undefined</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >}</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <span class="tsd-signature-type"
+                      >&quot;controller&quot;</span
+                    ><br />            <span class="tsd-signature-symbol"
+                      >|</span
+                    >
+                    <span class="tsd-signature-type">&quot;bindings&quot;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />        <span class="tsd-signature-symbol">&gt;</span
+                    ><br />    ) <span class="tsd-signature-symbol">&amp;</span>
+                    <span class="tsd-signature-symbol">{</span
+                    ><br />        <span class="tsd-kind-property"
+                      >bindings</span
+                    ><span class="tsd-signature-symbol">?:</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttbindings"
+                      >TBindings</a
+                    >
+                    <span class="tsd-signature-symbol">&amp;</span>
+                    <span class="tsd-signature-type"
+                      >CheckedControllerBindings</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />            <span class="tsd-signature-type"
+                      >ControllerInstanceFromRecipe</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />            <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttbindings"
+                      >TBindings</a
+                    ><span class="tsd-signature-symbol">,</span
+                    ><br />        <span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">;</span
+                    ><br />        <span class="tsd-kind-property"
+                      >controller</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#componenttrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">;</span><br />    <span
+                      class="tsd-signature-symbol"
+                      >}</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">this</span
+                    ><a
+                      href="#component-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Registers a component, inferring controller properties
+                        for binding checks and programmatic view context.
+                        Literal <code>&amp;</code> bindings require callable
+                        properties; untyped controllers remain permissive.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="componenttrecipe"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter">TRecipe</span>
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type"
+                              >ControllerRecipe</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="componenttbindings"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter"
+                              >TBindings</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Component name normalized from its HTML element
+                              name.
+                            </p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">options</span>:
+                            (<br />    <span class="tsd-signature-symbol"
+                              >|</span
+                            >
+                            <span class="tsd-signature-type">Omit</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />        <span class="tsd-signature-type"
+                              >Omit</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />            <a
+                              href="../interfaces/Component.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >Component</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type"
+                              >ControllerInstanceFromRecipe</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              href="Scope.html"
+                              class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">HTMLElement</span
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />            <span class="tsd-signature-type"
+                              >&quot;replace&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;view&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;template&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;templateUrl&quot;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            >
+                            <span class="tsd-signature-symbol">&amp;</span>
+                            <span class="tsd-signature-symbol">{</span
+                            ><br />            <span class="tsd-kind-property"
+                              >replace</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >template</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >templateUrl</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >view</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <span class="tsd-signature-symbol">(</span
+                            ><br />                <span
+                              class="tsd-kind-parameter"
+                              >context</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <a
+                              href="../interfaces/ProgrammaticViewContext.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >ProgrammaticViewContext</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />                    <span
+                              class="tsd-signature-type"
+                              >ControllerInstanceFromRecipe</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />                    <span
+                              class="tsd-signature-type"
+                              >undefined</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />                    <a
+                              href="Scope.html"
+                              class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />                    <span
+                              class="tsd-signature-type"
+                              >HTMLElement</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />                <span
+                              class="tsd-signature-symbol"
+                              >&gt;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />            <span
+                              class="tsd-signature-symbol"
+                              >)</span
+                            >
+                            <span class="tsd-signature-symbol">=&gt;</span>
+                            <a
+                              href="../types/ProgrammaticViewChild.html"
+                              class="tsd-signature-type tsd-kind-type-alias"
+                              >ProgrammaticViewChild</a
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >}</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <span class="tsd-signature-type"
+                              >&quot;controller&quot;</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >|</span
+                            >
+                            <span class="tsd-signature-type"
+                              >&quot;bindings&quot;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >|</span
+                            >
+                            <span class="tsd-signature-type">Omit</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />        <span class="tsd-signature-type"
+                              >Omit</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />            <a
+                              href="../interfaces/Component.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >Component</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type"
+                              >ControllerInstanceFromRecipe</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              href="Scope.html"
+                              class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">HTMLElement</span
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />            <span class="tsd-signature-type"
+                              >&quot;replace&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;view&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;template&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;templateUrl&quot;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            >
+                            <span class="tsd-signature-symbol">&amp;</span>
+                            <span class="tsd-signature-symbol">{</span
+                            ><br />            <span class="tsd-kind-property"
+                              >replace</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">boolean</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >template</span
+                            ><span class="tsd-signature-symbol">?:</span> string
+                            | Injectable&lt;(...args: never[]) =&gt; string&gt;
+                            | undefined<span class="tsd-signature-symbol"
+                              >;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >templateUrl</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >view</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >}</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <span class="tsd-signature-type"
+                              >&quot;controller&quot;</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >|</span
+                            >
+                            <span class="tsd-signature-type"
+                              >&quot;bindings&quot;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >|</span
+                            >
+                            <span class="tsd-signature-type">Omit</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />        <span class="tsd-signature-type"
+                              >Omit</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />            <a
+                              href="../interfaces/Component.html"
+                              class="tsd-signature-type tsd-kind-interface"
+                              >Component</a
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type"
+                              >ControllerInstanceFromRecipe</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              href="Scope.html"
+                              class="tsd-signature-type tsd-kind-class"
+                              >Scope</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">HTMLElement</span
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />            <span class="tsd-signature-type"
+                              >&quot;replace&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;view&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;template&quot;</span
+                            >
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type"
+                              >&quot;templateUrl&quot;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            >
+                            <span class="tsd-signature-symbol">&amp;</span>
+                            <span class="tsd-signature-symbol">{</span
+                            ><br />            <span class="tsd-kind-property"
+                              >replace</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">boolean</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >template</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >templateUrl</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <span class="tsd-signature-type">NonNullable</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />                (string |
+                            Injectable&lt;(...args: never[]) =&gt; string&gt; |
+                            undefined)<span class="tsd-signature-symbol">,</span
+                            ><br />            <span
+                              class="tsd-signature-symbol"
+                              >&gt;</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />            <span class="tsd-kind-property"
+                              >view</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <span class="tsd-signature-type">undefined</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >}</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <span class="tsd-signature-type"
+                              >&quot;controller&quot;</span
+                            ><br />        <span class="tsd-signature-symbol"
+                              >|</span
+                            >
+                            <span class="tsd-signature-type"
+                              >&quot;bindings&quot;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ><br />)
+                            <span class="tsd-signature-symbol">&amp;</span>
+                            <span class="tsd-signature-symbol">{</span
+                            ><br />    <span class="tsd-kind-property"
+                              >bindings</span
+                            ><span class="tsd-signature-symbol">?:</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttbindings"
+                              >TBindings</a
+                            >
+                            <span class="tsd-signature-symbol">&amp;</span>
+                            <span class="tsd-signature-type"
+                              >CheckedControllerBindings</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><br />        <span class="tsd-signature-type"
+                              >ControllerInstanceFromRecipe</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">&gt;</span
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />        <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttbindings"
+                              >TBindings</a
+                            ><span class="tsd-signature-symbol">,</span
+                            ><br />    <span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br />    <span class="tsd-kind-property"
+                              >controller</span
+                            ><span class="tsd-signature-symbol">:</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#componenttrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">;</span
+                            ><br /><span class="tsd-signature-symbol"
+                              >}</span
+                            ></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Controller, bindings, and one rendering
+                              definition.
+                            </p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">this</span>
+                    </h4>
+                    <p>This module for chained registrations.</p>
                   </div>
                 </li>
               </ul>
@@ -1057,24 +1866,32 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="controller-1">
                     <span class="tsd-kind-call-signature">controller</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">ctlFn</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >ctlFn</span
                     ><span class="tsd-signature-symbol">:</span>
                     <a
                       href="../types/Injectable.html"
                       class="tsd-signature-type tsd-kind-type-alias"
                       >Injectable</a
                     ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type"
+                      >ControllerConstructor</span
+                    ><span class="tsd-signature-symbol">&lt;</span
                     ><a
-                      href="../types/ControllerConstructor.html"
+                      href="../types/Controller.html"
                       class="tsd-signature-type tsd-kind-type-alias"
-                      >ControllerConstructor</a
+                      >Controller</a
                     ><span class="tsd-signature-symbol">&gt;</span
-                    ><span class="tsd-signature-symbol">)</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">this</span
                     ><a
@@ -1113,10 +1930,14 @@
                               class="tsd-signature-type tsd-kind-type-alias"
                               >Injectable</a
                             ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type"
+                              >ControllerConstructor</span
+                            ><span class="tsd-signature-symbol">&lt;</span
                             ><a
-                              href="../types/ControllerConstructor.html"
+                              href="../types/Controller.html"
                               class="tsd-signature-type tsd-kind-type-alias"
-                              >ControllerConstructor</a
+                              >Controller</a
+                            ><span class="tsd-signature-symbol">&gt;</span
                             ><span class="tsd-signature-symbol"
                               >&gt;</span
                             ></span
@@ -1218,18 +2039,49 @@
                 <li class="">
                   <div class="tsd-signature tsd-anchor-link" id="directive-1">
                     <span class="tsd-kind-call-signature">directive</span
-                    ><span class="tsd-signature-symbol">(</span
-                    ><span class="tsd-kind-parameter">name</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetcontroller"
+                      >TController</a
+                    >
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-keyword">const</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetdefinition"
+                      >TDefinition</a
+                    >
+                    <span class="tsd-signature-symbol">=</span>
+                    <span class="tsd-signature-type">unknown</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">string</span
-                    ><span class="tsd-signature-symbol">,</span>
-                    <span class="tsd-kind-parameter">directiveFactory</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >directiveFactory</span
                     ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type"
+                      >DirectiveRegistrationFactory</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetcontroller"
+                      >TController</a
+                    ><span class="tsd-signature-symbol">,</span>
                     <a
-                      href="../types/DirectiveFactory.html"
-                      class="tsd-signature-type tsd-kind-type-alias"
-                      >DirectiveFactory</a
-                    ><span class="tsd-signature-symbol">)</span
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetdefinition"
+                      >TDefinition</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
                     ><span class="tsd-signature-symbol">:</span>
                     <span class="tsd-signature-type">this</span
                     ><a
@@ -1241,6 +2093,44 @@
                     ></a>
                   </div>
                   <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Registers a directive factory, checking controller
+                        binding names and literal <code>&amp;</code> callbacks
+                        against its controller type. With
+                        <code>bindToController: true</code>, the checks apply to
+                        <code>scope</code> bindings. Other scope bindings stay
+                        independent.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="directivetcontroller"
+                            ><span class="tsd-kind-type-parameter"
+                              >TController</span
+                            >
+                            =
+                            <span class="tsd-signature-type"
+                              >unknown</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="directivetdefinition"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter"
+                              >TDefinition</span
+                            >
+                            =
+                            <span class="tsd-signature-type"
+                              >unknown</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
                       <ul class="tsd-parameter-list">
@@ -1249,24 +2139,254 @@
                             ><span class="tsd-kind-parameter">name</span>:
                             <span class="tsd-signature-type">string</span></span
                           >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Directive name normalized from its HTML element or
+                              attribute.
+                            </p>
+                          </div>
                         </li>
                         <li>
                           <span
                             ><span class="tsd-kind-parameter"
                               >directiveFactory</span
                             >:
+                            <span class="tsd-signature-type"
+                              >DirectiveRegistrationFactory</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#directivetcontroller"
+                              >TController</a
+                            ><span class="tsd-signature-symbol">,</span>
                             <a
-                              href="../types/DirectiveFactory.html"
-                              class="tsd-signature-type tsd-kind-type-alias"
-                              >DirectiveFactory</a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#directivetdefinition"
+                              >TDefinition</a
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
                             ></span
                           >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Plain or dependency-annotated directive factory.
+                            </p>
+                          </div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">this</span>
                     </h4>
+                    <p>This module for chained registrations.</p>
+                  </div>
+                </li>
+                <li class="">
+                  <div class="tsd-signature tsd-anchor-link" id="directive-2">
+                    <span class="tsd-kind-call-signature">directive</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><br />    <span class="tsd-signature-keyword">const</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetrecipe"
+                      >TRecipe</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">ControllerRecipe</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-signature-keyword"
+                      >const</span
+                    >
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetbindings"
+                      >TBindings</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">boolean</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-signature-keyword"
+                      >const</span
+                    >
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetscope"
+                      >TScope</a
+                    >
+                    <span class="tsd-signature-keyword">extends</span>
+                    <span class="tsd-signature-type">boolean</span>
+                    <span class="tsd-signature-symbol">|</span>
+                    <span class="tsd-signature-type">Record</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >&gt;</span
+                    ><span class="tsd-signature-symbol">(</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >name</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">string</span
+                    ><span class="tsd-signature-symbol">,</span><br />    <span
+                      class="tsd-kind-parameter"
+                      >directiveFactory</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type"
+                      >InferredDirectiveFactory</span
+                    ><span class="tsd-signature-symbol">&lt;</span
+                    ><a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetrecipe"
+                      >TRecipe</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetbindings"
+                      >TBindings</a
+                    ><span class="tsd-signature-symbol">,</span>
+                    <a
+                      class="tsd-signature-type tsd-kind-type-parameter"
+                      href="#directivetscope"
+                      >TScope</a
+                    ><span class="tsd-signature-symbol">&gt;</span
+                    ><span class="tsd-signature-symbol">,</span><br /><span
+                      class="tsd-signature-symbol"
+                      >)</span
+                    ><span class="tsd-signature-symbol">:</span>
+                    <span class="tsd-signature-type">this</span
+                    ><a
+                      href="#directive-2"
+                      aria-label="Permalink"
+                      class="tsd-anchor-icon"
+                      ><svg viewBox="0 0 24 24" aria-hidden="true">
+                        <use href="../assets/icons.svg#icon-anchor"></use></svg
+                    ></a>
+                  </div>
+                  <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Registers a directive factory, checking controller
+                        binding names and literal <code>&amp;</code> callbacks
+                        against its controller type. With
+                        <code>bindToController: true</code>, the checks apply to
+                        <code>scope</code> bindings. Other scope bindings stay
+                        independent.
+                      </p>
+                    </div>
+                    <section class="tsd-panel">
+                      <h4>Type Parameters</h4>
+                      <ul class="tsd-type-parameter-list">
+                        <li>
+                          <span id="directivetrecipe"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter">TRecipe</span>
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type"
+                              >ControllerRecipe</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="directivetbindings"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter"
+                              >TBindings</span
+                            >
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">boolean</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                        <li>
+                          <span id="directivetscope"
+                            ><span class="tsd-signature-keyword">const</span>
+                            <span class="tsd-kind-type-parameter">TScope</span>
+                            <span class="tsd-signature-keyword">extends</span>
+                            <span class="tsd-signature-type">boolean</span>
+                            <span class="tsd-signature-symbol">|</span>
+                            <span class="tsd-signature-type">Record</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol">,</span>
+                            <span class="tsd-signature-type">string</span
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                        </li>
+                      </ul>
+                    </section>
+                    <div class="tsd-parameters">
+                      <h4 class="tsd-parameters-title">Parameters</h4>
+                      <ul class="tsd-parameter-list">
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter">name</span>:
+                            <span class="tsd-signature-type">string</span></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Directive name normalized from its HTML element or
+                              attribute.
+                            </p>
+                          </div>
+                        </li>
+                        <li>
+                          <span
+                            ><span class="tsd-kind-parameter"
+                              >directiveFactory</span
+                            >:
+                            <span class="tsd-signature-type"
+                              >InferredDirectiveFactory</span
+                            ><span class="tsd-signature-symbol">&lt;</span
+                            ><a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#directivetrecipe"
+                              >TRecipe</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#directivetbindings"
+                              >TBindings</a
+                            ><span class="tsd-signature-symbol">,</span>
+                            <a
+                              class="tsd-signature-type tsd-kind-type-parameter"
+                              href="#directivetscope"
+                              >TScope</a
+                            ><span class="tsd-signature-symbol"
+                              >&gt;</span
+                            ></span
+                          >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              Plain or dependency-annotated directive factory.
+                            </p>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                    <h4 class="tsd-returns-title">
+                      Returns <span class="tsd-signature-type">this</span>
+                    </h4>
+                    <p>This module for chained registrations.</p>
                   </div>
                 </li>
               </ul>

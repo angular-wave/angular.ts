@@ -133,9 +133,9 @@ assert(
 );
 assert(
   ngModule?.includes(
-    "directive(String name,DirectiveFactoryFn directiveFactory)",
+    "directive(String name,DirectiveFactoryFn<?> directiveFactory)",
   ),
-  "Generated NgModule.directive does not accept DirectiveFactoryFn.",
+  "Generated NgModule.directive does not accept a parameterized DirectiveFactoryFn.",
 );
 assert(
   ngModule?.includes(

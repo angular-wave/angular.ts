@@ -11,6 +11,8 @@ test("projects stable component models onto the Harmony surface", async () => {
     update: (snapshot) => operations.push(["update", snapshot.id, snapshot.revision, snapshot.visible]),
     layout: (id, rect) => operations.push(["layout", id, rect]),
     invoke: (id, method) => operations.push(["invoke", id, method]),
+    saveState: (id) => ({ id }),
+    restoreState: (id, state) => operations.push(["restore", id, state]),
     detach: (id) => operations.push(["detach", id]),
   };
   const adapter = new HarmonyNativeNodeAdapter(surface);
@@ -19,6 +21,8 @@ test("projects stable component models onto the Harmony surface", async () => {
   adapter.update(node, { text: "Hello" });
   adapter.layout(node, { x: 1, y: 2, width: 3, height: 4 });
   adapter.setVisible(node, true);
+  assert.deepEqual(adapter.saveState(node), { id: "title" });
+  adapter.restoreState(node, { x: 1, y: 2 });
   await adapter.invoke(node, "focus", {} ).catch((error) => {
     assert.equal(error.code, "unknown_method");
   });
@@ -30,6 +34,7 @@ test("projects stable component models onto the Harmony surface", async () => {
     ["update", "title", 1, false],
     ["layout", "title", { x: 1, y: 2, width: 3, height: 4 }],
     ["update", "title", 2, true],
+    ["restore", "title", { x: 1, y: 2 }],
     ["detach", "title"],
     "end",
   ]);

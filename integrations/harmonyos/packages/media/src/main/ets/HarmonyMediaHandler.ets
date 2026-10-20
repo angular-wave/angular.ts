@@ -1,11 +1,12 @@
 import { HarmonyAVPlayer } from "./HarmonyAVPlayer.ets";
+import type { HarmonyMediaStatus } from "./HarmonyAVPlayer.ets";
 import { HarmonyMedia } from "./HarmonyMedia.ts";
 import type { MediaPlatform } from "./HarmonyMedia.ts";
 
 class LazyHarmonyAVPlayer implements MediaPlatform {
   private player: Promise<HarmonyAVPlayer> | undefined;
 
-  status(): ESObject {
+  status(): HarmonyMediaStatus | Promise<HarmonyMediaStatus> {
     return this.player === undefined
       ? {
         available: true,
@@ -18,27 +19,27 @@ class LazyHarmonyAVPlayer implements MediaPlatform {
       : this.withPlayer((value) => value.status());
   }
 
-  load(parameters: Readonly<Record<string, ESObject>>): Promise<ESObject> {
+  load(parameters: Readonly<Record<string, ESObject>>): Promise<HarmonyMediaStatus> {
     return this.withPlayer((value) => value.load(parameters));
   }
 
-  play(): Promise<ESObject> {
+  play(): Promise<HarmonyMediaStatus> {
     return this.withPlayer((value) => value.play());
   }
 
-  pause(): Promise<ESObject> {
+  pause(): Promise<HarmonyMediaStatus> {
     return this.withPlayer((value) => value.pause());
   }
 
-  stop(): Promise<ESObject> {
+  stop(): Promise<HarmonyMediaStatus> {
     return this.withPlayer((value) => value.stop());
   }
 
-  seek(position: number): Promise<ESObject> {
-    return this.withPlayer((value): ESObject => value.seek(position));
+  seek(position: number): Promise<HarmonyMediaStatus> {
+    return this.withPlayer((value): HarmonyMediaStatus => value.seek(position));
   }
 
-  async release(): Promise<ESObject> {
+  async release(): Promise<HarmonyMediaStatus> {
     if (this.player === undefined) {
       return {
         available: false,

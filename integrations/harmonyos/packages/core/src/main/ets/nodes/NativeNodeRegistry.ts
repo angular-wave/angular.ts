@@ -19,6 +19,12 @@ export interface NativeNodeEvent {
   readonly data: Readonly<Record<string, unknown>>;
 }
 
+export interface NativeNodeSavedState {
+  readonly id: string;
+  readonly name: string;
+  readonly state: Readonly<Record<string, unknown>>;
+}
+
 export type NativeNodeEventSink = (event: NativeNodeEvent) => void;
 
 export interface NativeNodeAdapter<Node> {
@@ -38,6 +44,8 @@ export interface NativeNodeAdapter<Node> {
     method: string,
     argumentsValue: Readonly<Record<string, unknown>>,
   ): unknown | Promise<unknown>;
+  saveState?(node: Node): Readonly<Record<string, unknown>> | undefined;
+  restoreState?(node: Node, state: Readonly<Record<string, unknown>>): void;
   dispose(node: Node): void;
 }
 
@@ -56,6 +64,7 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
   private readonly queue: NativeMutationQueue;
   private readonly emit: NativeNodeEventSink;
   private readonly mounted = new Map<string, MountedNode<Node>>();
+  private readonly restored = new Map<string, NativeNodeSavedState>();
   private closed = false;
 
   constructor(
@@ -99,8 +108,46 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
     try {
       for (const mounted of this.mounted.values()) this.adapter.dispose(mounted.node);
       this.mounted.clear();
+      this.restored.clear();
     } finally {
       this.adapter.endBatch();
+    }
+  }
+
+  saveState(): readonly NativeNodeSavedState[] {
+    const states = new Map(this.restored);
+    for (const mounted of this.mounted.values()) {
+      const state = this.adapter.saveState?.(mounted.node);
+      if (state === undefined) {
+        states.delete(mounted.id);
+      } else {
+        states.set(mounted.id, { id: mounted.id, name: mounted.name, state });
+      }
+    }
+    return [...states.values()];
+  }
+
+  restoreState(states: readonly NativeNodeSavedState[]): void {
+    if (states.length > 128) throw new Error("Too many restored HarmonyOS native nodes");
+    const ids = new Set<string>();
+    for (const saved of states) {
+      if (
+        !saved.id ||
+        !saved.name ||
+        typeof saved.state !== "object" ||
+        saved.state === null ||
+        Array.isArray(saved.state) ||
+        ids.has(saved.id)
+      ) {
+        throw new Error("Invalid restored HarmonyOS native node state");
+      }
+      ids.add(saved.id);
+      const mounted = this.mounted.get(saved.id);
+      if (mounted?.name === saved.name) {
+        this.adapter.restoreState?.(mounted.node, saved.state);
+      } else if (mounted === undefined) {
+        this.restored.set(saved.id, saved);
+      }
     }
   }
 
@@ -124,6 +171,9 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
       this.adapter.setVisible(mounted.node, false);
       this.adapter.update(mounted.node, properties);
       if (rect !== null) this.adapter.layout(mounted.node, rect);
+      const restored = this.restored.get(id);
+      this.restored.delete(id);
+      if (restored?.name === name) this.adapter.restoreState?.(mounted.node, restored.state);
       this.adapter.setVisible(mounted.node, true);
       return { mounted: true, id, name };
     });
@@ -169,6 +219,7 @@ export class NativeNodeRegistry<Node> implements NativeBridgeHandler {
       const mounted = this.mounted.get(id);
       if (mounted !== undefined) {
         this.mounted.delete(id);
+        this.restored.delete(id);
         this.adapter.dispose(mounted.node);
       }
       return { mounted: false, id };

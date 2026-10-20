@@ -121,14 +121,8 @@ function createHttpDirective(method, attrName) {
                 }
                 let throttled = false;
                 let intervalId;
-                let resolveDestroy;
-                const destroyPromise = new Promise((resolve) => {
-                    resolveDestroy = resolve;
-                });
                 const destroyController = new AbortController();
                 scope.on("$destroy", () => {
-                    resolveDestroy?.();
-                    resolveDestroy = undefined;
                     destroyController.abort("scope destroyed");
                     if (intervalId)
                         clearInterval(intervalId);
@@ -168,7 +162,7 @@ function createHttpDirective(method, attrName) {
                         hasAttr("responseStream")) {
                         config.responseType = "stream";
                     }
-                    config.timeout = destroyPromise;
+                    config.signal = destroyController.signal;
                     return config;
                 }
                 function dispatchSseEvent(name, detail) {

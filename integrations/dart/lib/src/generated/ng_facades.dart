@@ -1401,6 +1401,190 @@ base class GeneratedNgCachedRestBackendOptions extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('onRevalidate'.toJS));
 }
 
+/// Frame timestamps are in seconds; delta is zero after mounting or resuming.
+///
+/// Raw JavaScript facade for `ng.CanvasFrame`.
+base class GeneratedNgCanvasFrame extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CanvasFrame.
+  const GeneratedNgCanvasFrame(super.raw);
+
+  /// The time member of ng.CanvasFrame.
+  num get time => _toDartNumber(raw.getProperty('time'.toJS))!;
+
+  /// The time member of ng.CanvasFrame.
+  set time(num value) {
+    raw.setProperty('time'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The delta member of ng.CanvasFrame.
+  num get delta => _toDartNumber(raw.getProperty('delta'.toJS))!;
+
+  /// The delta member of ng.CanvasFrame.
+  set delta(num value) {
+    raw.setProperty('delta'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The size member of ng.CanvasFrame.
+  Object? get size => unsafe.jsToDart<Object?>(raw.getProperty('size'.toJS));
+}
+
+/// Application renderer contract for the optional ng-canvas directive.
+///
+/// Raw JavaScript facade for `ng.CanvasRenderer`.
+base class GeneratedNgCanvasRenderer extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CanvasRenderer.
+  const GeneratedNgCanvasRenderer(super.raw);
+
+  /// Keep native drawing resources outside scope proxies when held on this adapter.
+  bool? get $nonscope => _toDartBool(raw.getProperty('\$nonscope'.toJS));
+
+  /// Native context type. Defaults to 2d.
+  String? get context => _toDartString(raw.getProperty('context'.toJS));
+
+  /// Native context type. Defaults to 2d.
+  set context(String? value) {
+    raw.setProperty('context'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Continuous frames are opt-in. Otherwise render only after invalidation.
+  bool? get animate => _toDartBool(raw.getProperty('animate'.toJS));
+
+  /// Continuous frames are opt-in. Otherwise render only after invalidation.
+  set animate(bool? value) {
+    raw.setProperty('animate'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Optional backing-store pixel-ratio cap.
+  num? get maxPixelRatio =>
+      _toDartNumber(raw.getProperty('maxPixelRatio'.toJS));
+
+  /// Optional backing-store pixel-ratio cap.
+  set maxPixelRatio(num? value) {
+    raw.setProperty('maxPixelRatio'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The mount member of ng.CanvasRenderer.
+  ///
+  /// Parameters:
+  /// - [surface]: Value supplied for the surface parameter.
+  void mount(Object? surface) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(surface));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('mount'.toJS, args));
+  }
+
+  /// The resize member of ng.CanvasRenderer.
+  ///
+  /// Parameters:
+  /// - [size]: Value supplied for the size parameter.
+  void resize(Object? size) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(size));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('resize'.toJS, args));
+  }
+
+  /// The render member of ng.CanvasRenderer.
+  ///
+  /// Parameters:
+  /// - [frame]: Value supplied for the frame parameter.
+  void render(Object? frame) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(frame));
+
+    unsafe.jsToDart<void>(raw.callMethodVarArgs('render'.toJS, args));
+  }
+
+  /// The suspend member of ng.CanvasRenderer.
+  void suspend() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('suspend'.toJS, const <JSAny?>[]));
+  }
+
+  /// The resume member of ng.CanvasRenderer.
+  void resume() {
+    unsafe
+        .jsToDart<void>(raw.callMethodVarArgs('resume'.toJS, const <JSAny?>[]));
+  }
+
+  /// The dispose member of ng.CanvasRenderer.
+  void dispose() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('dispose'.toJS, const <JSAny?>[]));
+  }
+}
+
+/// CSS dimensions and the corresponding canvas backing-store dimensions.
+///
+/// Raw JavaScript facade for `ng.CanvasSize`.
+base class GeneratedNgCanvasSize extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CanvasSize.
+  const GeneratedNgCanvasSize(super.raw);
+
+  /// The width member of ng.CanvasSize.
+  num get width => _toDartNumber(raw.getProperty('width'.toJS))!;
+
+  /// The width member of ng.CanvasSize.
+  set width(num value) {
+    raw.setProperty('width'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The height member of ng.CanvasSize.
+  num get height => _toDartNumber(raw.getProperty('height'.toJS))!;
+
+  /// The height member of ng.CanvasSize.
+  set height(num value) {
+    raw.setProperty('height'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The pixelRatio member of ng.CanvasSize.
+  num get pixelRatio => _toDartNumber(raw.getProperty('pixelRatio'.toJS))!;
+
+  /// The pixelRatio member of ng.CanvasSize.
+  set pixelRatio(num value) {
+    raw.setProperty('pixelRatio'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The pixelWidth member of ng.CanvasSize.
+  num get pixelWidth => _toDartNumber(raw.getProperty('pixelWidth'.toJS))!;
+
+  /// The pixelWidth member of ng.CanvasSize.
+  set pixelWidth(num value) {
+    raw.setProperty('pixelWidth'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// The pixelHeight member of ng.CanvasSize.
+  num get pixelHeight => _toDartNumber(raw.getProperty('pixelHeight'.toJS))!;
+
+  /// The pixelHeight member of ng.CanvasSize.
+  set pixelHeight(num value) {
+    raw.setProperty('pixelHeight'.toJS, unsafe.dartToJs(value));
+  }
+}
+
+/// Native drawing resources owned by one linked ng-canvas element.
+///
+/// Raw JavaScript facade for `ng.CanvasSurface`.
+base class GeneratedNgCanvasSurface extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.CanvasSurface.
+  const GeneratedNgCanvasSurface(super.raw);
+
+  /// The canvas member of ng.CanvasSurface.
+  Object? get canvas =>
+      unsafe.jsToDart<Object?>(raw.getProperty('canvas'.toJS));
+
+  /// The context member of ng.CanvasSurface.
+  Object? get context =>
+      unsafe.jsToDart<Object?>(raw.getProperty('context'.toJS));
+
+  /// The invalidate member of ng.CanvasSurface.
+  void invalidate() {
+    unsafe.jsToDart<void>(
+        raw.callMethodVarArgs('invalidate'.toJS, const <JSAny?>[]));
+  }
+}
+
 /// Public shape accepted by `ng-class` for class binding expressions.
 ///
 /// Raw JavaScript facade for `ng.ClassValue`.
@@ -1455,7 +1639,7 @@ base class GeneratedNgComponent extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.Component.
   const GeneratedNgComponent(super.raw);
 
-  /// The controller member of ng.Component.
+  /// Controller constructor or factory. Its instance type supplies binding names and view context.
   Object? get controller =>
       unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
 
@@ -1487,8 +1671,10 @@ base class GeneratedNgComponent extends GeneratedNgFacade {
   /// `onInit`, and is mutually exclusive with template, templateUrl, and replace.
   Object? get view => unsafe.jsToDart<Object?>(raw.getProperty('view'.toJS));
 
-  /// Define DOM attribute binding to component properties. Component properties are always bound to
-  /// the component controller and not to the scope.
+  /// Bind DOM attributes to controller properties. Known controller types restrict binding names to
+  /// their string keys; untyped controllers allow arbitrary names. `NgModule.component()` also checks
+  /// literal `&` bindings against callable properties. Existing binding modes, aliases, and optional
+  /// markers are preserved.
   Object? get bindings =>
       unsafe.jsToDart<Object?>(raw.getProperty('bindings'.toJS));
 
@@ -1521,7 +1707,7 @@ base class GeneratedNgComponentDefinition extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.ComponentDefinition.
   const GeneratedNgComponentDefinition(super.raw);
 
-  /// The controller member of ng.ComponentDefinition.
+  /// Controller constructor or factory. Its instance type supplies binding names and view context.
   Object? get controller =>
       unsafe.jsToDart<Object?>(raw.getProperty('controller'.toJS));
 
@@ -1536,8 +1722,10 @@ base class GeneratedNgComponentDefinition extends GeneratedNgFacade {
     raw.setProperty('controllerAs'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Define DOM attribute binding to component properties. Component properties are always bound to
-  /// the component controller and not to the scope.
+  /// Bind DOM attributes to controller properties. Known controller types restrict binding names to
+  /// their string keys; untyped controllers allow arbitrary names. `NgModule.component()` also checks
+  /// literal `&` bindings against callable properties. Existing binding modes, aliases, and optional
+  /// markers are preserved.
   Object? get bindings =>
       unsafe.jsToDart<Object?>(raw.getProperty('bindings'.toJS));
 
@@ -1987,7 +2175,9 @@ base class GeneratedNgDirective extends GeneratedNgFacade {
     raw.setProperty('controllerAs'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Whether to bind scope to controller
+  /// Bind attributes to controller properties. Known controller types restrict binding names and
+  /// require callable properties for `&` callbacks. `true` uses the bindings declared in `scope`;
+  /// `false` leaves them on the scope.
   Object? get bindToController =>
       unsafe.jsToDart<Object?>(raw.getProperty('bindToController'.toJS));
 
@@ -2087,7 +2277,7 @@ base class GeneratedNgDirectiveController extends GeneratedNgFacade {
   const GeneratedNgDirectiveController(super.raw);
 }
 
-/// Public AngularTS DirectiveFactory contract exposed through the ng namespace.
+/// Plain or dependency-annotated factory, optionally typed by its controller.
 ///
 /// Raw JavaScript facade for `ng.DirectiveFactory`.
 base class GeneratedNgDirectiveFactory extends GeneratedNgFacade {
@@ -2124,7 +2314,8 @@ base class GeneratedNgDirectiveFactory extends GeneratedNgFacade {
   }
 }
 
-/// Public AngularTS DirectiveFactoryFn contract exposed through the ng namespace.
+/// Injectable factory returning a directive definition or a link function. Structural results let
+/// registries accept definitions with known controller types.
 ///
 /// Raw JavaScript facade for `ng.DirectiveFactoryFn`.
 base class GeneratedNgDirectiveFactoryFn extends GeneratedNgFacade {
@@ -2862,17 +3053,15 @@ base class GeneratedNgHtmlPolicy extends GeneratedNgFacade {
 }
 
 /// Default request settings configured through `app.config({ $http })` and exposed at runtime
-/// through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape
-/// only includes the fields that the runtime reads from provider-level defaults.
-/// https://docs.angularjs.org/api/ng/service/$http#defaults
-/// https://docs.angularjs.org/api/ng/service/$http#usage
+/// through `$http.defaults`. Only the settings declared here are read from service-level defaults.
+/// Set `timeout`, `signal`, and `responseType` on individual requests instead.
 ///
 /// Raw JavaScript facade for `ng.HttpDefaults`.
 base class GeneratedNgHttpDefaults extends GeneratedNgFacade {
   /// Creates a generated raw facade for ng.HttpDefaults.
   const GeneratedNgHttpDefaults(super.raw);
 
-  /// Cache used for cacheable requests. `true` enables the default cache.
+  /// GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
   Object? get cache => unsafe.jsToDart<Object?>(raw.getProperty('cache'.toJS));
 
   /// Request body transform pipeline.
@@ -2883,7 +3072,7 @@ base class GeneratedNgHttpDefaults extends GeneratedNgFacade {
   Object? get transformResponse =>
       unsafe.jsToDart<Object?>(raw.getProperty('transformResponse'.toJS));
 
-  /// Default headers merged into each request.
+  /// Default headers grouped by method and merged into each request case-insensitively.
   Object? get headers =>
       unsafe.jsToDart<Object?>(raw.getProperty('headers'.toJS));
 
@@ -2905,13 +3094,12 @@ base class GeneratedNgHttpDefaults extends GeneratedNgFacade {
     raw.setProperty('xsrfCookieName'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Whether cross-site requests should include credentials by default.
-  bool? get withCredentials =>
-      _toDartBool(raw.getProperty('withCredentials'.toJS));
+  /// Fetch credential mode. Defaults to `"same-origin"`.
+  String? get credentials => _toDartString(raw.getProperty('credentials'.toJS));
 
-  /// Whether cross-site requests should include credentials by default.
-  set withCredentials(bool? value) {
-    raw.setProperty('withCredentials'.toJS, unsafe.dartToJs(value));
+  /// Fetch credential mode. Defaults to `"same-origin"`.
+  set credentials(String? value) {
+    raw.setProperty('credentials'.toJS, unsafe.dartToJs(value));
   }
 
   /// Query parameter serializer token or function.
@@ -2948,8 +3136,7 @@ base class GeneratedNgHttpParamSerializerService extends GeneratedNgFacade {
   }
 }
 
-/// Full request configuration accepted by `$http(...)`. See
-/// http://docs.angularjs.org/api/ng/service/$http#usage
+/// Full request configuration accepted by `$http(...)`.
 ///
 /// Raw JavaScript facade for `ng.HttpRequestConfig`.
 base class GeneratedNgHttpRequestConfig extends GeneratedNgFacade {
@@ -2972,35 +3159,46 @@ base class GeneratedNgHttpRequestConfig extends GeneratedNgFacade {
     raw.setProperty('url'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Event handlers notified by the underlying transport.
-  Object? get eventHandlers =>
-      unsafe.jsToDart<Object?>(raw.getProperty('eventHandlers'.toJS));
-
-  /// Upload event handlers. Not used by the fetch transport.
-  Object? get uploadEventHandlers =>
-      unsafe.jsToDart<Object?>(raw.getProperty('uploadEventHandlers'.toJS));
-
   /// Query parameters appended to the request URL.
   Object? get params =>
       unsafe.jsToDart<Object?>(raw.getProperty('params'.toJS));
 
-  /// Request body. Shorthand methods with explicit data set this automatically.
+  /// Request body. Objects and arrays are JSON serialized by default; File, Blob, and FormData are
+  /// passed through. For browser-generated content headers, override the default with `headers: {
+  /// "Content-Type": undefined }`. Shorthand methods with an explicit body set this field
+  /// automatically.
   Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
 
-  /// Millisecond timeout, or a promise whose resolution aborts the request.
-  Object? get timeout =>
-      unsafe.jsToDart<Object?>(raw.getProperty('timeout'.toJS));
+  /// Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero or
+  /// negative values disable the timer. Covers response body reading except when `responseType:
+  /// "stream"` hands the body to the caller.
+  num? get timeout => _toDartNumber(raw.getProperty('timeout'.toJS));
 
-  /// Native fetch response body reader hint.
+  /// Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero or
+  /// negative values disable the timer. Covers response body reading except when `responseType:
+  /// "stream"` hands the body to the caller.
+  set timeout(num? value) {
+    raw.setProperty('timeout'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`.
+  AbortSignal? get signal =>
+      unsafe.jsToDart<AbortSignal?>(raw.getProperty('signal'.toJS));
+
+  /// Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default
+  /// response transforms still apply; set `transformResponse: []` to preserve raw text. Stream
+  /// responses skip implicit transforms.
   String? get responseType =>
       _toDartString(raw.getProperty('responseType'.toJS));
 
-  /// Native fetch response body reader hint.
+  /// Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default
+  /// response transforms still apply; set `transformResponse: []` to preserve raw text. Stream
+  /// responses skip implicit transforms.
   set responseType(String? value) {
     raw.setProperty('responseType'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Cache used for cacheable requests. `true` enables the default cache.
+  /// GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
   Object? get cache => unsafe.jsToDart<Object?>(raw.getProperty('cache'.toJS));
 
   /// Request body transform pipeline.
@@ -3011,7 +3209,7 @@ base class GeneratedNgHttpRequestConfig extends GeneratedNgFacade {
   Object? get transformResponse =>
       unsafe.jsToDart<Object?>(raw.getProperty('transformResponse'.toJS));
 
-  /// Default headers merged into each request.
+  /// Default headers grouped by method and merged into each request case-insensitively.
   Object? get headers =>
       unsafe.jsToDart<Object?>(raw.getProperty('headers'.toJS));
 
@@ -3033,13 +3231,12 @@ base class GeneratedNgHttpRequestConfig extends GeneratedNgFacade {
     raw.setProperty('xsrfCookieName'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Whether cross-site requests should include credentials by default.
-  bool? get withCredentials =>
-      _toDartBool(raw.getProperty('withCredentials'.toJS));
+  /// Fetch credential mode. Defaults to `"same-origin"`.
+  String? get credentials => _toDartString(raw.getProperty('credentials'.toJS));
 
-  /// Whether cross-site requests should include credentials by default.
-  set withCredentials(bool? value) {
-    raw.setProperty('withCredentials'.toJS, unsafe.dartToJs(value));
+  /// Fetch credential mode. Defaults to `"same-origin"`.
+  set credentials(String? value) {
+    raw.setProperty('credentials'.toJS, unsafe.dartToJs(value));
   }
 
   /// Query parameter serializer token or function.
@@ -3047,8 +3244,7 @@ base class GeneratedNgHttpRequestConfig extends GeneratedNgFacade {
       unsafe.jsToDart<Object?>(raw.getProperty('paramSerializer'.toJS));
 }
 
-/// Request options shared by the `$http` shortcut methods. See
-/// http://docs.angularjs.org/api/ng/service/$http#usage
+/// Request options shared by the `$http` shorthand methods.
 ///
 /// Raw JavaScript facade for `ng.HttpRequestOptions`.
 base class GeneratedNgHttpRequestOptions extends GeneratedNgFacade {
@@ -3059,23 +3255,42 @@ base class GeneratedNgHttpRequestOptions extends GeneratedNgFacade {
   Object? get params =>
       unsafe.jsToDart<Object?>(raw.getProperty('params'.toJS));
 
-  /// Request body. Shorthand methods with explicit data set this automatically.
+  /// Request body. Objects and arrays are JSON serialized by default; File, Blob, and FormData are
+  /// passed through. For browser-generated content headers, override the default with `headers: {
+  /// "Content-Type": undefined }`. Shorthand methods with an explicit body set this field
+  /// automatically.
   Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
 
-  /// Millisecond timeout, or a promise whose resolution aborts the request.
-  Object? get timeout =>
-      unsafe.jsToDart<Object?>(raw.getProperty('timeout'.toJS));
+  /// Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero or
+  /// negative values disable the timer. Covers response body reading except when `responseType:
+  /// "stream"` hands the body to the caller.
+  num? get timeout => _toDartNumber(raw.getProperty('timeout'.toJS));
 
-  /// Native fetch response body reader hint.
+  /// Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero or
+  /// negative values disable the timer. Covers response body reading except when `responseType:
+  /// "stream"` hands the body to the caller.
+  set timeout(num? value) {
+    raw.setProperty('timeout'.toJS, unsafe.dartToJs(value));
+  }
+
+  /// Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`.
+  AbortSignal? get signal =>
+      unsafe.jsToDart<AbortSignal?>(raw.getProperty('signal'.toJS));
+
+  /// Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default
+  /// response transforms still apply; set `transformResponse: []` to preserve raw text. Stream
+  /// responses skip implicit transforms.
   String? get responseType =>
       _toDartString(raw.getProperty('responseType'.toJS));
 
-  /// Native fetch response body reader hint.
+  /// Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default
+  /// response transforms still apply; set `transformResponse: []` to preserve raw text. Stream
+  /// responses skip implicit transforms.
   set responseType(String? value) {
     raw.setProperty('responseType'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Cache used for cacheable requests. `true` enables the default cache.
+  /// GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
   Object? get cache => unsafe.jsToDart<Object?>(raw.getProperty('cache'.toJS));
 
   /// Request body transform pipeline.
@@ -3086,7 +3301,7 @@ base class GeneratedNgHttpRequestOptions extends GeneratedNgFacade {
   Object? get transformResponse =>
       unsafe.jsToDart<Object?>(raw.getProperty('transformResponse'.toJS));
 
-  /// Default headers merged into each request.
+  /// Default headers grouped by method and merged into each request case-insensitively.
   Object? get headers =>
       unsafe.jsToDart<Object?>(raw.getProperty('headers'.toJS));
 
@@ -3108,13 +3323,12 @@ base class GeneratedNgHttpRequestOptions extends GeneratedNgFacade {
     raw.setProperty('xsrfCookieName'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Whether cross-site requests should include credentials by default.
-  bool? get withCredentials =>
-      _toDartBool(raw.getProperty('withCredentials'.toJS));
+  /// Fetch credential mode. Defaults to `"same-origin"`.
+  String? get credentials => _toDartString(raw.getProperty('credentials'.toJS));
 
-  /// Whether cross-site requests should include credentials by default.
-  set withCredentials(bool? value) {
-    raw.setProperty('withCredentials'.toJS, unsafe.dartToJs(value));
+  /// Fetch credential mode. Defaults to `"same-origin"`.
+  set credentials(String? value) {
+    raw.setProperty('credentials'.toJS, unsafe.dartToJs(value));
   }
 
   /// Query parameter serializer token or function.
@@ -3132,10 +3346,10 @@ base class GeneratedNgHttpResponse extends GeneratedNgFacade {
   /// Parsed response body.
   Object? get data => unsafe.jsToDart<Object?>(raw.getProperty('data'.toJS));
 
-  /// Numeric HTTP status code. Non-2xx statuses reject the promise.
+  /// Numeric HTTP status code, or a non-positive value when no HTTP response exists.
   num get status => _toDartNumber(raw.getProperty('status'.toJS))!;
 
-  /// Numeric HTTP status code. Non-2xx statuses reject the promise.
+  /// Numeric HTTP status code, or a non-positive value when no HTTP response exists.
   set status(num value) {
     raw.setProperty('status'.toJS, unsafe.dartToJs(value));
   }
@@ -3157,15 +3371,17 @@ base class GeneratedNgHttpResponse extends GeneratedNgFacade {
   }
 
   /// Transport completion status. Useful for distinguishing timeout, abort, and network errors.
-  String get xhrStatus => _toDartString(raw.getProperty('xhrStatus'.toJS))!;
+  String get transportStatus =>
+      _toDartString(raw.getProperty('transportStatus'.toJS))!;
 
   /// Transport completion status. Useful for distinguishing timeout, abort, and network errors.
-  set xhrStatus(String value) {
-    raw.setProperty('xhrStatus'.toJS, unsafe.dartToJs(value));
+  set transportStatus(String value) {
+    raw.setProperty('transportStatus'.toJS, unsafe.dartToJs(value));
   }
 }
 
-/// Final transport status reported by transport completion handlers.
+/// Fetch transport outcome exposed on responses and errors. `complete` includes non-2xx HTTP
+/// responses; `error` indicates a transport or security-policy failure.
 ///
 /// Raw JavaScript facade for `ng.HttpResponseStatus`.
 base class GeneratedNgHttpResponseStatus extends GeneratedNgFacade {
@@ -3176,7 +3392,10 @@ base class GeneratedNgHttpResponseStatus extends GeneratedNgFacade {
 /// Runtime surface of the `$http` service. Call the service directly with a full HttpRequestConfig,
 /// or use a shorthand method for common HTTP verbs. All methods return an
 /// `Promise&lt;HttpResponse&lt;T&gt;&gt;` that resolves for successful 2xx responses and rejects with HttpError
-/// for errors.
+/// for HTTP or transport failures. Configuration, transform, and interceptor errors can reject with
+/// other error types. Uses Fetch exclusively. Cancel with a native `AbortSignal`, set a numeric
+/// `timeout` for a deadline, and observe completion through the returned promise. Upload progress
+/// events are not available.
 ///
 /// Raw JavaScript facade for `ng.HttpService`.
 base class GeneratedNgHttpService extends GeneratedNgFacade {
@@ -6621,11 +6840,13 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
     return this;
   }
 
-  /// The component member of ng.NgModule.
+  /// Registers a component, inferring controller properties for binding checks and programmatic view
+  /// context. Literal `&` bindings require callable properties; untyped controllers remain
+  /// permissive.
   ///
   /// Parameters:
-  /// - [name]: Value supplied for the name parameter.
-  /// - [options]: Value supplied for the options parameter.
+  /// - [name]: Component name normalized from its HTML element name.
+  /// - [options]: Controller, bindings, and one rendering definition.
   GeneratedNgNgModule rawComponent(String name, Object? options) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(name));
@@ -6691,11 +6912,13 @@ base class GeneratedNgNgModule extends GeneratedNgFacade {
     return this;
   }
 
-  /// The directive member of ng.NgModule.
+  /// Registers a directive factory, checking controller binding names and literal `&` callbacks
+  /// against its controller type. With `bindToController: true`, the checks apply to `scope`
+  /// bindings. Other scope bindings stay independent.
   ///
   /// Parameters:
-  /// - [name]: Value supplied for the name parameter.
-  /// - [directiveFactory]: Value supplied for the directiveFactory parameter.
+  /// - [name]: Directive name normalized from its HTML element or attribute.
+  /// - [directiveFactory]: Plain or dependency-annotated directive factory.
   GeneratedNgNgModule rawDirective(String name, Object? directiveFactory) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(name));
@@ -8082,10 +8305,10 @@ base class GeneratedNgRestResponse extends GeneratedNgFacade {
     raw.setProperty('stale'.toJS, unsafe.dartToJs(value));
   }
 
-  /// Numeric HTTP status code. Non-2xx statuses reject the promise.
+  /// Numeric HTTP status code, or a non-positive value when no HTTP response exists.
   num? get status => _toDartNumber(raw.getProperty('status'.toJS));
 
-  /// Numeric HTTP status code. Non-2xx statuses reject the promise.
+  /// Numeric HTTP status code, or a non-positive value when no HTTP response exists.
   set status(num? value) {
     raw.setProperty('status'.toJS, unsafe.dartToJs(value));
   }
@@ -8107,11 +8330,12 @@ base class GeneratedNgRestResponse extends GeneratedNgFacade {
   }
 
   /// Transport completion status. Useful for distinguishing timeout, abort, and network errors.
-  String? get xhrStatus => _toDartString(raw.getProperty('xhrStatus'.toJS));
+  String? get transportStatus =>
+      _toDartString(raw.getProperty('transportStatus'.toJS));
 
   /// Transport completion status. Useful for distinguishing timeout, abort, and network errors.
-  set xhrStatus(String? value) {
-    raw.setProperty('xhrStatus'.toJS, unsafe.dartToJs(value));
+  set transportStatus(String? value) {
+    raw.setProperty('transportStatus'.toJS, unsafe.dartToJs(value));
   }
 }
 
@@ -8657,20 +8881,6 @@ base class GeneratedNgRouterModule extends GeneratedNgFacade {
     raw.setProperty('name'.toJS, unsafe.dartToJs(value));
   }
 
-  /// The filter member of ng.RouterModule.
-  ///
-  /// Parameters:
-  /// - [name]: Value supplied for the name parameter.
-  /// - [filterFn]: Value supplied for the filterFn parameter.
-  GeneratedNgRouterModule filter(String name, Object? filterFn) {
-    final args = <JSAny?>[];
-    args.add(unsafe.dartToJs(name));
-    args.add(unsafe.dartToJs(filterFn));
-
-    raw.callMethodVarArgs('filter'.toJS, args);
-    return this;
-  }
-
   /// Declare built-in AngularTS service configuration during the config phase.
   ///
   /// Parameters:
@@ -8723,11 +8933,13 @@ base class GeneratedNgRouterModule extends GeneratedNgFacade {
     return this;
   }
 
-  /// The component member of ng.RouterModule.
+  /// Registers a component, inferring controller properties for binding checks and programmatic view
+  /// context. Literal `&` bindings require callable properties; untyped controllers remain
+  /// permissive.
   ///
   /// Parameters:
-  /// - [name]: Value supplied for the name parameter.
-  /// - [options]: Value supplied for the options parameter.
+  /// - [name]: Component name normalized from its HTML element name.
+  /// - [options]: Controller, bindings, and one rendering definition.
   GeneratedNgRouterModule component(String name, Object? options) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(name));
@@ -8793,11 +9005,13 @@ base class GeneratedNgRouterModule extends GeneratedNgFacade {
     return this;
   }
 
-  /// The directive member of ng.RouterModule.
+  /// Registers a directive factory, checking controller binding names and literal `&` callbacks
+  /// against its controller type. With `bindToController: true`, the checks apply to `scope`
+  /// bindings. Other scope bindings stay independent.
   ///
   /// Parameters:
-  /// - [name]: Value supplied for the name parameter.
-  /// - [directiveFactory]: Value supplied for the directiveFactory parameter.
+  /// - [name]: Directive name normalized from its HTML element or attribute.
+  /// - [directiveFactory]: Plain or dependency-annotated directive factory.
   GeneratedNgRouterModule directive(String name, Object? directiveFactory) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(name));
@@ -8818,6 +9032,20 @@ base class GeneratedNgRouterModule extends GeneratedNgFacade {
     args.add(unsafe.dartToJs(animationFactory));
 
     raw.callMethodVarArgs('animation'.toJS, args);
+    return this;
+  }
+
+  /// The filter member of ng.RouterModule.
+  ///
+  /// Parameters:
+  /// - [name]: Value supplied for the name parameter.
+  /// - [filterFn]: Value supplied for the filterFn parameter.
+  GeneratedNgRouterModule filter(String name, Object? filterFn) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(name));
+    args.add(unsafe.dartToJs(filterFn));
+
+    raw.callMethodVarArgs('filter'.toJS, args);
     return this;
   }
 
@@ -11413,9 +11641,10 @@ base class GeneratedNgSwapMode extends GeneratedNgFacade {
   const GeneratedNgSwapMode(super.raw);
 }
 
-/// Downloads a template using $http and, upon success, stores the contents inside of
-/// $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then
-/// a $compile error will be thrown (unless {ignoreRequestError} is set to true).
+/// Returns cached template text or downloads it through `$http` and stores it in `$templateCache`.
+/// Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates
+/// or rewrites the URL before lookup. HTTP failures reject; an empty successful response is
+/// returned unchanged.
 ///
 /// Raw JavaScript facade for `ng.TemplateRequestService`.
 base class GeneratedNgTemplateRequestService extends GeneratedNgFacade {

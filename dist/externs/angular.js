@@ -241,8 +241,8 @@ ng.AnnotatedDirectiveFactory;
 ng.Component = function() {};
 
 /**
- * Public Component.controller member exposed by the AngularTS namespace contract.
- * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
+ * Controller constructor or factory. Its instance type supplies binding names and view context.
+ * @type {(!Array<(function(...?): (TControllerInstance|undefined)|function(...?): TControllerInstance)>|!Array<string>|function(...?): (TControllerInstance|undefined)|function(new: TControllerInstance, ...?)|string|undefined)}
  */
 ng.Component.prototype.controller;
 
@@ -271,7 +271,7 @@ ng.Component.prototype.templateUrl;
 ng.Component.prototype.view;
 
 /**
- * Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.
+ * Bind DOM attributes to controller properties. Known controller types restrict binding names to their string keys; untyped controllers allow arbitrary names. `NgModule.component()` also checks literal `&` bindings against callable properties. Existing binding modes, aliases, and optional markers are preserved.
  * @type {(!Object<string, string>|undefined)}
  */
 ng.Component.prototype.bindings;
@@ -302,8 +302,8 @@ ng.Component.prototype.require;
 ng.ComponentDefinition = function() {};
 
 /**
- * Public ComponentDefinition.controller member exposed by the AngularTS namespace contract.
- * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
+ * Controller constructor or factory. Its instance type supplies binding names and view context.
+ * @type {(!Array<(function(...?): (TControllerInstance|undefined)|function(...?): TControllerInstance)>|!Array<string>|function(...?): (TControllerInstance|undefined)|function(new: TControllerInstance, ...?)|string|undefined)}
  */
 ng.ComponentDefinition.prototype.controller;
 
@@ -314,7 +314,7 @@ ng.ComponentDefinition.prototype.controller;
 ng.ComponentDefinition.prototype.controllerAs;
 
 /**
- * Define DOM attribute binding to component properties. Component properties are always bound to the component controller and not to the scope.
+ * Bind DOM attributes to controller properties. Known controller types restrict binding names to their string keys; untyped controllers allow arbitrary names. `NgModule.component()` also checks literal `&` bindings against callable properties. Existing binding modes, aliases, and optional markers are preserved.
  * @type {(!Object<string, string>|undefined)}
  */
 ng.ComponentDefinition.prototype.bindings;
@@ -546,7 +546,7 @@ ng.Directive.prototype.view;
 
 /**
  * Controller constructor or injectable string name
- * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
+ * @type {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|!Array<string>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string|undefined)}
  */
 ng.Directive.prototype.controller;
 
@@ -557,7 +557,7 @@ ng.Directive.prototype.controller;
 ng.Directive.prototype.controllerAs;
 
 /**
- * Whether to bind scope to controller
+ * Bind attributes to controller properties. Known controller types restrict binding names and require callable properties for `&` callbacks. `true` uses the bindings declared in `scope`; `false` leaves them on the scope.
  * @type {(!Object<string, string>|boolean|undefined)}
  */
 ng.Directive.prototype.bindToController;
@@ -725,10 +725,10 @@ ng.NgModule.prototype.config = function(config) {};
 ng.NgModule.prototype.run = function(block) {};
 
 /**
- * Public NgModule.component member exposed by the AngularTS namespace contract.
+ * Registers a component, inferring controller properties for binding checks and programmatic view context. Literal `&` bindings require callable properties; untyped controllers remain permissive.
  * @template TController
- * @param {string} name Value supplied for the name parameter.
- * @param {!Object} options Value supplied for the options parameter.
+ * @param {string} name Component name normalized from its HTML element name.
+ * @param {!Object} options Controller, bindings, and one rendering definition.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.component = function(name, options) {};
@@ -766,9 +766,10 @@ ng.NgModule.prototype.provider = function(name, providerType) {};
 ng.NgModule.prototype.decorator = function(name, decorFn) {};
 
 /**
- * Public NgModule.directive member exposed by the AngularTS namespace contract.
- * @param {string} name Value supplied for the name parameter.
- * @param {!ng.DirectiveFactory} directiveFactory Value supplied for the directiveFactory parameter.
+ * Registers a directive factory, checking controller binding names and literal `&` callbacks against its controller type. With `bindToController: true`, the checks apply to `scope` bindings. Other scope bindings stay independent.
+ * @template TController, TDefinition
+ * @param {string} name Directive name normalized from its HTML element or attribute.
+ * @param {!ng.DirectiveFactory} directiveFactory Plain or dependency-annotated directive factory.
  * @return {!ng.NgModule}
  */
 ng.NgModule.prototype.directive = function(name, directiveFactory) {};
@@ -1000,10 +1001,10 @@ ng.RouterModule.prototype.config = function(config) {};
 ng.RouterModule.prototype.run = function(block) {};
 
 /**
- * Public RouterModule.component member exposed by the AngularTS namespace contract.
+ * Registers a component, inferring controller properties for binding checks and programmatic view context. Literal `&` bindings require callable properties; untyped controllers remain permissive.
  * @template TController
- * @param {string} name Value supplied for the name parameter.
- * @param {!Object} options Value supplied for the options parameter.
+ * @param {string} name Component name normalized from its HTML element name.
+ * @param {!Object} options Controller, bindings, and one rendering definition.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.component = function(name, options) {};
@@ -1041,9 +1042,10 @@ ng.RouterModule.prototype.provider = function(name, providerType) {};
 ng.RouterModule.prototype.decorator = function(name, decorFn) {};
 
 /**
- * Public RouterModule.directive member exposed by the AngularTS namespace contract.
- * @param {string} name Value supplied for the name parameter.
- * @param {(!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void))} directiveFactory Value supplied for the directiveFactory parameter.
+ * Registers a directive factory, checking controller binding names and literal `&` callbacks against its controller type. With `bindToController: true`, the checks apply to `scope` bindings. Other scope bindings stay independent.
+ * @template TController, TDefinition
+ * @param {string} name Directive name normalized from its HTML element or attribute.
+ * @param {!ng.DirectiveFactory} directiveFactory Plain or dependency-annotated directive factory.
  * @return {!ng.NgModule}
  */
 ng.RouterModule.prototype.directive = function(name, directiveFactory) {};
@@ -2370,7 +2372,7 @@ ng.CompileService;
 
 /**
  * Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
+ * @typedef {function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|!Array<string>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
  */
 ng.ControllerService;
 
@@ -2537,6 +2539,157 @@ ng.HtmlCanvasConfig.prototype.defaultMode;
  * @type {(boolean|undefined)}
  */
 ng.HtmlCanvasConfig.prototype.requireFlag;
+
+/**
+ * Frame timestamps are in seconds; delta is zero after mounting or resuming.
+ * @record
+ */
+ng.CanvasFrame = function() {};
+
+/**
+ * Public CanvasFrame.time member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasFrame.prototype.time;
+
+/**
+ * Public CanvasFrame.delta member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasFrame.prototype.delta;
+
+/**
+ * Public CanvasFrame.size member exposed by the AngularTS namespace contract.
+ * @type {!ng.CanvasSize}
+ */
+ng.CanvasFrame.prototype.size;
+
+/**
+ * Application renderer contract for the optional ng-canvas directive.
+ * @record
+ */
+ng.CanvasRenderer = function() {};
+
+/**
+ * Keep native drawing resources outside scope proxies when held on this adapter.
+ * @type {(boolean|undefined)}
+ */
+ng.CanvasRenderer.prototype.$nonscope;
+
+/**
+ * Native context type. Defaults to 2d.
+ * @type {(string|undefined)}
+ */
+ng.CanvasRenderer.prototype.context;
+
+/**
+ * Continuous frames are opt-in. Otherwise render only after invalidation.
+ * @type {(boolean|undefined)}
+ */
+ng.CanvasRenderer.prototype.animate;
+
+/**
+ * Optional backing-store pixel-ratio cap.
+ * @type {(number|undefined)}
+ */
+ng.CanvasRenderer.prototype.maxPixelRatio;
+
+/**
+ * Public CanvasRenderer.mount member exposed by the AngularTS namespace contract.
+ * @type {(function(!ng.CanvasSurface): void|undefined)}
+ */
+ng.CanvasRenderer.prototype.mount;
+
+/**
+ * Public CanvasRenderer.resize member exposed by the AngularTS namespace contract.
+ * @type {(function(!ng.CanvasSize): void|undefined)}
+ */
+ng.CanvasRenderer.prototype.resize;
+
+/**
+ * Public CanvasRenderer.render member exposed by the AngularTS namespace contract.
+ * @param {!ng.CanvasFrame} frame Value supplied for the frame parameter.
+ * @return {void}
+ */
+ng.CanvasRenderer.prototype.render = function(frame) {};
+
+/**
+ * Public CanvasRenderer.suspend member exposed by the AngularTS namespace contract.
+ * @type {(function(): void|undefined)}
+ */
+ng.CanvasRenderer.prototype.suspend;
+
+/**
+ * Public CanvasRenderer.resume member exposed by the AngularTS namespace contract.
+ * @type {(function(): void|undefined)}
+ */
+ng.CanvasRenderer.prototype.resume;
+
+/**
+ * Public CanvasRenderer.dispose member exposed by the AngularTS namespace contract.
+ * @type {(function(): void|undefined)}
+ */
+ng.CanvasRenderer.prototype.dispose;
+
+/**
+ * CSS dimensions and the corresponding canvas backing-store dimensions.
+ * @record
+ */
+ng.CanvasSize = function() {};
+
+/**
+ * Public CanvasSize.width member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasSize.prototype.width;
+
+/**
+ * Public CanvasSize.height member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasSize.prototype.height;
+
+/**
+ * Public CanvasSize.pixelRatio member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasSize.prototype.pixelRatio;
+
+/**
+ * Public CanvasSize.pixelWidth member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasSize.prototype.pixelWidth;
+
+/**
+ * Public CanvasSize.pixelHeight member exposed by the AngularTS namespace contract.
+ * @type {number}
+ */
+ng.CanvasSize.prototype.pixelHeight;
+
+/**
+ * Native drawing resources owned by one linked ng-canvas element.
+ * @record
+ */
+ng.CanvasSurface = function() {};
+
+/**
+ * Public CanvasSurface.canvas member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.CanvasSurface.prototype.canvas;
+
+/**
+ * Public CanvasSurface.context member exposed by the AngularTS namespace contract.
+ * @type {!Object}
+ */
+ng.CanvasSurface.prototype.context;
+
+/**
+ * Public CanvasSurface.invalidate member exposed by the AngularTS namespace contract.
+ * @return {void}
+ */
+ng.CanvasSurface.prototype.invalidate = function() {};
 
 /**
  * Public AngularTS HtmlCanvasRuntimeSupport contract exposed through the global ng namespace for Closure-annotated applications.
@@ -2890,7 +3043,7 @@ ng.InjectionTokenMap.prototype.$compile = function(compileNode, transcludeFn, ma
 
 /**
  * Public InjectionTokenMap.$controller member exposed by the AngularTS namespace contract.
- * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string)} expression Value supplied for the expression parameter.
+ * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|!Array<string>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string)} expression Value supplied for the expression parameter.
  * @param {(!Object|undefined)} locals Value supplied for the locals parameter.
  * @param {(boolean|undefined)} later Value supplied for the later parameter.
  * @param {(string|undefined)} ident Value supplied for the ident parameter.
@@ -4248,7 +4401,7 @@ ng.SwapMode;
 ng.TemplateCacheService;
 
 /**
- * Downloads a template using $http and, upon success, stores the contents inside of $templateCache. If the HTTP request fails or the response data of the HTTP request is empty then a $compile error will be thrown (unless {ignoreRequestError} is set to true).
+ * Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged.
  * @typedef {function(string): !Promise<string>}
  */
 ng.TemplateRequestService;
@@ -4628,13 +4781,13 @@ ng.AngularElementOptions.prototype.filters;
 
 /**
  * Directives registered in the composed root module.
- * @type {(!Array<!Object<string, (!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void))>>|!Object<string, (!Array<(function(...?): (!ng.Directive<?>|function(...?): void)|string)>|function(...?): (!ng.Directive<?>|function(...?): void))>|undefined)}
+ * @type {(!Array<!Object<string, !ng.DirectiveFactory>>|!Object<string, !ng.DirectiveFactory>|undefined)}
  */
 ng.AngularElementOptions.prototype.directives;
 
 /**
- * A controller constructor function used in AngularTS.
- * @typedef {(function(...?): (!Object|undefined)|function(new: Object, ...?))}
+ * Public AngularTS ControllerConstructor contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {(function(...?): ?|function(new: ?, ...?))}
  */
 ng.ControllerConstructor;
 
@@ -4729,13 +4882,13 @@ ng.Expression;
 ng.HttpMethod;
 
 /**
- * Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Not every `HttpRequestOptions` field is supported here; this shape only includes the fields that the runtime reads from provider-level defaults. https://docs.angularjs.org/api/ng/service/$http#defaults https://docs.angularjs.org/api/ng/service/$http#usage
+ * Default request settings configured through `app.config({ $http })` and exposed at runtime through `$http.defaults`. Only the settings declared here are read from service-level defaults. Set `timeout`, `signal`, and `responseType` on individual requests instead.
  * @record
  */
 ng.HttpDefaults = function() {};
 
 /**
- * Cache used for cacheable requests. `true` enables the default cache.
+ * GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
  * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpDefaults.prototype.cache;
@@ -4753,7 +4906,7 @@ ng.HttpDefaults.prototype.transformRequest;
 ng.HttpDefaults.prototype.transformResponse;
 
 /**
- * Default headers merged into each request.
+ * Default headers grouped by method and merged into each request case-insensitively.
  * @type {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}
  */
 ng.HttpDefaults.prototype.headers;
@@ -4771,10 +4924,10 @@ ng.HttpDefaults.prototype.xsrfHeaderName;
 ng.HttpDefaults.prototype.xsrfCookieName;
 
 /**
- * Whether cross-site requests should include credentials by default.
- * @type {(boolean|undefined)}
+ * Fetch credential mode. Defaults to `"same-origin"`.
+ * @type {(string|undefined)}
  */
-ng.HttpDefaults.prototype.withCredentials;
+ng.HttpDefaults.prototype.credentials;
 
 /**
  * Query parameter serializer token or function.
@@ -4796,7 +4949,7 @@ ng.HttpResponse = function() {};
 ng.HttpResponse.prototype.data;
 
 /**
- * Numeric HTTP status code. Non-2xx statuses reject the promise.
+ * Numeric HTTP status code, or a non-positive value when no HTTP response exists.
  * @type {number}
  */
 ng.HttpResponse.prototype.status;
@@ -4823,10 +4976,10 @@ ng.HttpResponse.prototype.statusText;
  * Transport completion status. Useful for distinguishing timeout, abort, and network errors.
  * @type {string}
  */
-ng.HttpResponse.prototype.xhrStatus;
+ng.HttpResponse.prototype.transportStatus;
 
 /**
- * Final transport status reported by transport completion handlers.
+ * Fetch transport outcome exposed on responses and errors. `complete` includes non-2xx HTTP responses; `error` indicates a transport or security-policy failure.
  * @typedef {string}
  */
 ng.HttpResponseStatus;
@@ -7604,7 +7757,7 @@ ng.NativeWindowStatus.prototype.safeArea;
 ng.NativeWindowStatus.prototype.displayFeatures;
 
 /**
- * Full request configuration accepted by `$http(...)`. See http://docs.angularjs.org/api/ng/service/$http#usage
+ * Full request configuration accepted by `$http(...)`.
  * @record
  */
 ng.HttpRequestConfig = function() {};
@@ -7622,43 +7775,37 @@ ng.HttpRequestConfig.prototype.method;
 ng.HttpRequestConfig.prototype.url;
 
 /**
- * Event handlers notified by the underlying transport.
- * @type {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}
- */
-ng.HttpRequestConfig.prototype.eventHandlers;
-
-/**
- * Upload event handlers. Not used by the fetch transport.
- * @type {(!Object<string, (!Object|function(!Event): void|undefined)>|undefined)}
- */
-ng.HttpRequestConfig.prototype.uploadEventHandlers;
-
-/**
  * Query parameters appended to the request URL.
  * @type {(!Object<string, ?>|undefined)}
  */
 ng.HttpRequestConfig.prototype.params;
 
 /**
- * Request body. Shorthand methods with explicit data set this automatically.
+ * Request body. Objects and arrays are JSON serialized by default; File, Blob, and FormData are passed through. For browser-generated content headers, override the default with `headers: { "Content-Type": undefined }`. Shorthand methods with an explicit body set this field automatically.
  * @type {(?|undefined)}
  */
 ng.HttpRequestConfig.prototype.data;
 
 /**
- * Millisecond timeout, or a promise whose resolution aborts the request.
- * @type {(!Promise<?>|number|undefined)}
+ * Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero or negative values disable the timer. Covers response body reading except when `responseType: "stream"` hands the body to the caller.
+ * @type {(number|undefined)}
  */
 ng.HttpRequestConfig.prototype.timeout;
 
 /**
- * Native fetch response body reader hint.
+ * Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`.
+ * @type {(!AbortSignal|undefined)}
+ */
+ng.HttpRequestConfig.prototype.signal;
+
+/**
+ * Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default response transforms still apply; set `transformResponse: []` to preserve raw text. Stream responses skip implicit transforms.
  * @type {(string|undefined)}
  */
 ng.HttpRequestConfig.prototype.responseType;
 
 /**
- * Cache used for cacheable requests. `true` enables the default cache.
+ * GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
  * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpRequestConfig.prototype.cache;
@@ -7676,7 +7823,7 @@ ng.HttpRequestConfig.prototype.transformRequest;
 ng.HttpRequestConfig.prototype.transformResponse;
 
 /**
- * Default headers merged into each request.
+ * Default headers grouped by method and merged into each request case-insensitively.
  * @type {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}
  */
 ng.HttpRequestConfig.prototype.headers;
@@ -7694,10 +7841,10 @@ ng.HttpRequestConfig.prototype.xsrfHeaderName;
 ng.HttpRequestConfig.prototype.xsrfCookieName;
 
 /**
- * Whether cross-site requests should include credentials by default.
- * @type {(boolean|undefined)}
+ * Fetch credential mode. Defaults to `"same-origin"`.
+ * @type {(string|undefined)}
  */
-ng.HttpRequestConfig.prototype.withCredentials;
+ng.HttpRequestConfig.prototype.credentials;
 
 /**
  * Query parameter serializer token or function.
@@ -7706,7 +7853,7 @@ ng.HttpRequestConfig.prototype.withCredentials;
 ng.HttpRequestConfig.prototype.paramSerializer;
 
 /**
- * Request options shared by the `$http` shortcut methods. See http://docs.angularjs.org/api/ng/service/$http#usage
+ * Request options shared by the `$http` shorthand methods.
  * @record
  */
 ng.HttpRequestOptions = function() {};
@@ -7718,25 +7865,31 @@ ng.HttpRequestOptions = function() {};
 ng.HttpRequestOptions.prototype.params;
 
 /**
- * Request body. Shorthand methods with explicit data set this automatically.
+ * Request body. Objects and arrays are JSON serialized by default; File, Blob, and FormData are passed through. For browser-generated content headers, override the default with `headers: { "Content-Type": undefined }`. Shorthand methods with an explicit body set this field automatically.
  * @type {(?|undefined)}
  */
 ng.HttpRequestOptions.prototype.data;
 
 /**
- * Millisecond timeout, or a promise whose resolution aborts the request.
- * @type {(!Promise<?>|number|undefined)}
+ * Timeout in milliseconds. Positive values abort with `transportStatus: "timeout"`; zero or negative values disable the timer. Covers response body reading except when `responseType: "stream"` hands the body to the caller.
+ * @type {(number|undefined)}
  */
 ng.HttpRequestOptions.prototype.timeout;
 
 /**
- * Native fetch response body reader hint.
+ * Native cancellation signal. Aborting it rejects with `transportStatus: "abort"`.
+ * @type {(!AbortSignal|undefined)}
+ */
+ng.HttpRequestOptions.prototype.signal;
+
+/**
+ * Response body reader: text (default), json, blob, arraybuffer, document, or stream. Default response transforms still apply; set `transformResponse: []` to preserve raw text. Stream responses skip implicit transforms.
  * @type {(string|undefined)}
  */
 ng.HttpRequestOptions.prototype.responseType;
 
 /**
- * Cache used for cacheable requests. `true` enables the default cache.
+ * GET caching: `true` enables the URL cache; a strategy selects strategy-aware caching.
  * @type {(!Object|boolean|string|undefined)}
  */
 ng.HttpRequestOptions.prototype.cache;
@@ -7754,7 +7907,7 @@ ng.HttpRequestOptions.prototype.transformRequest;
 ng.HttpRequestOptions.prototype.transformResponse;
 
 /**
- * Default headers merged into each request.
+ * Default headers grouped by method and merged into each request case-insensitively.
  * @type {(!Object<string, (!Object<string, (boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|boolean|function(!ng.HttpRequestConfig): ?|null|number|string|undefined)>|undefined)}
  */
 ng.HttpRequestOptions.prototype.headers;
@@ -7772,10 +7925,10 @@ ng.HttpRequestOptions.prototype.xsrfHeaderName;
 ng.HttpRequestOptions.prototype.xsrfCookieName;
 
 /**
- * Whether cross-site requests should include credentials by default.
- * @type {(boolean|undefined)}
+ * Fetch credential mode. Defaults to `"same-origin"`.
+ * @type {(string|undefined)}
  */
-ng.HttpRequestOptions.prototype.withCredentials;
+ng.HttpRequestOptions.prototype.credentials;
 
 /**
  * Query parameter serializer token or function.
@@ -7998,7 +8151,7 @@ ng.RestResponse.prototype.source;
 ng.RestResponse.prototype.stale;
 
 /**
- * Numeric HTTP status code. Non-2xx statuses reject the promise.
+ * Numeric HTTP status code, or a non-positive value when no HTTP response exists.
  * @type {(number|undefined)}
  */
 ng.RestResponse.prototype.status;
@@ -8025,7 +8178,7 @@ ng.RestResponse.prototype.statusText;
  * Transport completion status. Useful for distinguishing timeout, abort, and network errors.
  * @type {(string|undefined)}
  */
-ng.RestResponse.prototype.xhrStatus;
+ng.RestResponse.prototype.transportStatus;
 
 /**
  * Public AngularTS RestRevalidateEvent contract exposed through the global ng namespace for Closure-annotated applications.

@@ -27,6 +27,8 @@ export interface HarmonyNativeSurface {
     method: string,
     argumentsValue: Readonly<Record<string, unknown>>,
   ): unknown | Promise<unknown>;
+  saveState(id: string): Readonly<Record<string, unknown>> | undefined;
+  restoreState(id: string, state: Readonly<Record<string, unknown>>): void;
   detach(id: string): void;
   beginBatch(): void;
   endBatch(): void;
@@ -37,7 +39,7 @@ export type NativeContractResolver = (
   name: string,
 ) => NativeElementContract | undefined;
 
-interface HarmonyNativeNode {
+export interface HarmonyNativeNode {
   readonly model: NativeComponentModel;
   readonly primitive: string;
 }
@@ -123,6 +125,17 @@ export class HarmonyNativeNodeAdapter
       argumentsValue,
     );
     return surfaceResult === undefined ? modelResult : surfaceResult;
+  }
+
+  saveState(node: HarmonyNativeNode): Readonly<Record<string, unknown>> | undefined {
+    return this.surface.saveState(node.model.snapshot().id);
+  }
+
+  restoreState(
+    node: HarmonyNativeNode,
+    state: Readonly<Record<string, unknown>>,
+  ): void {
+    this.surface.restoreState(node.model.snapshot().id, state);
   }
 
   dispose(node: HarmonyNativeNode): void {

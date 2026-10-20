@@ -30,11 +30,18 @@ angular.createModule('demo', []).config({
   $rest: {
     defaults: {
       timeout: 5000,
-      withCredentials: true,
+      credentials: 'include',
     },
   },
 });
 ```
+
+The HTTP backend uses `$http`'s Fetch options: `credentials` selects a Fetch
+credential mode, `timeout` is numeric, and `signal` accepts a native
+`AbortSignal`. Resource options are reused for every operation on the resource;
+use a fresh controller and resource after aborting a shared signal. The [$http
+guide]({{< relref "/docs/services/http" >}}) explains cancellation and
+`transportStatus` on failures.
 
 ## Create a resource at runtime
 

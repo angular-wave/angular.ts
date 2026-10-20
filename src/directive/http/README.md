@@ -38,13 +38,18 @@ Public attributes consumed by the directives include `trigger`, `latch`,
 `stream`, `responseStream`, `withCredentials`, `sseEvents`, and
 `onReconnect`.
 
+`withCredentials` configures native EventSource for SSE only. Programmatic
+`$http` requests use Fetch's `credentials` modes instead. Completion is observed
+through promises; the HTTP service does not expose upload or synthetic transport
+event handlers. SSE lifecycle DOM events are provided by the directive itself.
+
 ## Core Model
 
 All method directives share the same link-time model. `defineDirective()` maps a
 method to its normalized directive attribute name and injects the services
 needed by `createHttpDirective()`. The linked element then owns one event
-listener, optional polling interval, a destroy promise for `$http` timeouts, and
-an `AbortController` for stream consumption.
+listener, optional polling interval, and one `AbortController`. Its signal is
+shared by `$http` cancellation and stream consumption.
 
 The main flow is:
 
@@ -102,8 +107,7 @@ mode.
 - `HttpDirectiveMethod`: method union for `get`, `delete`, `post`, and `put`.
 - `HttpDirectiveElement`: host element shape used for form-associated controls.
 - `HttpRequestOptionsWithHeaders`: `$http` options plus optional headers.
-- `destroyPromise`: request timeout promise resolved on scope destruction.
-- `destroyController`: abort controller passed to stream consumers.
+- `destroyController`: aborts requests and stream consumption on scope destruction.
 - `sourceRef`: mutable reference to the active SSE connection.
 - Realtime protocol messages: structured payloads with optional `html`,
   `data`, `target`, and `swap` fields.
@@ -140,8 +144,8 @@ mode.
 
 ## Destruction And Cleanup
 
-The directive resolves the destroy timeout promise, aborts stream consumption,
-and clears polling intervals when the scope is destroyed. SSE directives also
+The directive aborts requests and stream consumption and clears polling
+intervals when the scope is destroyed. SSE directives also
 dispatch `ng:sse:close` and close the active source. Delayed requests check
 `scope._destroyed` before dispatching so a destroyed scope cannot start a
 request after its delay finishes.

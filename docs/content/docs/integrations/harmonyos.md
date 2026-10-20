@@ -62,6 +62,26 @@ Open `integrations/harmonyos` in DevEco Studio when signing or device selection
 needs the IDE. The `entry` module is the packaged proof application. It loads
 the same AngularTS distribution that a release ships, not a development server.
 
+## Load the application page
+
+Use the core page loader from the ability instead of calling
+`windowStage.loadContent` directly. It handles synchronous and callback-based
+platform failures consistently.
+
+<!-- tested-by: integrations/harmonyos/scripts/harmony-window-wiring.test.mjs -->
+
+```ts
+import window from '@ohos.window';
+import { loadAngularNativePage } from '@angular-wave/angular-native-harmony-core';
+import { AngularNativeNavigationAbility } from '@angular-wave/angular-native-harmony-navigation';
+
+export default class EntryAbility extends AngularNativeNavigationAbility {
+  onWindowStageCreate(windowStage: window.WindowStage): void {
+    loadAngularNativePage(windowStage, 'pages/Index');
+  }
+}
+```
+
 ## Add native UI to a page
 
 Use AngularTS native elements in HTML. AngularTS resolves CSS,
@@ -154,6 +174,45 @@ into the application.
 The AngularTS router remains the source of route intent. HarmonyOS mirrors
 committed routes into `NavPathStack`; ArkUI must not invent a second application
 history. External HTTP and HTTPS locations go through the system resolver.
+
+## Restore navigation after the process stops
+
+Extend `AngularNativeNavigationAbility` instead of `UIAbility`. It enables the
+HarmonyOS recovery lifecycle and saves the active AngularTS navigation scopes
+when the system stops the process.
+
+<!-- tested-by: integrations/harmonyos/scripts/harmony-recovery-wiring.test.mjs -->
+
+```ts
+import { AngularNativeNavigationAbility } from '@angular-wave/angular-native-harmony-navigation';
+
+export default class EntryAbility extends AngularNativeNavigationAbility {}
+```
+
+Call `super.onCreate(want, launchParam)` first when the ability has its own
+`onCreate` method. Pulse demonstrates that wiring. Normal launches start with a
+clean stack; a system recovery recreates the destinations and back stack
+without replaying route transitions.
+
+Each `AngularNativeNavigation` uses the `default` recovery scope. Give every
+instance a stable key when one ability contains more than one AngularTS
+application:
+
+<!-- tested-by: integrations/harmonyos/scripts/harmony-recovery-wiring.test.mjs -->
+
+```ts
+AngularNativeNavigation({
+  initialLocation: this.location,
+  recoveryKey: 'dashboard',
+})
+```
+
+Recovery stores at most four scopes, 32 destinations per scope, and 128 native
+viewport positions per destination. It stores validated locations, modal state,
+transition names, and finite offsets for native `scroll`, `list`, `grid`, and
+`pull-to-refresh` elements. It does not store the route `state` object,
+credentials, response bodies, form values, or bridge tokens. Reload private
+application data from the server after restoration.
 
 ## Security
 

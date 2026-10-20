@@ -42,6 +42,10 @@ part of the Dart public facade.
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | started |
 | `AriaConfig` | started |
+| `CanvasFrame` | planned |
+| `CanvasRenderer` | planned |
+| `CanvasSize` | planned |
+| `CanvasSurface` | planned |
 | `ClassMap` | started |
 | `ClassValue` | review |
 | `Component` | started |

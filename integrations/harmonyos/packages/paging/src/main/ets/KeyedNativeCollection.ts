@@ -39,8 +39,8 @@ export class KeyedNativeCollection<T> {
         mutations.push({ type: "insert", index, item });
       } else {
         if (current !== index) {
-          working.splice(current, 1);
-          working.splice(index, 0, item);
+          const [currentItem] = working.splice(current, 1);
+          working.splice(index, 0, currentItem as T);
           mutations.push({ type: "move", from: current, to: index, key: itemKey });
         }
         if (working[index] !== item) {

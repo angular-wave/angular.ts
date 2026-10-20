@@ -20,19 +20,20 @@ problem first.
 
 ## Choose the smallest control
 
-| What you observe                       | First response                                      |
-| -------------------------------------- | --------------------------------------------------- |
-| Fast typing starts a request per key   | Add a short delay after input settles               |
-| Scroll or resize fires continuously    | Throttle the event                                  |
-| The same read repeats unchanged        | Reuse an appropriate public or user-partitioned cache |
-| An old search overwrites a newer one   | Reject stale results or cancel the old request      |
-| Hover prefetch repeats                 | Guard it with loaded and loading state              |
-| Double-click repeats a write           | Disable while pending and make the server idempotent |
+| What you observe                     | First response                                        |
+| ------------------------------------ | ----------------------------------------------------- |
+| Fast typing starts a request per key | Add a short delay after input settles                 |
+| Scroll or resize fires continuously  | Throttle the event                                    |
+| The same read repeats unchanged      | Reuse an appropriate public or user-partitioned cache |
+| An old search overwrites a newer one | Reject stale results or cancel the old request        |
+| Hover prefetch repeats               | Guard it with loaded and loading state                |
+| Double-click repeats a write         | Disable while pending and make the server idempotent  |
 
-Use a promise-valued `$http` `timeout` to cancel an obsolete programmatic
-request. Treat `xhrStatus === "abort"` as cancellation rather than a server
-failure. HTTP directive flows should usually prevent another trigger while the
-current request is pending instead of creating custom cancellation code.
+Pass a native `AbortSignal` through `$http`'s `signal` option and call
+`AbortController.abort()` to cancel an obsolete programmatic request. Treat
+`transportStatus === "abort"` as cancellation rather than a server failure. HTTP
+directive flows should usually prevent another trigger while the current request
+is pending instead of creating custom cancellation code.
 
 ## Server contract
 
@@ -47,8 +48,8 @@ authorization failure or leak user-specific data through a shared cache.
 
 ## Apply it now
 
-Find the noisiest interaction in the Network panel. Apply only the first matching
-row, then measure it again before combining techniques.
+Find the noisiest interaction in the Network panel. Apply only the first
+matching row, then measure it again before combining techniques.
 
 ## Verify
 

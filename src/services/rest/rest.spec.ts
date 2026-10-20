@@ -16,7 +16,7 @@ function httpResponse(data, overrides = {}) {
     headers: () => ({}),
     config: {},
     statusText: "OK",
-    xhrStatus: "complete",
+    transportStatus: "complete",
     ...overrides,
   };
 }
@@ -939,7 +939,7 @@ describe("$rest", () => {
       };
       const factory = createRestFactory(jasmine.createSpy("$http"), {
         backend,
-        withCredentials: true,
+        credentials: "include",
         timeout: 100,
       });
 
@@ -947,7 +947,7 @@ describe("$rest", () => {
 
       expect(backend.request).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          options: { withCredentials: true, timeout: 10 },
+          options: { credentials: "include", timeout: 10 },
         }),
       );
     });

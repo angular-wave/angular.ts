@@ -1,6 +1,7 @@
 ---
 title: Cancel a file upload and handle server rejection
-description: Send FormData, abort through timeout, and distinguish cancellation
+description:
+  Send FormData, abort through AbortSignal, and distinguish cancellation
 weight: 30
 ---
 
@@ -28,21 +29,22 @@ class UploadController {
   }
 
   async send(file) {
-    this.cancellation = Promise.withResolvers();
+    this.cancellation = new AbortController();
     const body = new FormData();
     body.append('file', file);
 
     try {
       await this.$http.post('/api/uploads', body, {
-        timeout: this.cancellation.promise,
+        headers: { 'Content-Type': undefined },
+        signal: this.cancellation.signal,
       });
     } catch (error) {
-      if (error.xhrStatus !== 'abort') this.error = error.data.message;
+      if (error.transportStatus !== 'abort') this.error = error.data.message;
     }
   }
 
   cancel() {
-    this.cancellation?.resolve();
+    this.cancellation?.abort();
   }
 }
 ```
@@ -68,14 +70,15 @@ the server. Return `413` for size limits and `422` JSON for rejected content.
 
 ## What AngularTS wires
 
-Resolving the promise supplied as `timeout` aborts the underlying request. An
-aborted request rejects with `xhrStatus === 'abort'`.
+Aborting the controller whose `signal` was supplied aborts the underlying
+request. An aborted request rejects with `transportStatus === 'abort'`.
 
 ## Failure path
 
-Do not set `Content-Type` manually for `FormData`; the browser adds the
-multipart boundary. Do not advertise progress: `uploadEventHandlers` is ignored
-by the fetch transport today.
+Clear the default JSON header with `headers: { 'Content-Type': undefined }` for
+`FormData`; the browser adds the multipart content type and boundary. Fetch does
+not expose upload progress events; display pending state until the returned
+promise settles.
 
 ## Apply it now
 

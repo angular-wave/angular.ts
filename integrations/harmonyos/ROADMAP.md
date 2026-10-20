@@ -4,16 +4,19 @@ Status: portable implementation complete; official API 26, device, and publicati
 
 ## Current evidence
 
-The repository implementation is no longer a proposal. As of 2026-10-03:
+The repository implementation is no longer a proposal. As of 2026-10-09:
 
-- `make -C integrations/harmonyos check` passes 133 runtime tests with 100%
-  line, branch, and function coverage, 50 tooling tests, generated-file checks,
+- `make -C integrations/harmonyos check` passes 146 runtime tests with 100%
+  line, branch, and function coverage, 65 tooling tests, generated-file checks,
   formatting, package metadata, samples, and all 61 shared parity entries.
 - `make -C integrations/harmonyos openharmony-audit` reports zero repository
   errors against the pinned public OpenHarmony API 23 SDK.
 - `make -C integrations/harmonyos openharmony-build` compiles and retains two
   HAPs and six compatible HARs. Credentials and Map Kit remain API 26 gates
   because their Huawei kits are not in the public OpenHarmony SDK.
+- Versioned process recovery restores destination stacks and bounded native
+  `scroll`, `list`, `grid`, and `pull-to-refresh` positions without persisting
+  route models, forms, credentials, responses, or bridge tokens.
 - Pull requests and `master` builds run the portable suite, strict API 23 audit,
   and API 23 package build. The manual official-toolchain lane captures exact
   API 26 packages, device reports, screenshots, checksums, tool identities,
@@ -459,7 +462,7 @@ make -C integrations/harmonyos visual-test
 - [ ] Implement `list`, `grid`, `list-item`, `pager`, `swipe-action`, and `pull-to-refresh`.
 - [ ] Use ArkUI lazy/recycled collection facilities while preserving stable AngularTS keys.
 - [ ] Implement append, prepend, insert, remove, move, replace, and reset without unnecessary node recreation.
-- [ ] Preserve scroll position through incremental updates and route restoration.
+- [x] Preserve scroll position through incremental updates and route restoration.
 - [ ] Coordinate nested scrolling and gesture ownership with ArkWeb.
 - [ ] Add pagination, empty, loading, retry, refresh, and end-of-list states.
 - [ ] Benchmark large collections, rapid updates, image-heavy grids, and pager transitions.
@@ -683,10 +686,10 @@ make -C integrations/harmonyos visual-regression
 
 ### Tasks
 
-- [ ] Reach 100% branch coverage for protocol validation, dispatch, ownership, registry mutation, and generated mappings.
-- [ ] Add property-based and fuzz tests for messages, layout values, collection mutations, and lifecycle ordering.
-- [ ] Add leak tests for destinations, watchers, overlays, media, maps, files, and native nodes.
-- [ ] Define budgets for cold start, first native reveal, bridge round trip, navigation, scroll frames, memory, and package size.
+- [x] Reach 100% branch coverage for protocol validation, dispatch, ownership, registry mutation, and generated mappings.
+- [x] Add property-based and fuzz tests for messages, layout values, collection mutations, and lifecycle ordering.
+- [x] Add leak tests for destinations, watchers, overlays, media, maps, files, and native nodes.
+- [x] Define budgets for cold start, first native reveal, bridge round trip, navigation, scroll frames, memory, and package size.
 - [ ] Test minimum SDK and API 26 on phone, tablet, and foldable profiles.
 - [ ] Test RTL, 1.5x and 2x font scale, dark mode, reduced motion, keyboard, rotation, multi-window, and safe areas.
 - [ ] Audit accessibility with screen reader, keyboard, switch access, focus order, labels, roles, states, and touch targets.

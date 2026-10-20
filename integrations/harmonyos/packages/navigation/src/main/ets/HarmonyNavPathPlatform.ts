@@ -21,11 +21,14 @@ export interface HarmonyNavPathStack {
 
 export type HarmonyExternalNavigator = (location: string) => void | Promise<void>;
 
+type HarmonyNavPathMutation = "push" | "replace" | "pop";
+
 /** Applies AngularTS route transactions to an ArkUI NavPathStack. */
 export class HarmonyNavPathPlatform implements NavigationPlatform {
   private readonly stack: HarmonyNavPathStack;
   private readonly destinationName: string;
   private readonly external: HarmonyExternalNavigator;
+  private activeMutation: HarmonyNavPathMutation | undefined;
 
   constructor(
     stack: HarmonyNavPathStack,
@@ -45,7 +48,7 @@ export class HarmonyNavPathPlatform implements NavigationPlatform {
   ): void {
     const animated = transition !== "none";
     if (operation === "pop") {
-      this.stack.pop(animated);
+      this._mutate("pop", () => this.stack.pop(animated));
       return;
     }
     const entry = entries[entries.length - 1];
@@ -55,14 +58,30 @@ export class HarmonyNavPathPlatform implements NavigationPlatform {
       param: { entry },
     };
     if (operation === "replace") {
-      this.stack.replacePath(info, animated);
+      this._mutate("replace", () => this.stack.replacePath(info, animated));
     } else {
-      this.stack.pushPath(info, animated);
+      this._mutate("push", () => this.stack.pushPath(info, animated));
     }
+  }
+
+  /** @internal */
+  isApplying(operation: HarmonyNavPathMutation): boolean {
+    return this.activeMutation === operation;
   }
 
   openExternal(location: string): void | Promise<void> {
     return this.external(location);
+  }
+
+  /** @internal */
+
+  private _mutate(operation: HarmonyNavPathMutation, mutation: () => unknown): void {
+    this.activeMutation = operation;
+    try {
+      mutation();
+    } finally {
+      this.activeMutation = undefined;
+    }
   }
 }
 

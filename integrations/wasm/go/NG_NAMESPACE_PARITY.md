@@ -57,6 +57,10 @@ reference example makes one necessary.
 | `AngularService` | alias |
 | `AnnotatedDirectiveFactory` | deferred |
 | `AriaConfig` | deferred |
+| `CanvasFrame` | deferred |
+| `CanvasRenderer` | deferred |
+| `CanvasSize` | deferred |
+| `CanvasSurface` | deferred |
 | `ClassMap` | deferred |
 | `ClassValue` | deferred |
 | `Component` | covered |
@@ -363,3 +367,62 @@ reference example makes one necessary.
    `unsafe` with a reason in follow-up notes.
 6. `make parity` must pass before Go integration changes are considered
    complete.
+
+## Native capability value contracts
+
+These value types are inventoried for future typed Go bindings.
+
+| ng type | Go status |
+| --- | --- |
+| `NativeBiometricStatus` | deferred |
+| `NativeCameraCaptureResult` | deferred |
+| `NativeCameraStatus` | deferred |
+| `NativeClipboardContent` | deferred |
+| `NativeClipboardWriteParameters` | deferred |
+| `NativeClipboardWriteResult` | deferred |
+| `NativeConnectivityStatus` | deferred |
+| `NativeCredentialClearResult` | deferred |
+| `NativeCredentialCreatePasskeyParameters` | deferred |
+| `NativeCredentialCreatePasskeyResult` | deferred |
+| `NativeCredentialCreatePasswordParameters` | deferred |
+| `NativeCredentialCreatePasswordResult` | deferred |
+| `NativeCredentialGetParameters` | deferred |
+| `NativeCredentialResult` | deferred |
+| `NativeCredentialStatus` | deferred |
+| `NativeFileDescriptor` | deferred |
+| `NativeFileOpenParameters` | deferred |
+| `NativeFileOpenResult` | deferred |
+| `NativeFileStatus` | deferred |
+| `NativeFileUploadParameters` | deferred |
+| `NativeFileUploadProgress` | deferred |
+| `NativeFileUploadResult` | deferred |
+| `NativeGeolocationPosition` | deferred |
+| `NativeGeolocationStatus` | deferred |
+| `NativeHapticParameters` | deferred |
+| `NativeHapticResult` | deferred |
+| `NativeIntentParameters` | deferred |
+| `NativeJsonObject` | deferred |
+| `NativeJsonPrimitive` | deferred |
+| `NativeJsonValue` | deferred |
+| `NativeLifecycleStatus` | deferred |
+| `NativeMediaLoadParameters` | deferred |
+| `NativeMediaSeekParameters` | deferred |
+| `NativeMediaStatus` | deferred |
+| `NativeNavigationBridgeChange` | deferred |
+| `NativeNavigationChange` | deferred |
+| `NativeNavigationPlatformChange` | deferred |
+| `NativeNavigationPopResult` | deferred |
+| `NativeNavigationRouteParameters` | deferred |
+| `NativeNavigationRouteResult` | deferred |
+| `NativeNavigationStatus` | deferred |
+| `NativeNavigationTransition` | deferred |
+| `NativeNotificationStatus` | deferred |
+| `NativeOpenResult` | deferred |
+| `NativePermissionParameters` | deferred |
+| `NativePermissionStatus` | deferred |
+| `NativePlatformStatus` | deferred |
+| `NativeShareParameters` | deferred |
+| `NativeWindowBounds` | deferred |
+| `NativeWindowDisplayFeature` | deferred |
+| `NativeWindowInsets` | deferred |
+| `NativeWindowStatus` | deferred |
