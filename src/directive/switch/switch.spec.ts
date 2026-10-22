@@ -33,6 +33,42 @@ describe("ngSwitch", () => {
     dealoc(element);
   });
 
+  it("preserves SVG namespaces when a transcluded container switches cases", async () => {
+    element = document.createElement("div");
+    element.innerHTML =
+      '<svg svg-container><g ng-switch="shape">' +
+      '<circle ng-switch-when="circle" r="5"></circle>' +
+      '<rect ng-switch-when="rect" width="10" height="10"></rect>' +
+      "</g></svg>";
+    const angular = new Angular();
+
+    angular.createModule("svgSwitch", []).directive("svgContainer", () => ({
+      template: "<svg ng-transclude></svg>",
+      replace: true,
+      transclude: true,
+    }));
+    const injector = angular.bootstrap(element, ["svgSwitch"]);
+    const scope = injector.get("$rootScope");
+
+    try {
+      scope.shape = "circle";
+      await wait();
+      expect(element.querySelector("circle").namespaceURI).toBe(
+        "http://www.w3.org/2000/svg",
+      );
+      expect(element.querySelector("rect")).toBeNull();
+
+      scope.shape = "rect";
+      await wait();
+      expect(element.querySelector("rect").namespaceURI).toBe(
+        "http://www.w3.org/2000/svg",
+      );
+      expect(element.querySelector("circle")).toBeNull();
+    } finally {
+      angular._composition.destroy();
+    }
+  });
+
   it("should switch on value change", async () => {
     element = $compile(
       '<div ng-switch="select">' +
@@ -514,150 +550,3 @@ describe("ngSwitch", () => {
     });
   });
 });
-
-// describe("ngSwitch animation", () => {
-//   let body;
-//   let element;
-//   let $rootElement;
-
-//   function html(content) {
-//     $rootElement.innerHTML = content;
-//     element = $rootElement.children[0];
-//     return element;
-//   }
-
-//   beforeEach(
-//     module(
-//       () =>
-//         // we need to run animation on attached elements;
-//         function (_$rootElement_) {
-//           $rootElement = _$rootElement_;
-//           body = (document.body);
-//           body.append($rootElement);
-//         },
-//     ),
-//   );
-
-//   afterEach(() => {
-//     dealoc(body);
-//     dealoc(element);
-//   });
-
-//   describe("behavior", () => {
-//     it("should destroy the previous leave animation if a new one takes place", () => {
-//       module("ngAnimate");
-//       module.animation(".long-leave", () => ({
-//           leave(element, done) {
-//             // do nothing at all
-//           },
-//         }));
-//       () => {
-//         // inejct $compile, $scope, $animate, $templateCache
-//         let item;
-//         const $scope = $rootScope.new();
-//         element = $compile(
-//           html(
-//             '<div ng-switch="inc">' +
-//               '<div ng-switch-when="one">one</div>' +
-//               '<div ng-switch-when="two">two</div>' +
-//               "</div>",
-//           ),
-//         )($scope);
-
-//         let destroyed;
-//         const inner = element.children(0);
-//         inner.on("$destroy", () => {
-//           destroyed = true;
-//         });
-
-//         expect(destroyed).toBe(true);
-//       };
-//     });
-//   });
-
-//   describe("events", () => {
-//     beforeEach(module("ngAnimateMock"));
-
-//     it("should fire off the enter animation", inject((
-//       $compile,
-//       $rootScope,
-//       $animate,
-//     ) => {
-//       let item;
-//       const $scope = $rootScope.new();
-//       element = $compile(
-//         html(
-//           '<div ng-switch on="val">' +
-//             '<div ng-switch-when="one">one</div>' +
-//             '<div ng-switch-when="two">two</div>' +
-//             '<div ng-switch-when="three">three</div>' +
-//             "</div>",
-//         ),
-//       )($scope);
-
-//       ; // re-enable the animations;
-//       $scope.val = "one";
-//       ;
-
-//       item = $animate.queue.shift();
-//       expect(item.event).toBe("enter");
-//       expect(item.element.textContent).toBe("one");
-//     }));
-
-//     it("should fire off the leave animation", inject((
-//       $compile,
-//       $rootScope,
-//       $animate,
-//     ) => {
-//       let item;
-//       const $scope = $rootScope.new();
-//       element = $compile(
-//         html(
-//           '<div ng-switch on="val">' +
-//             '<div ng-switch-when="one">one</div>' +
-//             '<div ng-switch-when="two">two</div>' +
-//             '<div ng-switch-when="three">three</div>' +
-//             "</div>",
-//         ),
-//       )($scope);
-
-//       ; // re-enable the animations;
-//       $scope.val = "two";
-//       ;
-
-//       item = $animate.queue.shift();
-//       expect(item.event).toBe("enter");
-//       expect(item.element.textContent).toBe("two");
-
-//       $scope.val = "three";
-//       ;
-
-//       item = $animate.queue.shift();
-//       expect(item.event).toBe("leave");
-//       expect(item.element.textContent).toBe("two");
-
-//       item = $animate.queue.shift();
-//       expect(item.event).toBe("enter");
-//       expect(item.element.textContent).toBe("three");
-//     }));
-
-//     it("should work with svg elements when the svg container is transcluded", () => {
-//       module.directive("svgContainer", () => ({
-//           template: "<svg ng-transclude></svg>",
-//           replace: true,
-//           transclude: true,
-//         }));
-//       inject(($compile, $rootScope) => {
-//         element = $compile(
-//           '<svg-container ng-switch="inc"><circle ng-switch-when="one"></circle>' +
-//             "</svg-container>",
-//         )($rootScope);
-//         $rootScope.inc = "one";
-//         await wait();
-
-//         const circle = element.querySelectorAll("circle");
-//         expect(circle[0].toString()).toMatch(/SVG/);
-//       });
-//     });
-//   });
-// });

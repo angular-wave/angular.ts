@@ -150,9 +150,20 @@ function createEnvironment(
 }
 
 function environmentScript(environment: AngularNativeEnvironment): string {
-  return `(function(environment){var root=document.documentElement;if(!root)return;root.classList.remove("platform-web");root.classList.add("platform-harmonyos","native-shell");Object.keys(environment.cssVariables).forEach(function(name){root.style.setProperty(name,environment.cssVariables[name]);});window.angularNativeEnvironment=environment;window.dispatchEvent(new CustomEvent("ng:native:environment",{detail:environment}));})(${JSON.stringify(environment)});`;
+  return `(function(environment){var root=document.documentElement;if(!root)return;root.classList.remove("platform-web");root.classList.add("platform-harmonyos","native-shell");Object.keys(environment.cssVariables).forEach(function(name){root.style.setProperty(name,environment.cssVariables[name]);});window.angularNativeEnvironment=environment;window.dispatchEvent(new CustomEvent("ng:native:environment",{detail:environment}));})(${scriptLiteral(environment)});`;
 }
 
 function messageScript(message: NativeBridgeReply | AngularNativeEvent): string {
-  return `window.angularNative&&window.angularNative.receive(${JSON.stringify(message)});`;
+  return `window.angularNative&&window.angularNative.receive(${scriptLiteral(message)});`;
+}
+
+function scriptLiteral(value: unknown): string {
+  // JSON quoting protects the JavaScript literal; escape HTML delimiters and
+  // line separators as well so the source is safe in a script element.
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
 }

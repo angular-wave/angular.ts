@@ -138,4 +138,52 @@ describe("ngSrc", () => {
       expect(error).toBeDefined();
     });
   });
+  describe("script URL aliases", () => {
+    let errors;
+
+    beforeEach(() => {
+      errors = [];
+      window.angular = new Angular();
+      window.angular
+        .createModule("scriptAliases", ["ng"])
+        .decorator("$exceptionHandler", () => (error) => {
+          errors.push(error);
+        });
+      createInjector(["scriptAliases"]).invoke([
+        "$rootScope",
+        "$compile",
+        (root, compile) => {
+          $scope = root.new();
+          $compile = compile;
+        },
+      ]);
+    });
+
+    afterEach(() => {
+      $scope.destroy();
+    });
+
+    for (const attribute of ["src", "href"]) {
+      it(`validates script ng-${attribute} values read from DOM attributes`, async () => {
+        element = $compile(
+          `<script type="application/json" ng-${attribute}="/safe.js"></script>`,
+        )($scope);
+        expect(element.getAttribute(attribute)).toBe("/safe.js");
+        for (const url of [
+          "javascript:alert(1)",
+          "data:text/javascript,alert(1)",
+          "https://untrusted.example/evil.js",
+          "unsafe:javascript:alert(1)",
+        ]) {
+          element.setAttribute(`ng-${attribute}`, url);
+          await wait();
+          expect(element.getAttribute(attribute)).toBe("/safe.js");
+        }
+        expect(errors.length).toBe(4);
+        expect(
+          errors.every((error) => /insecurl/.test(error.message)),
+        ).toBeTrue();
+      });
+    }
+  });
 });

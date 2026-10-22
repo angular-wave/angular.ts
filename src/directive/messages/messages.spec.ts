@@ -341,22 +341,17 @@ describe("ngMessages", () => {
 
     expect(messageChildren(element).length).toBe(1);
     expect(trim(element.textContent)).toEqual("Your age is incorrect");
-    //
-    // // remove the age!
-    // $rootScope.items.shift();
-    //
-    // await wait();
-    //
-    // expect(messageChildren(element).length).toBe(1);
-    // expect(trim(element.textContent)).toEqual("Your hair is too long");
-    //
-    // // remove the hair!
-    // $rootScope.items.length = 0;
-    // $rootScope.col.primary = true;
-    // await wait();
-    //
-    // expect(messageChildren(element).length).toBe(1);
-    // expect(trim(element.textContent)).toEqual("Enter something");
+
+    $rootScope.items.shift();
+    await wait();
+    expect(messageChildren(element).length).toBe(1);
+    expect(trim(element.textContent)).toEqual("Your hair is too long");
+
+    $rootScope.items.length = 0;
+    $rootScope.col.primary = true;
+    await wait();
+    expect(messageChildren(element).length).toBe(1);
+    expect(trim(element.textContent)).toEqual("Enter something");
   });
 
   it("should be compatible with ngBind", async () => {
@@ -397,10 +392,6 @@ describe("ngMessages", () => {
 
   // issue #12856
   it("should only detach the message object that is associated with the message node being removed", async () => {
-    // We are going to spy on the `leave` method to give us control over
-    // when the element is actually removed
-    //spyOn($animate, "leave");
-
     // Create a basic ng-messages set up
     element = $compile(
       '<div ng-messages="col">' +
@@ -416,23 +407,16 @@ describe("ngMessages", () => {
 
     // Remove the message
     $rootScope.col = { primary: undefined };
-    // Since we have spied on the `leave` method, the message node is still in the DOM
-    //expect($animate.leave).toHaveBeenCalled();
-    // const nodeToRemove = $animate.leave.calls.mostRecent().args[0][0];
-    // expect(nodeToRemove).toBe(oldMessageNode);
+    await wait();
+    expect(messageChildren(element).length).toBe(0);
 
     // Add the message back in
     $rootScope.col = { primary: true };
-    // Simulate the animation completing on the node
-    // (nodeToRemove).remove();
-
-    // We should not get another call to `leave`
-    //expect($animate.leave).not.toHaveBeenCalled();
 
     // There should only be the new message node
     await wait();
     expect(messageChildren(element).length).toEqual(1);
-    const newMessageNode = messageChildren(element);
+    const newMessageNode = messageChildren(element)[0];
 
     expect(newMessageNode).not.toBe(oldMessageNode);
   });
@@ -764,11 +748,6 @@ describe("ngMessages", () => {
         required: true,
         failed: true,
       };
-
-      // expect(messageChildren(element).length).toBe(1);
-      // expect(trim(element.textContent)).toEqual(
-      //   "Your value is that of failure",
-      // );
 
       await waitUntil(
         () => trim(element.textContent) === "You did not enter a value",

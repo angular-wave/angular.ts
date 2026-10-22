@@ -62,15 +62,26 @@ test.describe("animations", () => {
     await expect(animated).not.toHaveClass(/ng-enter|ng-leave/);
   });
 
-  // TODO
-  // test("should work with svg elements when the svg container is transcluded", async ({
-  //   page,
-  // }) => {
-  //   await page.goto("src/directive/if/if-animate-svg.html");
-  //   await page.content();
-  //   await page.click('button:has-text("Fade In!")');
-  //   let animated = await page.locator("#circle");
-  //   await expect(animated).not.toHaveClass(/ng-enter/);
-  //   await expect(animated).not.toHaveClass(/ng-enter-active/);
-  // });
+  test("preserves SVG elements when their container is transcluded", async ({
+    page,
+  }) => {
+    await page.goto("src/directive/if/if-animate-svg.html");
+    const circle = page.locator("svg circle#circle");
+
+    await expect(circle).toHaveCount(0);
+    await page.getByRole("button", { name: "Fade In!" }).click();
+    await expect(circle).toHaveCount(1);
+    expect(await circle.evaluate((node) => node.namespaceURI)).toBe(
+      "http://www.w3.org/2000/svg",
+    );
+    await expect(page.locator("svg-container")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Fade Out!" }).click();
+    await expect(circle).toHaveCount(0);
+    await page.getByRole("button", { name: "Fade In!" }).click();
+    await expect(circle).toHaveCount(1);
+    expect(await circle.evaluate((node) => node.namespaceURI)).toBe(
+      "http://www.w3.org/2000/svg",
+    );
+  });
 });

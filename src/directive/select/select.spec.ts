@@ -66,6 +66,8 @@ describe("select", () => {
   }
 
   function unknownValue(value) {
+    if (value === undefined) return "? undefined:undefined ?";
+
     return `? ${hashKey(value)} ?`;
   }
 
@@ -545,7 +547,7 @@ describe("select", () => {
         scope.robot = undefined;
         await wait();
 
-        expect(element.value).toBe("");
+        expect(element.value).toBe(unknownValue(undefined));
       });
 
       it("should cope use a dynamic empty option that is added to a static empty option", async () => {
@@ -858,7 +860,7 @@ describe("select", () => {
           expect(scope.robot).toBe("r2d2");
         });
 
-        it("should insert unknown element when repeater shrinks and selected option is unavailable", async () => {
+        it("should preserve the model when repeated options remove the selected value", async () => {
           scope.robots = ["c3p0", "r2d2"];
           scope.robot = "r2d2";
           compile(
@@ -873,25 +875,20 @@ describe("select", () => {
           scope.robots = ["c3p0"];
           await wait();
 
-          expect(element.value).toBe("c3p0");
+          expect(element.value).toBe(unknownValue("r2d2"));
 
-          // TODO we can add a mutation observer to trigger the render but it seems like an overkill for this case
-          // as none of the behavior below is 'expected' when mutating the array of robots.
-          // expect(scope.robot).toBe(null);
+          // Removing DOM options does not synthesize a user change event.
+          expect(scope.robot).toBe("r2d2");
 
-          // scope.robots.unshift("r2d2");
-          // await wait();
-          // expect(element.value).toBe("r2d2");
-          // expect(scope.robot).toBe(null);
+          scope.robots.unshift("r2d2");
+          await wait();
+          expect(element.value).toBe("r2d2");
+          expect(scope.robot).toBe("r2d2");
 
-          // scope.robot = "r2d2";
-          // await wait();
-          // expect(element.value).toBe("r2d2");
-
-          // delete scope.robots;
-          // await wait();
-          // expect(element.value).toBe(unknownValue(null));
-          // expect(scope.robot).toBe(null);
+          delete scope.robots;
+          await wait();
+          expect(element.options.length).toBe(0);
+          expect(scope.robot).toBe("r2d2");
         });
       });
     });
@@ -973,54 +970,50 @@ describe("select", () => {
       expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
       expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
-      // // remove empty
-      // await wait();
-      // expect(element.value).toBe("x");
-      // expect(selectCtrl.hasEmptyOption()).toBe(false);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
+      scope.empty = false;
+      await wait();
+      expect(element.value).toBe("x");
+      expect(selectCtrl.hasEmptyOption()).toBe(false);
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
-      // // selection -> unknown
-      // await wait();
-      // expect(element.value).toBe(unknownValue("unmatched"));
-      // expect(selectCtrl.hasEmptyOption()).toBe(false);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
+      scope.selected = "unmatched";
+      await wait();
+      expect(element.value).toBe(unknownValue("unmatched"));
+      expect(selectCtrl.hasEmptyOption()).toBe(false);
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
 
-      // // add empty
-      // await wait();
-      // expect(element.value).toBe(unknownValue("unmatched"));
-      // expect(selectCtrl.hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
+      scope.empty = true;
+      await wait();
+      expect(element.value).toBe(unknownValue("unmatched"));
+      expect(selectCtrl.hasEmptyOption()).toBe(true);
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
 
-      // // unknown -> empty
-      // await wait();
-      // expect(element.value).toBe("");
-      // expect(selectCtrl.hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
+      scope.selected = "";
+      await wait();
+      expect(element.value).toBe("");
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
-      // // empty -> unknown
-      // await wait();
-      // expect(element.value).toBe(unknownValue("unmatched"));
-      // expect(selectCtrl.hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
+      scope.selected = "unmatched";
+      await wait();
+      expect(element.value).toBe(unknownValue("unmatched"));
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(true);
 
-      // // unknown -> selection
-      // await wait();
-      // expect(element.value).toBe("y");
-      // expect(selectCtrl.hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
+      scope.selected = "y";
+      await wait();
+      expect(element.value).toBe("y");
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(false);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
 
-      // // selection -> empty
-      // await wait();
-      // expect(element.value).toBe("");
-      // expect(selectCtrl.hasEmptyOption()).toBe(true);
-      // expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
-      // expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
+      scope.selected = "";
+      await wait();
+      expect(element.value).toBe("");
+      expect(selectCtrl.isEmptyOptionSelected()).toBe(true);
+      expect(selectCtrl.isUnknownOptionSelected()).toBe(false);
     });
   });
 

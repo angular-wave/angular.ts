@@ -51,6 +51,17 @@ jobs:
           key: openharmony-ets-6.1.0.31-${{ runner.os }}-${{ runner.arch }}
       - name: Audit ArkTS against public OpenHarmony API 23
         run: make -C integrations/harmonyos openharmony-audit
+      - name: Cache pinned OpenHarmony build tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/angularts/hvigor-6.0.0.868/extracted-v1
+            ~/.cache/angularts/openharmony-sdk-hvigor-6.1.0.31
+          key: openharmony-build-6.0.0.868-api23-6.1.0.31-${{ runner.os }}-${{ runner.arch }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - name: Build the public OpenHarmony API 23 projection
         run: make -C integrations/harmonyos openharmony-build
       - name: Retain OpenHarmony compatibility packages

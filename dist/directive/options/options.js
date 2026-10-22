@@ -1,5 +1,6 @@
 import { _compile, _parse } from '../../injection-tokens.js';
-import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, startingTag, removeElement } from '../../shared/dom.js';
+import { registerScopeDestroyCallback, observeScopeExpression } from '../../core/scope/scope.js';
+import { hasNormalizedAttr, emptyElement, getNormalizedAttr, createDocumentFragment, addElementDisposer, startingTag, removeElement } from '../../shared/dom.js';
 import { assertInvariantDefined, isDefined, isNull, equals, isArrayLike, hasOwn, hashKey, includes, createErrorFactory } from '../../shared/utils.js';
 
 const ngOptionsError = createErrorFactory("ngOptions");
@@ -19,7 +20,7 @@ class OptionItem {
 }
 ngOptionsDirective.$inject = [_compile, _parse];
 function ngOptionsDirective($compile, $parse) {
-    function parseOptionsExpression(optionsExp, selectElement, scope) {
+    function parseOptionsExpression(optionsExp, selectElement, scope, onOptionChange) {
         const match = NG_OPTIONS_REGEXP.exec(optionsExp);
         if (!match) {
             throw ngOptionsError("iexp", "Expected expression in form of " +
@@ -35,7 +36,13 @@ function ngOptionsDirective($compile, $parse) {
         const groupByFn = $parse(groupExpression || "");
         const disableWhenFn = $parse(disabledExpression || "");
         const valuesFn = $parse(collectionExpression);
+        const optionObservers = [];
         const locals = {};
+        function disposeOptionObservers() {
+            optionObservers.splice(0).forEach((dispose) => {
+                dispose();
+            });
+        }
         const getLocals = keyName
             ? (value, key) => {
                 locals[keyName] = key;
@@ -49,7 +56,10 @@ function ngOptionsDirective($compile, $parse) {
         return {
             _getWatchables: collectionExpression,
             /** @internal */
+            _dispose: disposeOptionObservers,
+            /** @internal */
             _getOptions() {
+                disposeOptionObservers();
                 const optionItems = [];
                 const selectValueMap = {};
                 const optionValues = valuesFn(scope) ?? [];
@@ -63,6 +73,24 @@ function ngOptionsDirective($compile, $parse) {
                     const optionItem = new OptionItem(selectValue, viewValue, label, group, disabled);
                     optionItems.push(optionItem);
                     selectValueMap[selectValue] = optionItem;
+                    // Observe item expressions with locals so aliases cannot shadow Scope APIs.
+                    let initialized = false;
+                    optionObservers.push(observeScopeExpression(scope, () => {
+                        const currentLocals = getLocals(value, key);
+                        return new OptionItem(selectValue, viewValueFn(scope, currentLocals), displayFn(scope, currentLocals), groupByFn(scope, currentLocals), disableWhenFn(scope, currentLocals));
+                    }, (result) => {
+                        if (!initialized) {
+                            initialized = true;
+                            return;
+                        }
+                        const current = result;
+                        if (!Object.is(current._viewValue, viewValue) ||
+                            current._label !== optionItem._label ||
+                            !Object.is(current._group, optionItem._group) ||
+                            current._disabled !== optionItem._disabled) {
+                            onOptionChange();
+                        }
+                    }, false));
                 };
                 if (!keyName && isArrayLike(optionValues)) {
                     const arrayLikeOptions = optionValues;
@@ -107,7 +135,7 @@ function ngOptionsDirective($compile, $parse) {
         emptyElement(selectNode);
         const providedEmptyOption = !!selectCtrl._emptyOption;
         let options;
-        const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") ?? "", selectNode, scope);
+        const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") ?? "", selectNode, scope, updateOptions);
         const listFragment = createDocumentFragment();
         selectCtrl._generateUnknownOptionValue = () => "?";
         if (!multiple) {
@@ -175,7 +203,17 @@ function ngOptionsDirective($compile, $parse) {
             selectNode.prepend(assertInvariantDefined(selectCtrl._emptyOption));
             linkFn(scope);
         }
-        scope.watch(ngOptions._getWatchables, updateOptions);
+        let disposed = false;
+        const deregisterOptions = scope.watch(ngOptions._getWatchables, updateOptions);
+        function disposeOptions() {
+            if (disposed)
+                return;
+            disposed = true;
+            deregisterOptions?.();
+            ngOptions._dispose();
+        }
+        addElementDisposer(selectNode, disposeOptions);
+        registerScopeDestroyCallback(scope, disposeOptions);
         function _addOptionElement(option, parent) {
             const optionElement = optionTemplate.cloneNode(false);
             parent.appendChild(optionElement);
@@ -198,6 +236,8 @@ function ngOptionsDirective($compile, $parse) {
             element.value = option._selectValue;
         }
         function updateOptions() {
+            if (disposed)
+                return;
             const previousValue = options && selectCtrl._readValue();
             if (options) {
                 for (let i = options._items.length - 1; i >= 0; i--) {

@@ -366,7 +366,7 @@ describe("angular", () => {
 
       expect(injector).toBeDefined();
       expect(angular.getInjector(element)).toBe(injector);
-      // dealoc(element);
+      dealoc(element);
     });
 
     it("have a reference to inself from injector", () => {

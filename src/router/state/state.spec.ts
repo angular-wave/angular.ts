@@ -1274,9 +1274,9 @@ describe("$state", () => {
         expect(e.message).toMatch(
           /The transition has been superseded by a different transition/,
         );
-        //TODO fix
-        //expect($state.current.name).toBe("about");
       }
+      await waitUntil(() => $state.current.name === "about");
+      expect($state.current.name).toBe("about");
     });
 
     it("triggers onEnter and onExit callbacks", async () => {

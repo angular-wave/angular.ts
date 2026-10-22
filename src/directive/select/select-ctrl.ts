@@ -1,6 +1,7 @@
 import { _element, _scope } from "../../injection-tokens.ts";
 import { NodeType } from "../../shared/node.ts";
 import {
+  addElementDisposer,
   getNormalizedAttr,
   removeElement,
   setNormalizedAttr,
@@ -613,7 +614,7 @@ export class SelectController {
       },
     );
 
-    optionElement.addEventListener("$destroy", () => {
+    addElementDisposer(optionElement, () => {
       const currentValue = this._readValue();
 
       const removeValue: unknown = oldVal ?? registeredValue;

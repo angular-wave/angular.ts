@@ -242,6 +242,11 @@ const patternDirective = [
                     setNativeCustomValidityIssue(modelCtrl, "pattern", valid ? null : "Value does not match the required pattern.");
                     return valid;
                 };
+                if (ngPattern && !REGEX_STRING_REGEXP.test(ngPattern)) {
+                    scope.watch(patternExp, () => {
+                        refreshRegexp();
+                    });
+                }
             };
         },
     }),
@@ -306,6 +311,15 @@ const maxlengthDirective = [
                     : `Value must be at most ${String(maxlengthParsed)} characters.`);
                 return valid;
             };
+            if (ngMaxlength) {
+                scope.watch(ngMaxlength, (newValue) => {
+                    if (maxlength !== newValue) {
+                        maxlength = newValue;
+                        maxlengthParsed = parseLength(newValue);
+                        ctrl.validate();
+                    }
+                });
+            }
         },
     }),
 ];
@@ -368,6 +382,15 @@ const minlengthDirective = [
                     : `Value must be at least ${String(minlengthParsed)} characters.`);
                 return valid;
             };
+            if (ngMinlength) {
+                scope.watch(ngMinlength, (newValue) => {
+                    if (minlength !== newValue) {
+                        minlength = newValue;
+                        minlengthParsed = parseLength(newValue) || -1;
+                        ctrl.validate();
+                    }
+                });
+            }
         },
     }),
 ];

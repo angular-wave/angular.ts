@@ -220,12 +220,11 @@ describe("validators", () => {
       inputElm.dispatchEvent(new Event("input"));
       expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
-      //   $rootScope.regexp = /abc?/;
-      // });
-      // await wait();
-      // inputElm.setAttribute("value", "ab");
-      // inputElm.dispatchEvent(new Event("input"));
-      // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+      $rootScope.regexp = /abc?/;
+      await wait();
+      inputElm.value = "ab";
+      inputElm.dispatchEvent(new Event("input"));
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
 
       inputElm.value = "xx";
       inputElm.dispatchEvent(new Event("input"));
@@ -246,21 +245,18 @@ describe("validators", () => {
       inputElm.dispatchEvent(new Event("input"));
       expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
-      // ON FLY CNANGES
-      //   $rootScope.regexp = /^\d+$/;
-      // });
-      // await wait();
-      // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+      $rootScope.regexp = /^\d+$/;
+      await wait();
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
 
-      // inputElm.setAttribute("value", "abcdef");
-      // inputElm.dispatchEvent(new Event("input"));
-      // await wait();
-      // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
+      inputElm.value = "abcdef";
+      inputElm.dispatchEvent(new Event("input"));
+      await wait();
+      expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
-      //   $rootScope.regexp = "";
-      // });
-      // await wait();
-      // expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+      $rootScope.regexp = "";
+      await wait();
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
     });
 
     it('should register "pattern" with the model validations when the pattern attribute is used', async () => {
@@ -432,6 +428,35 @@ describe("validators", () => {
   });
 
   describe("minlength", () => {
+    it("revalidates the current value when the minimum length changes", async () => {
+      $rootScope.minimum = 3;
+      inputElm = $compile(
+        '<input type="text" ng-model="value" ng-minlength="minimum" />',
+      )($rootScope);
+      await wait();
+      inputElm.value = "abcd";
+      inputElm.dispatchEvent(new Event("input"));
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+
+      $rootScope.minimum = 5;
+      await wait();
+      expect(inputElm.classList.contains("ng-invalid-minlength")).toBeTrue();
+
+      $rootScope.minimum = 2;
+      await wait();
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+      expect(inputElm.validity.customError).toBeFalse();
+
+      $rootScope.minimum = 0;
+      await wait();
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+      expect(inputElm.validity.customError).toBeFalse();
+
+      $rootScope.minimum = undefined;
+      await wait();
+      expect(inputElm.classList.contains("ng-valid")).toBeTrue();
+    });
+
     it("should invalidate values that are shorter than the given minlength", async () => {
       inputElm = $compile(
         '<input type="text" ng-model="value" ng-minlength="3" />',
@@ -606,9 +631,9 @@ describe("validators", () => {
       inputElm.value = "aaaaaaaaaa";
       inputElm.dispatchEvent(new Event("input"));
 
-      // ONFLY CHANGE
-      // await wait();
-      // expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
+      $rootScope.maxlength = 5;
+      await wait();
+      expect(inputElm.classList.contains("ng-invalid")).toBeTrue();
 
       $rootScope.maxlength = "abc";
       await wait();

@@ -71,7 +71,7 @@ test("keeps the compatibility audit separate from the API 26 release gate", asyn
   const makefile = await readFile(resolve(integration, "Makefile"), "utf8");
   assert.match(makefile, /^openharmony-bootstrap:/mu);
   assert.match(makefile, /^openharmony-audit: openharmony-bootstrap$/mu);
-  assert.match(makefile, /^openharmony-build: generate-check proof-assets-check$/mu);
+  assert.match(makefile, /^openharmony-build: openharmony-build-bootstrap generate-check proof-assets-check$/mu);
   assert.match(makefile, /check-platform-matrix\.mjs --require-implemented=harmonyos/u);
   assert.doesNotMatch(makefile, /^release-check:.*openharmony-audit/mu);
   assert.doesNotMatch(makefile, /^release-check:.*openharmony-build/mu);

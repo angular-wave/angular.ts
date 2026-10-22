@@ -742,44 +742,19 @@ describe("ngModel", () => {
 
           await wait();
 
-          //const ctrl = getController(input, "ngModel");
-
           expect(input.classList.contains("ng-empty")).toBeTrue();
           expect(input.classList.contains("ng-valid")).toBeTrue();
 
-          // setModelValue(ctrl, 3);
-          // ctrl.processModelValue();
+          $rootScope.value = "3";
+          await wait();
+          expect(input.classList.contains("ng-empty")).toBeFalse();
+          expect(input.classList.contains("ng-not-empty")).toBeTrue();
+          expect(input.classList.contains("ng-valid")).toBeTrue();
 
-          // // $animate adds / removes classes asynchronously, which
-          // // we cannot trigger with $digest, because that would set the model from the scope,
-          // // so we simply check if the functions have been called
-          // expect($animate.removeClass.calls.mostRecent().args[0][0]).toBe(
-          //   input[0],
-          // );
-          // expect($animate.removeClass.calls.mostRecent().args[1]).toBe(
-          //   "ng-empty",
-          // );
-
-          // expect($animate.addClass.calls.mostRecent().args[0][0]).toBe(
-          //   input[0],
-          // );
-          // expect($animate.addClass.calls.mostRecent().args[1]).toBe(
-          //   "ng-not-empty",
-          // );
-
-          // $animate.removeClass.calls.reset();
-          // $animate.addClass.calls.reset();
-
-          // setModelValue(ctrl, 35);
-          // ctrl.processModelValue();
-
-          // expect($animate.addClass.calls.argsFor(1)[0][0]).toBe(input[0]);
-          // expect($animate.addClass.calls.argsFor(1)[1]).toBe("ng-invalid");
-
-          // expect($animate.addClass.calls.argsFor(2)[0][0]).toBe(input[0]);
-          // expect($animate.addClass.calls.argsFor(2)[1]).toBe(
-          //   "ng-invalid-maxlength",
-          // );
+          $rootScope.value = "35";
+          await wait();
+          expect(input.classList.contains("ng-invalid")).toBeTrue();
+          expect(input.classList.contains("ng-invalid-maxlength")).toBeTrue();
         });
 
         // this is analogue to setViewValue
@@ -1385,7 +1360,7 @@ describe("ngModel", () => {
 
         expect(usernameCtrl.invalid).toBe(false);
         expect(ageCtrl.invalid).toBe(false);
-        ///expect(formCtrl.invalid).toBe(false);
+        expect(formCtrl.invalid).toBe(false);
 
         inputElm.value = "valid";
         browserTrigger(inputElm, "input");
@@ -1393,17 +1368,19 @@ describe("ngModel", () => {
         expect(ageCtrl.invalid).toBe(false);
         expect(formCtrl.invalid).toBe(true);
 
-        // usernameDefer = Promise.withResolvers();
-        // usernameCtrl.asyncValidators.usernameAvailability = function () {
-        //   return usernameDefer.promise;
-        // };
-        // usernameCtrl.setViewValue("another-valid-username");
-        // usernameDefer.resolve();
+        const retryDefer = Promise.withResolvers();
+
+        usernameCtrl.asyncValidators.usernameAvailability = () =>
+          retryDefer.promise;
+        inputElm.value = "another-valid-username";
+        browserTrigger(inputElm, "input");
+        expect(formCtrl.pending.usernameAvailability).toBeTruthy();
+        retryDefer.resolve();
         await wait();
-        // expect(usernameCtrl.invalid).toBe(false);
-        // expect(formCtrl.invalid).toBe(false);
-        // expect(formCtrl.pending).toBeFalsy();
-        // expect(ageCtrl.invalid).toBe(false);
+        expect(usernameCtrl.invalid).toBe(false);
+        expect(formCtrl.invalid).toBe(false);
+        expect(formCtrl.pending).toBeFalsy();
+        expect(ageCtrl.invalid).toBe(false);
 
         dealoc(element);
       });
@@ -1851,51 +1828,6 @@ describe("ngModel", () => {
       dealoc(element);
     });
 
-    it("should register/deregister a nested ngModel with parent form when entering or leaving DOM with animations", async () => {
-      // ngAnimate performs the dom manipulation after digest, and since the form validity can be affected by a form
-      // control going away we must ensure that the deregistration happens during the digest while we are still doing
-      // dirty checking.
-      // module("ngAnimate");
-
-      const element = $compile(
-        '<form name="myForm">' +
-          '<input ng-if="inputPresent" name="myControl" ng-model="value" required >' +
-          "</form>",
-      )($rootScope);
-
-      await wait();
-
-      let isFormValid;
-
-      $rootScope.inputPresent = false;
-      // this watch ensure that the form validity gets updated during digest (so that we can observe it)
-      $rootScope.watch("myForm.valid", (value) => {
-        isFormValid = value;
-      });
-
-      await wait();
-
-      expect($rootScope.myForm.valid).toBe(true);
-      expect(isFormValid).toBe(true);
-      expect($rootScope.myForm.myControl).toBeUndefined();
-
-      $rootScope.inputPresent = true;
-      await wait();
-
-      expect($rootScope.myForm.valid).toBe(false);
-      expect(isFormValid).toBe(false);
-      expect($rootScope.myForm.myControl).toBeDefined();
-
-      $rootScope.inputPresent = false;
-      await wait();
-
-      expect($rootScope.myForm.valid).toBe(true);
-      expect(isFormValid).toBe(true);
-      expect($rootScope.myForm.myControl).toBeUndefined();
-
-      dealoc(element);
-    });
-
     it("should keep previously defined watches consistent when changes in validity are made", async () => {
       let isFormValid;
 
@@ -1921,141 +1853,6 @@ describe("ngModel", () => {
       dealoc(element);
     });
   });
-
-  // TODO:
-  // describe("animations", () => {
-  //   function findElementAnimations(element, queue) {
-  //     const node = element;
-  //     const animations = [];
-  //     for (let i = 0; i < queue.length; i++) {
-  //       const animation = queue[i];
-  //       if (animation.element === node) {
-  //         animations.push(animation);
-  //       }
-  //     }
-  //     return animations;
-  //   }
-
-  //   function assertValidAnimation(animation, event, classNameA, classNameB) {
-  //     expect(animation.event).toBe(event);
-  //     expect(animation.args[1]).toBe(classNameA);
-  //     if (classNameB) expect(animation.args[2]).toBe(classNameB);
-  //   }
-
-  //   let doc;
-  //   let input;
-  //   let scope;
-  //   let model;
-
-  //   //beforeEach(module("ngAnimateMock"));
-
-  //   beforeEach(() => {
-  //     scope = $rootScope.new();
-  //     doc = (
-  //       '<form name="myForm">' +
-  //         '  <input type="text" ng-model="input" name="myInput" />' +
-  //         "</form>",
-  //     );
-  //     $rootElement.append(doc);
-  //     $compile(doc)(scope);
-  //     $animate.queue = [];
-
-  //     input = doc.querySelector("input");
-  //     model = scope.myForm.myInput;
-  //   });
-
-  //   afterEach(() => {
-  //     dealoc(input);
-  //   });
-
-  //   it("should trigger an animation when invalid", () => {
-  //     model.setValidity("required", false);
-
-  //     const animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "removeClass", "ng-valid");
-  //     assertValidAnimation(animations[1], "addClass", "ng-invalid");
-  //     assertValidAnimation(animations[2], "addClass", "ng-invalid-required");
-  //   });
-
-  //   it("should trigger an animation when valid", () => {
-  //     model.setValidity("required", false);
-
-  //     $animate.queue = [];
-
-  //     model.setValidity("required", true);
-
-  //     const animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "addClass", "ng-valid");
-  //     assertValidAnimation(animations[1], "removeClass", "ng-invalid");
-  //     assertValidAnimation(animations[2], "addClass", "ng-valid-required");
-  //     assertValidAnimation(animations[3], "removeClass", "ng-invalid-required");
-  //   });
-
-  //   it("should trigger an animation when dirty", () => {
-  //     model.setViewValue("some dirty value");
-
-  //     const animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "removeClass", "ng-empty");
-  //     assertValidAnimation(animations[1], "addClass", "ng-not-empty");
-  //     assertValidAnimation(animations[2], "removeClass", "ng-pristine");
-  //     assertValidAnimation(animations[3], "addClass", "ng-dirty");
-  //   });
-
-  //   it("should trigger an animation when pristine", () => {
-  //     model.setPristine();
-
-  //     const animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "removeClass", "ng-dirty");
-  //     assertValidAnimation(animations[1], "addClass", "ng-pristine");
-  //   });
-
-  //   it("should trigger an animation when untouched", () => {
-  //     model.setUntouched();
-
-  //     const animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "setClass", "ng-untouched");
-  //     expect(animations[0].args[2]).toBe("ng-touched");
-  //   });
-
-  //   it("should trigger an animation when touched", () => {
-  //     model.setTouched();
-
-  //     const animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(
-  //       animations[0],
-  //       "setClass",
-  //       "ng-touched",
-  //       "ng-untouched",
-  //     );
-  //     expect(animations[0].args[2]).toBe("ng-untouched");
-  //   });
-
-  //   it("should trigger custom errors as addClass/removeClass when invalid/valid", () => {
-  //     model.setValidity("custom-error", false);
-
-  //     let animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "removeClass", "ng-valid");
-  //     assertValidAnimation(animations[1], "addClass", "ng-invalid");
-  //     assertValidAnimation(
-  //       animations[2],
-  //       "addClass",
-  //       "ng-invalid-custom-error",
-  //     );
-
-  //     $animate.queue = [];
-  //     model.setValidity("custom-error", true);
-
-  //     animations = findElementAnimations(input, $animate.queue);
-  //     assertValidAnimation(animations[0], "addClass", "ng-valid");
-  //     assertValidAnimation(animations[1], "removeClass", "ng-invalid");
-  //     assertValidAnimation(animations[2], "addClass", "ng-valid-custom-error");
-  //     assertValidAnimation(
-  //       animations[3],
-  //       "removeClass",
-  //       "ng-invalid-custom-error",
-  //     );
-  //   });
-  // });
 });
 
 describe("data-change", () => {

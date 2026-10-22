@@ -27448,7 +27448,7 @@
     }
     ngOptionsDirective.$inject = [_compile, _parse];
     function ngOptionsDirective($compile, $parse) {
-        function parseOptionsExpression(optionsExp, selectElement, scope) {
+        function parseOptionsExpression(optionsExp, selectElement, scope, onOptionChange) {
             const match = NG_OPTIONS_REGEXP.exec(optionsExp);
             if (!match) {
                 throw ngOptionsError("iexp", "Expected expression in form of " +
@@ -27464,7 +27464,13 @@
             const groupByFn = $parse(groupExpression || "");
             const disableWhenFn = $parse(disabledExpression || "");
             const valuesFn = $parse(collectionExpression);
+            const optionObservers = [];
             const locals = {};
+            function disposeOptionObservers() {
+                optionObservers.splice(0).forEach((dispose) => {
+                    dispose();
+                });
+            }
             const getLocals = keyName
                 ? (value, key) => {
                     locals[keyName] = key;
@@ -27478,7 +27484,10 @@
             return {
                 _getWatchables: collectionExpression,
                 /** @internal */
+                _dispose: disposeOptionObservers,
+                /** @internal */
                 _getOptions() {
+                    disposeOptionObservers();
                     const optionItems = [];
                     const selectValueMap = {};
                     const optionValues = valuesFn(scope) ?? [];
@@ -27492,6 +27501,24 @@
                         const optionItem = new OptionItem(selectValue, viewValue, label, group, disabled);
                         optionItems.push(optionItem);
                         selectValueMap[selectValue] = optionItem;
+                        // Observe item expressions with locals so aliases cannot shadow Scope APIs.
+                        let initialized = false;
+                        optionObservers.push(observeScopeExpression(scope, () => {
+                            const currentLocals = getLocals(value, key);
+                            return new OptionItem(selectValue, viewValueFn(scope, currentLocals), displayFn(scope, currentLocals), groupByFn(scope, currentLocals), disableWhenFn(scope, currentLocals));
+                        }, (result) => {
+                            if (!initialized) {
+                                initialized = true;
+                                return;
+                            }
+                            const current = result;
+                            if (!Object.is(current._viewValue, viewValue) ||
+                                current._label !== optionItem._label ||
+                                !Object.is(current._group, optionItem._group) ||
+                                current._disabled !== optionItem._disabled) {
+                                onOptionChange();
+                            }
+                        }, false));
                     };
                     if (!keyName && isArrayLike(optionValues)) {
                         const arrayLikeOptions = optionValues;
@@ -27536,7 +27563,7 @@
             emptyElement(selectNode);
             const providedEmptyOption = !!selectCtrl._emptyOption;
             let options;
-            const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") ?? "", selectNode, scope);
+            const ngOptions = parseOptionsExpression(getNormalizedAttr(selectElement, "ngOptions") ?? "", selectNode, scope, updateOptions);
             const listFragment = createDocumentFragment();
             selectCtrl._generateUnknownOptionValue = () => "?";
             if (!multiple) {
@@ -27604,7 +27631,17 @@
                 selectNode.prepend(assertInvariantDefined(selectCtrl._emptyOption));
                 linkFn(scope);
             }
-            scope.watch(ngOptions._getWatchables, updateOptions);
+            let disposed = false;
+            const deregisterOptions = scope.watch(ngOptions._getWatchables, updateOptions);
+            function disposeOptions() {
+                if (disposed)
+                    return;
+                disposed = true;
+                deregisterOptions?.();
+                ngOptions._dispose();
+            }
+            addElementDisposer(selectNode, disposeOptions);
+            registerScopeDestroyCallback(scope, disposeOptions);
             function _addOptionElement(option, parent) {
                 const optionElement = optionTemplate.cloneNode(false);
                 parent.appendChild(optionElement);
@@ -27627,6 +27664,8 @@
                 element.value = option._selectValue;
             }
             function updateOptions() {
+                if (disposed)
+                    return;
                 const previousValue = options && selectCtrl._readValue();
                 if (options) {
                     for (let i = options._items.length - 1; i >= 0; i--) {
@@ -28167,7 +28206,7 @@
                     }
                 }
             });
-            optionElement.addEventListener("$destroy", () => {
+            addElementDisposer(optionElement, () => {
                 const currentValue = this._readValue();
                 const removeValue = oldVal ?? registeredValue;
                 const shouldUpdateViewValue = (this._multiple &&
@@ -29879,6 +29918,11 @@
                         setNativeCustomValidityIssue(modelCtrl, "pattern", valid ? null : "Value does not match the required pattern.");
                         return valid;
                     };
+                    if (ngPattern && !REGEX_STRING_REGEXP.test(ngPattern)) {
+                        scope.watch(patternExp, () => {
+                            refreshRegexp();
+                        });
+                    }
                 };
             },
         }),
@@ -29943,6 +29987,15 @@
                         : `Value must be at most ${String(maxlengthParsed)} characters.`);
                     return valid;
                 };
+                if (ngMaxlength) {
+                    scope.watch(ngMaxlength, (newValue) => {
+                        if (maxlength !== newValue) {
+                            maxlength = newValue;
+                            maxlengthParsed = parseLength(newValue);
+                            ctrl.validate();
+                        }
+                    });
+                }
             },
         }),
     ];
@@ -30005,6 +30058,15 @@
                         : `Value must be at least ${String(minlengthParsed)} characters.`);
                     return valid;
                 };
+                if (ngMinlength) {
+                    scope.watch(ngMinlength, (newValue) => {
+                        if (minlength !== newValue) {
+                            minlength = newValue;
+                            minlengthParsed = parseLength(newValue) || -1;
+                            ctrl.validate();
+                        }
+                    });
+                }
             },
         }),
     ];

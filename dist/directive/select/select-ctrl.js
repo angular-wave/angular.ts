@@ -1,6 +1,6 @@
 import { _element, _scope } from '../../injection-tokens.js';
 import { NodeType } from '../../shared/node.js';
-import { removeElement, getNormalizedAttr, setNormalizedAttr } from '../../shared/dom.js';
+import { removeElement, addElementDisposer, getNormalizedAttr, setNormalizedAttr } from '../../shared/dom.js';
 import { isUndefined, hashKey, deProxy, validateNotHasOwnPropertyName, isNullOrUndefined, stringify, isDefined, isArray, deleteProperty, directiveNormalize } from '../../shared/utils.js';
 
 function readOptionElementAttr(optionElement, normalizedName, observedValue) {
@@ -407,7 +407,7 @@ class SelectController {
                 }
             }
         });
-        optionElement.addEventListener("$destroy", () => {
+        addElementDisposer(optionElement, () => {
             const currentValue = this._readValue();
             const removeValue = oldVal ?? registeredValue;
             const shouldUpdateViewValue = (this._multiple &&

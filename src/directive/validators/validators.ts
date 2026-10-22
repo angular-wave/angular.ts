@@ -355,6 +355,12 @@ export const patternDirective: [
 
           return valid;
         };
+
+        if (ngPattern && !REGEX_STRING_REGEXP.test(ngPattern)) {
+          scope.watch(patternExp, () => {
+            refreshRegexp();
+          });
+        }
       };
     },
   }),
@@ -440,6 +446,16 @@ export const maxlengthDirective: [
 
         return valid;
       };
+
+      if (ngMaxlength) {
+        scope.watch(ngMaxlength, (newValue) => {
+          if (maxlength !== newValue) {
+            maxlength = newValue;
+            maxlengthParsed = parseLength(newValue);
+            ctrl.validate();
+          }
+        });
+      }
     },
   }),
 ];
@@ -523,6 +539,16 @@ export const minlengthDirective: [
 
         return valid;
       };
+
+      if (ngMinlength) {
+        scope.watch(ngMinlength, (newValue) => {
+          if (minlength !== newValue) {
+            minlength = newValue;
+            minlengthParsed = parseLength(newValue) || -1;
+            ctrl.validate();
+          }
+        });
+      }
     },
   }),
 ];

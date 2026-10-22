@@ -48,7 +48,10 @@ ArkTS sources against API 23. It catches ArkTS language restrictions and public
 OpenHarmony API drift. It does not provide HarmonyOS-only kits, compile the API
 26 project, replace device tests, or satisfy `release-check`.
 The companion `openharmony-build` target builds the proof and Pulse HAPs plus
-the six compatible HARs. It excludes credentials and maps because Account Kit
+the six compatible HARs. It first installs the pinned Hvigor tools and complete
+public API 23 SDK, verifying both downloaded archives with SHA-256. It requires
+Java 17, `curl`, `tar`, and `unzip`; the first run downloads the combined public
+SDK archive. It excludes credentials and maps because Account Kit
 and Map Kit require Huawei's API 26 SDK; their sources are still included in
 the strict ArkTS audit through declaration-only stubs.
 The HarmonyOS workflow runs both the audit and `openharmony-build`

@@ -105,7 +105,6 @@ describe("form", () => {
     input.value = "ab";
     browserTrigger(input, "input");
 
-    // await wait();
     await wait(10);
     expect(form.error.maxlength).toBeTruthy();
     expect(form.dirty).toBe(true);
@@ -411,7 +410,6 @@ describe("form", () => {
       scope.submit = jasmine.createSpy("submit").and.callFake(() => {
         expect(scope.name).toEqual("a");
       });
-      // browserTrigger(form, "submit");
       form.dispatchEvent(new Event("submit"));
       expect(scope.submit).toHaveBeenCalled();
     });
@@ -710,7 +708,6 @@ describe("form", () => {
       doc = $compile('<form action="some.py"></form>')(scope);
       doc.addEventListener("submit", callback);
 
-      //browserTrigger(doc, "submit");
       doc.dispatchEvent(new Event("submit"));
       expect(callback).toHaveBeenCalled();
     });
@@ -1714,7 +1711,6 @@ describe("form", () => {
     });
 
     it("should be in submitted state when submitted", () => {
-      // browserTrigger(doc, "submit");
       doc.dispatchEvent(new Event("submit"));
       expect(scope.form.submitted).toBe(true);
     });

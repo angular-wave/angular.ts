@@ -164,9 +164,7 @@ describe("event directives", () => {
       await wait();
       browserTrigger(element, "click");
       await wait();
-      // TODO
-      // expect(scope.e.target).toBe(element);
-      expect(scope.e.target).toBeDefined();
+      expect(scope.e.target).toBe(element);
     });
   });
 

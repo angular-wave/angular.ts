@@ -1322,13 +1322,13 @@ describe("parser", () => {
         watcherCalls++;
       });
 
-      // await wait();
-      // expect(filterCalls).toBe(1);
-      // expect(watcherCalls).toBe(1);
+      await wait();
+      expect(filterCalls).toBe(1);
+      expect(watcherCalls).toBe(1);
 
-      // await wait();
-      // expect(filterCalls).toBe(1);
-      // expect(watcherCalls).toBe(1);
+      await wait();
+      expect(filterCalls).toBe(1);
+      expect(watcherCalls).toBe(1);
     });
 
     it("should ignore changes within nested objects", async () => {
@@ -2060,15 +2060,8 @@ describe("parser", () => {
           tryParseAndIgnoreException('a.c["d"] = 2');
           expect(scope).toEqual({ a: { b: falsyValue, c: falsyValue } });
 
-          // Helpers
-          //
-          // Normally assigning property on a primitive should throw exception in strict mode
-          // and silently fail in non-strict mode, IE seems to always have the non-strict-mode behavior,
-          // so if we try to use 'expect(() => {$parse('a.b=1')({a:false});).toThrow()' for testing
-          // the test will fail in case of IE because it will not throw exception, and if we just use
-          // '$parse('a.b=1')({a:false})' the test will fail because it will throw exception in case of Chrome
-          // so we use tryParseAndIgnoreException helper to catch the exception silently for all cases.
-          //
+          // Assignment to primitives may throw. Inspect the resulting state
+          // regardless of whether the assignment throws or is ignored.
           function tryParseAndIgnoreException(expression) {
             try {
               $parse(expression)(scope);

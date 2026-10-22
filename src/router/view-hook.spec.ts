@@ -195,12 +195,9 @@ describe("view hooks", () => {
     });
 
     it("receives the new Transition as the first argument", async () => {
-      const _state = $state;
-
       ctrl.prototype.canExit = function (trans) {
         log += "canexit;";
         expect(trans._treeChanges).toBeDefined();
-        // expect(trans.injector().get("$state")).toBe(_state);
       };
       await initial();
 

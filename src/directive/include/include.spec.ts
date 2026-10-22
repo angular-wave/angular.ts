@@ -45,9 +45,9 @@ describe("ngInclude", () => {
       $compile = injector.get("$compile");
     });
 
-    // afterEach(() => {
-    //   dealoc(element);
-    // });
+    afterEach(() => {
+      dealoc(element);
+    });
 
     it("should trust and use literal urls", async () => {
       const element = createElementFromHTML(
@@ -628,21 +628,56 @@ describe("ngInclude", () => {
         expect(autoScrollSpy).not.toHaveBeenCalled();
       });
 
-      // it('should only call $anchorScroll after the "enter" animation completes', inject(
-      //   compileAndLink(
-      //     '<div><ng-include src="tpl" autoscroll></ng-include></div>',
-      //   ),
-      //   ($rootScope, $animate, $timeout) => {
-      //     expect(autoScrollSpy).not.toHaveBeenCalled();
+      [true, false].forEach((completed) => {
+        it(`scrolls only after successful animated entry (completed: ${completed})`, async () => {
+          const root = document.createElement("div");
+          const scroll = jasmine.createSpy("$anchorScroll");
+          let finishEntry;
+          const animate = {
+            enter: jasmine
+              .createSpy("enter")
+              .and.callFake((node, _parent, anchor) => {
+                anchor.after(node);
+                return {
+                  done(callback) {
+                    finishEntry = callback;
+                  },
+                };
+              }),
+          };
+          const localAngular = new Angular();
 
-      //     expect($animate.queue.shift().event).toBe("enter");
+          localAngular
+            .createModule("scrollAfterEntry", [])
+            .value("$animate", animate)
+            .value("$anchorScroll", scroll);
+          const localInjector = localAngular.bootstrap(root, [
+            "scrollAfterEntry",
+          ]);
+          const localScope = localInjector.get("$rootScope");
 
-      //     $animate.flush();
-      //     ;
+          try {
+            localInjector
+              .get("$templateCache")
+              .set("scroll-template", "<span>Ready</span>");
+            root.append(
+              localInjector.get("$compile")(
+                '<div><ng-include src="tpl" autoscroll data-animate="true"></ng-include></div>',
+              )(localScope),
+            );
+            localScope.tpl = "scroll-template";
+            await waitUntil(() => typeof finishEntry === "function");
 
-      //     expect(autoScrollSpy).toHaveBeenCalled();
-      //   },
-      // ));
+            expect(root.textContent).toBe("Ready");
+            expect(scroll).not.toHaveBeenCalled();
+            finishEntry(completed);
+            expect(scroll.calls.count()).toBe(completed ? 1 : 0);
+          } finally {
+            localAngular._composition.destroy();
+            dealoc(root);
+          }
+        });
+      });
     });
 
     describe("and transcludes", () => {
@@ -737,131 +772,5 @@ describe("ngInclude", () => {
         expect(root).toBe(element);
       });
     });
-
-    // describe("and animations", () => {
-    //   let body;
-    //   let element;
-    //   let $rootElement;
-
-    //   function html(content) {
-    //     $rootElement.html(content);
-    //     element = $rootElement.children()[0];
-    //     return element;
-    //   }
-
-    //   // beforeEach(
-    //   //   module(
-    //   //     () =>
-    //   //       // we need to run animation on attached elements;
-    //   //       function (_$rootElement_) {
-    //   //         $rootElement = _$rootElement_;
-    //   //         body = (document.body);
-    //   //         body.append($rootElement);
-    //   //       },
-    //   //   ),
-    //   // );
-
-    //   afterEach(() => {
-    //     dealoc(body);
-    //     dealoc(element);
-    //   });
-
-    //   // beforeEach(module("ngAnimateMock"));
-
-    //   afterEach(() => {
-    //     dealoc(element);
-    //   });
-
-    //   it("should fire off the enter animation", () => {
-    //     let item;
-
-    //     $templateCache.set("enter", [200, "<div>data</div>", {}]);
-    //     $rootScope.tpl = "enter";
-    //     element = $compile(
-    //       html("<div><div " + 'ng-include="tpl">' + "</div></div>"),
-    //     )($rootScope);
-    //     ;
-
-    //     const animation = $animate.queue.pop();
-    //     expect(animation.event).toBe("enter");
-    //     expect(animation.element.textContent).toBe("data");
-    //   });
-
-    //   it("should fire off the leave animation", () => {
-    //     let item;
-    //     $templateCache.set("enter", [200, "<div>data</div>", {}]);
-    //     $rootScope.tpl = "enter";
-    //     element = $compile(
-    //       html("<div><div " + 'ng-include="tpl">' + "</div></div>"),
-    //     )($rootScope);
-    //     ;
-
-    //     let animation = $animate.queue.shift();
-    //     expect(animation.event).toBe("enter");
-    //     expect(animation.element.textContent).toBe("data");
-
-    //     $rootScope.tpl = "";
-    //     ;
-
-    //     animation = $animate.queue.shift();
-    //     expect(animation.event).toBe("leave");
-    //     expect(animation.element.textContent).toBe("data");
-    //   });
-
-    //   it("should animate two separate ngInclude elements", () => {
-    //     let item;
-    //     $templateCache.set("one", [200, "one", {}]);
-    //     $templateCache.set("two", [200, "two", {}]);
-    //     $rootScope.tpl = "one";
-    //     element = $compile(
-    //       html("<div><div " + 'ng-include="tpl">' + "</div></div>"),
-    //     )($rootScope);
-    //     ;
-
-    //     const item1 = $animate.queue.shift().element;
-    //     expect(item1.textContent).toBe("one");
-
-    //     $rootScope.tpl = "two";
-    //     ;
-
-    //     const itemA = $animate.queue.shift().element;
-    //     const itemB = $animate.queue.shift().element;
-    //     expect(itemA.getAttribute("ng-include")).toBe("tpl");
-    //     expect(itemB.getAttribute("ng-include")).toBe("tpl");
-    //     expect(itemA).not.toEqual(itemB);
-    //   });
-
-    //   it("should destroy the previous leave animation if a new one takes place", () => {
-    //     module(($provide) => {
-    //       $provide.decorator("$animate", ($delegate, $$q) => {
-    //         const emptyPromise = Promise.withResolvers().promise;
-    //         emptyPromise.done = () => { /* empty */ };
-
-    //         $delegate.leave = function () {
-    //           return emptyPromise;
-    //         };
-    //         return $delegate;
-    //       });
-    //     });
-    //     () => {
-    //       let item;
-    //       const $scope = $rootScope.new();
-    //       element = $compile(
-    //         html("<div>" + '<div ng-include="inc">Yo</div>' + "</div>"),
-    //       )($scope);
-
-    //       $templateCache.set("one", [200, "<div>one</div>", {}]);
-    //       $templateCache.set("two", [200, "<div>two</div>", {}]);
-
-    //       let destroyed;
-    //       const inner = element.children(0);
-    //       inner.on("$destroy", () => {
-    //         destroyed = true;
-    //       });
-
-    //       expect(destroyed).toBe(true);
-    //     };
-    //   });
-    // });
   });
 });

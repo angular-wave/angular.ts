@@ -254,9 +254,9 @@ describe("ngOptions", () => {
   });
 
   afterEach(() => {
-    // scope.destroy(); // disables unknown option work during destruction
-    // dealoc(formElement);
-    // ngModelCtrl = null;
+    scope.destroy();
+    dealoc(formElement);
+    ngModelCtrl = null;
   });
 
   async function createSelect(attrs, blank, unknown) {
@@ -937,21 +937,130 @@ describe("ngOptions", () => {
   });
 
   it("should update the label if only the property has changed", async () => {
-    // ng-options="value.name for value in values"
-    // ng-model="selected"
     scope.values = [{ name: "A" }, { name: "B" }, { name: "C" }];
-    // scope.selected = scope.values[0];
-    element.innerHTML = $compile(
-      '<div><select ng-model="selected" ng-options="value.name for value in values"></select>',
-    )(scope);
+    scope.selected = scope.values[0];
+    await compile(
+      '<select ng-model="selected" ng-options="value.name for value in values"></select>',
+    );
     await wait();
-    // let options = element.querySelectorAll("option");
-    // expect(options[0].label).toEqual("A");
-    // expect(options[1].label).toEqual("B");
-    // expect(options[2].label).toEqual("C");
+    const options = element.querySelectorAll("option");
 
-    // options = element.querySelectorAll("option");
-    // expect(options[0].label).toEqual("X");
+    expect(Array.from(options, (option) => option.label)).toEqual([
+      "A",
+      "B",
+      "C",
+    ]);
+    scope.values[0].name = "X";
+    await wait();
+
+    expect(Array.from(element.options, (option) => option.label)).toEqual([
+      "X",
+      "B",
+      "C",
+    ]);
+    expect(scope.selected).toBe(scope.values[0]);
+    expect(element.selectedIndex).toBe(0);
+  });
+
+  ["id", "watch", "destroy", "_parse"].forEach((alias) => {
+    it(`updates labels when the item alias is ${alias}`, async () => {
+      scope.values = [{ name: "Before" }];
+      scope.selected = scope.values[0];
+      await compile(
+        `<select ng-model="selected" ng-options="${alias}.name for ${alias} in values"></select>`,
+      );
+
+      scope.values[0].name = "After";
+      await wait();
+      expect(element.selectedOptions[0].label).toBe("After");
+      expect(scope.selected).toBe(scope.values[0]);
+    });
+  });
+
+  it("updates object-source labels, groups, and disabled state and stops after disposal", async () => {
+    scope.values = {
+      first: { name: "A", group: "Initial", disabled: false },
+      second: { name: "B", group: "Initial", disabled: false },
+    };
+    scope.selected = [scope.values.first];
+    await compile(
+      '<select multiple ng-model="selected" ' +
+        "ng-options=\"value as key + ': ' + value.name group by value.group disable when value.disabled for (key, value) in values\"></select>",
+    );
+
+    expect(Array.from(element.options, (option) => option.label)).toEqual([
+      "first: A",
+      "second: B",
+    ]);
+    scope.values.second.name = "Renamed";
+    await wait();
+    expect(element.options[1].label).toBe("second: Renamed");
+
+    scope.values.second.group = "Moved";
+    await wait();
+    expect(element.options[1].parentElement.label).toBe("Moved");
+
+    scope.values.second.disabled = true;
+    await wait();
+
+    const renamed = Array.from(element.options).find(
+      (option) => option.label === "second: Renamed",
+    );
+
+    expect(renamed.disabled).toBeTrue();
+    expect(renamed.parentElement.label).toBe("Moved");
+    expect(scope.selected).toEqual([scope.values.first]);
+    expect(element.selectedOptions[0].label).toBe("first: A");
+
+    dealoc(formElement);
+    scope.values.second.name = "After disposal";
+    scope.values.third = { name: "C", group: "New", disabled: false };
+    await wait();
+    expect(Array.from(element.options, (option) => option.label)).toEqual([
+      "first: A",
+      "second: Renamed",
+    ]);
+  });
+
+  it("updates mapped option values when an identifier changes", async () => {
+    scope.values = [
+      { id: 1, name: "A" },
+      { id: 2, name: "B" },
+    ];
+    scope.selected = 1;
+    await compile(
+      '<select ng-model="selected" ng-options="value.id as value.name for value in values"></select>',
+    );
+    expect(element).toEqualSelectValue(1);
+
+    scope.values[0].id = 3;
+    await wait();
+    expect(scope.selected).toBeNull();
+
+    scope.selected = 3;
+    await wait();
+    expect(element).toEqualSelectValue(3);
+    expect(element.selectedOptions[0].label).toBe("A");
+  });
+
+  it("initializes object-literal option values without recursively rebuilding", async () => {
+    scope.values = [
+      { id: 1, name: "A" },
+      { id: 2, name: "B" },
+    ];
+    await compile(
+      '<select ng-model="selected" ng-options="({ id: value.id }) as value.name for value in values"></select>',
+    );
+
+    expect(
+      Array.from(element.options, (option) => option.label).filter(Boolean),
+    ).toEqual(["A", "B"]);
+    scope.values[0].name = "Renamed";
+    await wait();
+    expect(
+      Array.from(element.options, (option) => option.label).filter(Boolean),
+    ).toEqual(["Renamed", "B"]);
+    expect(errors).toEqual([]);
   });
 
   // bug fix #9714

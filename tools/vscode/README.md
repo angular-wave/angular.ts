@@ -76,6 +76,8 @@ and dependency injection.
 
 ## Development
 
+Use Node.js 22 or newer for development and packaging.
+
 ```sh
 npm install
 npm run build

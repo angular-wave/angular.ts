@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+- Updated vulnerable development dependencies across the framework, docs, and
+  VS Code extension. Hardened HarmonyOS bridge script serialization and audit
+  parsing; pinned CI to Ubuntu 24.04 and bootstrapped missing OpenHarmony build
+  tools.
+
+- Removed obsolete commented-out test suites and restored supported cases using
+  the current browser and reactive test harnesses. Fixed dynamic option labels,
+  validator expression updates, and cleanup of removed select options exposed
+  by the restored assertions.
+
 - Added controller binding type checks to directive registration, including
   `bindToController` maps and `scope` bindings with `bindToController: true`.
   Inferred controllers validate binding names and callable `&` properties;

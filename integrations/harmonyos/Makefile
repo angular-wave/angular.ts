@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: bootstrap openharmony-bootstrap openharmony-audit openharmony-build toolchain-check generate generate-check contract-check artifact-check core-test script-test sample-check coverage-check bridge-test protocol-parity security-check node-test layout-test accessibility-test typecheck package-check proof-assets-check stage-proof-assets format-check lint compile proof compatibility-check parity-check check clean-consumer device-test-build device-test-run device-test release-check publication-check device-evidence-check publish verify-published publish-release clean
+.PHONY: bootstrap openharmony-bootstrap openharmony-build-bootstrap openharmony-audit openharmony-build toolchain-check generate generate-check contract-check artifact-check core-test script-test sample-check coverage-check bridge-test protocol-parity security-check node-test layout-test accessibility-test typecheck package-check proof-assets-check stage-proof-assets format-check lint compile proof compatibility-check parity-check check clean-consumer device-test-build device-test-run device-test release-check publication-check device-evidence-check publish verify-published publish-release clean
 
 bootstrap:
 	./scripts/bootstrap-sdk.sh
@@ -11,7 +11,10 @@ openharmony-bootstrap:
 openharmony-audit: openharmony-bootstrap
 	node scripts/run-openharmony-arkts-audit.mjs
 
-openharmony-build: generate-check proof-assets-check
+openharmony-build-bootstrap:
+	bash scripts/bootstrap-openharmony-build.sh
+
+openharmony-build: openharmony-build-bootstrap generate-check proof-assets-check
 	node scripts/build-openharmony-hap.mjs
 
 toolchain-check:

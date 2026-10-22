@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
 import { AngularNativeWebHost } from "../main/ets/web/AngularNativeWebHost.ts";
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -14,7 +15,7 @@ function call(id, session = "session-1") {
   });
 }
 
-function fixture() {
+function fixture(session = "session-1") {
   const scripts = [];
   const runtime = {
     currentLocation: "https://example.com/dashboard",
@@ -30,7 +31,7 @@ function fixture() {
         invoke: () => ({ platform: "harmonyos" }),
       },
     },
-    "session-1",
+    session,
   );
   return { host, runtime, scripts };
 }
@@ -91,4 +92,31 @@ test("disposes handlers and ignores later proxy calls", async () => {
   await tick();
   assert.equal(closed, 1);
   assert.equal(scripts.length, 1);
+});
+
+test("preserves hostile data without emitting HTML delimiters or executable source", async () => {
+  const payload = '</script><script>throw new Error("injected")</script>&\\\"\u2028\u2029';
+  const { host, scripts } = fixture(payload);
+  await host.pageReady();
+  host.emitEvent("target", "event", { payload });
+  const received = [];
+  const environmentEvents = [];
+  const context = {
+    document: { documentElement: {
+      classList: { remove() {}, add() {} },
+      style: { setProperty() {} },
+    } },
+    window: {
+      angularNative: { receive(message) { received.push(message); } },
+      dispatchEvent(event) { environmentEvents.push(event); },
+    },
+    CustomEvent: class { constructor(name, options) { this.name = name; this.detail = options.detail; } },
+  };
+  for (const source of scripts) {
+    assert.doesNotMatch(source, /[<>\u2028\u2029]/u);
+    runInNewContext(source, context);
+  }
+  assert.equal(received.length, 1);
+  assert.equal(received[0].data.payload, payload);
+  assert.equal(environmentEvents[0].detail.session, payload);
 });

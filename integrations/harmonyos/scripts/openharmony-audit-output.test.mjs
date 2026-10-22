@@ -57,3 +57,11 @@ test("allows reductions within a reviewed warning category", () => {
   assert.equal(audit.warnings, 1);
   assert.deepEqual(audit.unexpectedWarnings, []);
 });
+
+test("handles long malformed paths without ambiguous backtracking", { timeout: 1000 }, () => {
+  const path = "/9".repeat(20000);
+  const audit = classifyOpenHarmonyAudit(`ArkTS:ERROR File: ${path}\n`);
+  assert.equal(audit.repositoryErrors, 0);
+  const valid = classifyOpenHarmonyAudit(`ArkTS:ERROR File: ${path}:12:3\n`);
+  assert.equal(valid.repositoryErrors, 1);
+});

@@ -7045,7 +7045,7 @@ describe("$compile", () => {
           template = $compile("<div><span first second last></span></div>");
           expect(log[0]).toEqual("first-C");
           log.push("FLUSH");
-          //expect(log.join("; ")).toEqual("first-C; FLUSH; second-C; last-C; third-C");
+          expect(log.join("; ")).toEqual("first-C; FLUSH");
 
           element = template($rootScope);
           await wait();
@@ -12571,17 +12571,17 @@ describe("$compile", () => {
         $templateCache.set("myDirectiveAsync.html", "<div>Hello!</div>");
         element = $compile(
           "<div>" +
-            "<span xmy-directive-sync></span>" +
+            "<span my-directive-sync></span>" +
             "<span my-directive-async></span>" +
             "</div>",
         )($rootScope);
-        expect(syncCtrlSpy).not.toHaveBeenCalled();
+        expect(syncCtrlSpy).toHaveBeenCalledTimes(1);
         expect(asyncCtrlSpy).not.toHaveBeenCalled();
 
         await wait();
 
-        // expect(syncCtrlSpy).toHaveBeenCalled();
-        expect(asyncCtrlSpy).toHaveBeenCalled();
+        expect(syncCtrlSpy).toHaveBeenCalledTimes(1);
+        expect(asyncCtrlSpy).toHaveBeenCalledTimes(1);
       });
 
       it("should instantiate controllers in the parent->child order when transclusion, templateUrl and replacement are in the mix", async () => {
@@ -12805,22 +12805,6 @@ describe("$compile", () => {
   });
 
   describe("$compile", () => {
-    // const { document } = window;
-
-    // beforeEach(() => {
-    //   module(provideLog, () => {
-    //     element = null;
-    //     return function (_$compile_, _$rootScope_) {
-    //       $rootScope = _$rootScope_;
-    //       $compile = _$compile_;
-    //     };
-    // });
-
-    // function compile(html) {
-    //   element = angular.element(html);
-    //   $compile(element)($rootScope);
-    // }
-
     describe("transclude", () => {
       describe("content transclusion", () => {
         it("should support transclude directive", async () => {

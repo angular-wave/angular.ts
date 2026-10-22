@@ -1,5 +1,10 @@
 import { _compile, _parse } from "../../injection-tokens.ts";
 import {
+  observeScopeExpression,
+  registerScopeDestroyCallback,
+} from "../../core/scope/scope.ts";
+import {
+  addElementDisposer,
   createDocumentFragment,
   emptyElement,
   getNormalizedAttr,
@@ -76,6 +81,8 @@ interface NgOptionsDefinition {
   _getWatchables: string;
   /** @internal */
   _getOptions(): NgOptionsCollection;
+  /** @internal */
+  _dispose(): void;
 }
 
 export function ngOptionsDirective(
@@ -86,6 +93,7 @@ export function ngOptionsDirective(
     optionsExp: string,
     selectElement: HTMLSelectElement,
     scope: ng.Scope,
+    onOptionChange: () => void,
   ): NgOptionsDefinition {
     const match = NG_OPTIONS_REGEXP.exec(optionsExp);
 
@@ -126,7 +134,15 @@ export function ngOptionsDirective(
 
     const valuesFn = $parse(collectionExpression);
 
+    const optionObservers: (() => void)[] = [];
+
     const locals: Record<string, unknown> = {};
+
+    function disposeOptionObservers() {
+      optionObservers.splice(0).forEach((dispose) => {
+        dispose();
+      });
+    }
 
     const getLocals = keyName
       ? (value: unknown, key: unknown) => {
@@ -144,7 +160,10 @@ export function ngOptionsDirective(
     return {
       _getWatchables: collectionExpression,
       /** @internal */
+      _dispose: disposeOptionObservers,
+      /** @internal */
       _getOptions() {
+        disposeOptionObservers();
         const optionItems: OptionItem[] = [];
 
         const selectValueMap: Record<string, OptionItem> = {};
@@ -174,6 +193,43 @@ export function ngOptionsDirective(
 
           optionItems.push(optionItem);
           selectValueMap[selectValue] = optionItem;
+
+          // Observe item expressions with locals so aliases cannot shadow Scope APIs.
+          let initialized = false;
+
+          optionObservers.push(
+            observeScopeExpression(
+              scope,
+              () => {
+                const currentLocals = getLocals(value, key);
+
+                return new OptionItem(
+                  selectValue,
+                  viewValueFn(scope, currentLocals),
+                  displayFn(scope, currentLocals),
+                  groupByFn(scope, currentLocals),
+                  disableWhenFn(scope, currentLocals),
+                );
+              },
+              (result) => {
+                if (!initialized) {
+                  initialized = true;
+                  return;
+                }
+                const current = result as OptionItem;
+
+                if (
+                  !Object.is(current._viewValue, viewValue) ||
+                  current._label !== optionItem._label ||
+                  !Object.is(current._group, optionItem._group) ||
+                  current._disabled !== optionItem._disabled
+                ) {
+                  onOptionChange();
+                }
+              },
+              false,
+            ),
+          );
         };
 
         if (!keyName && isArrayLike(optionValues)) {
@@ -241,6 +297,7 @@ export function ngOptionsDirective(
       getNormalizedAttr(selectElement, "ngOptions") ?? "",
       selectNode,
       scope,
+      updateOptions,
     );
 
     const listFragment = createDocumentFragment();
@@ -334,10 +391,22 @@ export function ngOptionsDirective(
       linkFn(scope);
     }
 
-    scope.watch(
+    let disposed = false;
+
+    const deregisterOptions = scope.watch(
       ngOptions._getWatchables,
       updateOptions as unknown as Parameters<typeof scope.watch>[1],
     );
+
+    function disposeOptions() {
+      if (disposed) return;
+      disposed = true;
+      deregisterOptions?.();
+      ngOptions._dispose();
+    }
+
+    addElementDisposer(selectNode, disposeOptions);
+    registerScopeDestroyCallback(scope, disposeOptions);
 
     function _addOptionElement(
       option: OptionItem,
@@ -376,6 +445,7 @@ export function ngOptionsDirective(
     }
 
     function updateOptions() {
+      if (disposed) return;
       const previousValue = options && selectCtrl._readValue();
 
       if (options) {

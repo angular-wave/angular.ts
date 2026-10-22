@@ -13,7 +13,7 @@ const warningBudgets = new Map([
 
 export function classifyOpenHarmonyAudit(output) {
   const plain = output.replace(ansiPattern, "");
-  const errors = [...plain.matchAll(/ArkTS:ERROR File: ([^\n:]+(?:\/[^\n:]+)*):\d+:\d+/gu)]
+  const errors = [...plain.matchAll(/ArkTS:ERROR File: ([^\n:]+):\d+:\d+/gu)]
     .map((match) => match[1]);
   const sdkErrors = errors.filter((file) => file.includes("/ets/ets/api/")).length;
   const repositoryErrors = errors.length - sdkErrors;
