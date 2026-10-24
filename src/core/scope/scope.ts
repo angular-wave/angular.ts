@@ -4939,6 +4939,16 @@ export class Scope {
 
       // 9
       case ASTType._MemberExpression: {
+        if ((expr as ExpressionNode)._computed) {
+          collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
+          collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
+          if (keySet.length === 0) {
+            throw new Error("Unable to determine key");
+          }
+          listener._dedupeUnchanged = true;
+          this._bindForeignDependency(listener);
+          break;
+        }
         key = getNodePropertyName(expr);
 
         // array watcher

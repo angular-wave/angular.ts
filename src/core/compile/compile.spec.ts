@@ -5341,6 +5341,65 @@ describe("$compile", () => {
       expect(events).toEqual(["parent:1", "child:1"]);
     });
 
+    it("keeps object input notifications stable after proxy storage unwraps them", async () => {
+      let changes = 0;
+      myModule
+        .component("objectOwner", {
+          bindings: { model: "<" },
+          template: '<object-child model="$ctrl.model"></object-child>',
+        })
+        .component("objectChild", {
+          bindings: { model: "<" },
+          template: '<strong ng-bind="$ctrl.model.value"></strong>',
+          controller: class {
+            onChanges() {
+              changes++;
+            }
+          },
+        });
+      reloadModules();
+      $rootScope.model = { value: "first" };
+      const el = $('<object-owner model="model"></object-owner>');
+      $compile(el)($rootScope);
+      await wait();
+      expect(el.textContent).toBe("first");
+      expect(changes).toBe(1);
+      $rootScope.model = { value: "second" };
+      await wait();
+      expect(el.textContent).toBe("second");
+      expect(changes).toBe(2);
+      $rootScope.unrelated = true;
+      await wait();
+      expect(changes).toBe(2);
+    });
+
+    it("watches computed object inputs inside repeated components", async () => {
+      myModule
+        .component("computedOwner", {
+          bindings: { ships: "<", placements: "<" },
+          template:
+            '<div ng-repeat="ship in $ctrl.ships"><computed-child ' +
+            'coordinates="$ctrl.placements[ship.id]"></computed-child></div>',
+        })
+        .component("computedChild", {
+          bindings: { coordinates: "<" },
+          template: '<strong ng-bind="$ctrl.coordinates.length"></strong>',
+        });
+      reloadModules();
+      $rootScope.ships = [{ id: "first" }, { id: "second" }];
+      $rootScope.placements = { first: [], second: [] };
+      const el = $(
+        '<computed-owner ships="ships" placements="placements"></computed-owner>',
+      );
+      $compile(el)($rootScope);
+      await wait();
+      expect(el.querySelectorAll("strong").length).toBe(2);
+      expect(el.textContent).toBe("00");
+      $rootScope.placements = { first: [1, 2], second: [3] };
+      await wait();
+      expect(el.textContent).toBe("21");
+    });
+
     it("propagates one-way inputs through nested components into DOM directives", async () => {
       myModule
         .component("outerPanel", {

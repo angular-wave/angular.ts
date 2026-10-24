@@ -5833,6 +5833,30 @@ describe("Scope optimizations", () => {
       expect(observed).toEqual(["John", "Jane"]);
     });
 
+    it("tracks computed nested object members and their selector", async () => {
+      const observed = [];
+      scope.owner = { placements: { first: "one", second: "two" } };
+      scope.ship = { id: "first" };
+      const unwatch = scope.watch("owner.placements[ship.id]", (value) => {
+        observed.push(value);
+      });
+      await wait();
+      expect(observed).toEqual(["one"]);
+      scope.owner.placements = { first: "updated", second: "two" };
+      await wait();
+      expect(observed).toEqual(["one", "updated"]);
+      scope.ship.id = "second";
+      await wait();
+      expect(observed).toEqual(["one", "updated", "two"]);
+      scope.owner.placements.first = "unselected";
+      await wait();
+      expect(observed).toEqual(["one", "updated", "two"]);
+      unwatch();
+      scope.ship.id = "first";
+      await wait();
+      expect(observed).toEqual(["one", "updated", "two"]);
+    });
+
     it("should parse escaped computed members in array watch expressions", async () => {
       const observed = [];
 

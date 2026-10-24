@@ -2950,8 +2950,11 @@ export class CompileRegistry {
 
           if (
             !state._firstChange &&
-            simpleCompare(state._lastParentValue, val) &&
-            simpleCompare(destinationTarget[state._scopeName], currentValue)
+            simpleCompare(deProxy(state._lastParentValue), deProxy(val)) &&
+            simpleCompare(
+              deProxy(destinationTarget[state._scopeName]),
+              deProxy(currentValue),
+            )
           ) {
             return;
           }
