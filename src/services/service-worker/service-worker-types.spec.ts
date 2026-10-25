@@ -11,6 +11,9 @@ import type {
   ServiceWorkerUpdateState,
 } from "./service-worker.ts";
 
+// Compile-time fixtures: this file is checked by tsc, not imported by a browser runner.
+declare function typeFixture<T>(): T;
+
 describe("$serviceWorker types", () => {
   it("typechecks public service-worker contract shapes", () => {
     const config: ServiceWorkerConfig = {
@@ -42,7 +45,7 @@ describe("$serviceWorker types", () => {
       target: "waiting",
     };
     const errorCode: ServiceWorkerErrorCode = "request-timeout";
-    const service = null as unknown as ServiceWorkerService;
+    const service = typeFixture<ServiceWorkerService>();
 
     service.register();
     service.register({ scope: "/configured/", updateViaCache: "none" });
@@ -63,7 +66,7 @@ describe("$serviceWorker types", () => {
     const status: ServiceWorkerService["status"] = service.status;
     const message: ServiceWorkerMessageEvent<string> = {
       data: "ready",
-      event: null as unknown as MessageEvent<string>,
+      event: typeFixture<MessageEvent<string>>(),
       source: null,
     };
 
@@ -94,7 +97,7 @@ describe("$serviceWorker types", () => {
 
   it("typechecks ng namespace aliases", () => {
     const config: ng.ServiceWorkerConfig = { scope: "/" };
-    const service = null as unknown as ng.ServiceWorkerService;
+    const service = typeFixture<ng.ServiceWorkerService>();
     const state: ng.ServiceWorkerUpdateState = service.updateState;
     const options: ng.ServiceWorkerRequestOptions = { timeout: 1000 };
     const postOptions: ng.ServiceWorkerPostOptions = { target: "active" };

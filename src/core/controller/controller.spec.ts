@@ -159,8 +159,6 @@ describe("$controller", () => {
 
       const scope = {};
 
-      let ctrl;
-
       const BoundFooCtrl = FooCtrl.bind(null);
 
       controllerRegistry.register("FooCtrl", ["$scope", BoundFooCtrl]);

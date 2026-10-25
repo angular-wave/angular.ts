@@ -90,13 +90,13 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
 
     // JSON
-    implementation("com.google.code.gson:gson:2.14.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("com.google.code.gson:gson:2.15.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
 
     // Networking/API
-    implementation("com.squareup.okhttp3:okhttp:5.5.0")
-    implementation("com.squareup.okhttp3:okhttp-coroutines:5.5.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
+    implementation("com.squareup.okhttp3:okhttp:5.5.1")
+    implementation("com.squareup.okhttp3:okhttp-coroutines:5.5.1")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.5.1")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
@@ -105,7 +105,7 @@ dependencies {
     // Exported AndroidX dependencies
     api("androidx.appcompat:appcompat:1.8.0")
     api("androidx.core:core-ktx:1.19.1")
-    api("androidx.webkit:webkit:1.17.1")
+    api("androidx.webkit:webkit:1.18.0")
 
     // Tests
     testImplementation("androidx.test:core:1.7.0") // Robolectric
@@ -116,7 +116,7 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.17")
     testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("com.nhaarman:mockito-kotlin:1.6.0")
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.5.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.5.1")
     testImplementation("junit:junit:4.13.2")
 }
 

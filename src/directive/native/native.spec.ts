@@ -1086,7 +1086,7 @@ describe("native bridge", () => {
   });
 
   it("retries disconnected generic components and coalesces reentrant updates", async () => {
-    const detached = compile(
+    compile(
       '<section ng-native-component="text" data-props="{ text: \'Detached\' }"></section>',
     )(scope);
     await wait(120);

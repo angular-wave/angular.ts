@@ -1171,8 +1171,8 @@ class CompileRegistry {
                         : createScope(val, state._bindingChangeState._scope._handler);
                     const destinationTarget = state._destAny._target;
                     if (!state._firstChange &&
-                        simpleCompare(state._lastParentValue, val) &&
-                        simpleCompare(destinationTarget[state._scopeName], currentValue)) {
+                        simpleCompare(deProxy(state._lastParentValue), deProxy(val)) &&
+                        simpleCompare(deProxy(destinationTarget[state._scopeName]), deProxy(currentValue))) {
                         return;
                     }
                     state._destAny[state._scopeName] = currentValue;

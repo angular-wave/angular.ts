@@ -171,14 +171,14 @@ function invokeAfterRenderCallback(callback: AfterRenderCallback): void {
   }
 }
 
-function requestFrame(callback: FrameRequestCallback): void {
+function requestFrame(callback: () => void): void {
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(callback);
     return;
   }
 
   setTimeout(() => {
-    callback(Date.now());
+    callback();
   });
 }
 

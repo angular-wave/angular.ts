@@ -106,7 +106,7 @@ function requestFrame(callback) {
         return;
     }
     setTimeout(() => {
-        callback(Date.now());
+        callback();
     });
 }
 function getScopeAfterRenderRetentionState(scope) {

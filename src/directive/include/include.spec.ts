@@ -1,6 +1,6 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { createElementFromHTML, dealoc, getScope } from "../../shared/dom.ts";
+import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { wait, waitUntil } from "../../shared/test-utils.ts";

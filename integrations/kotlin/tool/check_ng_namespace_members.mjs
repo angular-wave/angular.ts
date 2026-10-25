@@ -109,7 +109,7 @@ function collectNamespaceMetadata() {
     if (ts.isModuleDeclaration(node)) {
       const nextInNgNamespace =
         inNgNamespace ||
-        (ts.isIdentifier(node.name) && node.name.escapedText.toString() === "ng");
+        (ts.isIdentifier(node.name) && node.name.escapedText === "ng");
 
       if (node.body) visit(node.body, nextInNgNamespace);
       return;
@@ -137,7 +137,7 @@ function collectNamespaceMetadata() {
       }
 
       metadata.push({
-        typeName: node.name.escapedText.toString(),
+        typeName: node.name.escapedText,
         members: [...members].sort((left, right) => left.localeCompare(right)),
       });
       return;

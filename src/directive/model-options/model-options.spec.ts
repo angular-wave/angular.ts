@@ -782,7 +782,7 @@ describe("ngModelOptions", () => {
     });
 
     describe("on directives with `replace: true`", () => {
-      let inputElm, module, $rootScope, angular;
+      let module, $rootScope, angular;
 
       beforeEach(() => {
         dealoc(document.getElementById("app"));

@@ -59,10 +59,9 @@ export class RouterUrlRuntime {
   }
 
   /** @internal */
-  _setUrl(newUrl: string, state?: unknown): string {
+  _setUrl(newUrl: string, replace: boolean): string {
     this._location.setUrl(decodeURIComponent(newUrl));
-
-    if (state) this._location.setState(state);
+    this._location._replace = replace;
 
     return this._getUrl();
   }
@@ -112,7 +111,7 @@ export class RouterUrlRuntime {
     if (!options.absolute || !url) {
       return url;
     }
-    const slash = !isHtml5 && url ? "/" : "";
+    const slash = isHtml5 ? "" : "/";
 
     return [
       `${window.location.protocol}//`,

@@ -378,16 +378,21 @@ describe("ngProp*", () => {
       expect(app.querySelector("a").href).toMatch(/^http:\/\/.*\/someUrl$/);
     });
 
-    it("should not have endless digests when given arrays in concatenable context", () => {
-      const element = $compile(
-        '<foo ng-prop-href="testUrl"></foo><foo ng-prop-href="::testUrl"></foo>' +
-          "<foo ng-prop-href=\"'http://example.com/' + testUrl\"></foo><foo ng-prop-href=\"::'http://example.com/' + testUrl\"></foo>",
-      )($rootScope);
+    ["testUrl", "'http://example.com/' + testUrl"].forEach((expression) => {
+      it(`should update non-string property values without errors: ${expression}`, async () => {
+        const element = $compile(`<foo ng-prop-href="${expression}"></foo>`)(
+          $rootScope,
+        );
 
-      $rootScope.testUrl = [1];
-      $rootScope.testUrl = [];
-      $rootScope.testUrl = { a: "b" };
-      $rootScope.testUrl = {};
+        for (const value of [[1], [], { a: "b" }, {}]) {
+          $rootScope.testUrl = value;
+          await wait();
+          expect(element.href).toEqual(
+            expression === "testUrl" ? value : "http://example.com/",
+          );
+          expect(logs).toEqual([]);
+        }
+      });
     });
   });
 
@@ -415,9 +420,7 @@ describe("ngProp*", () => {
     });
 
     it("should clear out src properties for a different domain", async () => {
-      const element = $compile('<iframe ng-prop-src="testUrl"></iframe>')(
-        $rootScope,
-      );
+      $compile('<iframe ng-prop-src="testUrl"></iframe>')($rootScope);
 
       $rootScope.testUrl = "http://a.different.domain.example.com";
       await wait();
@@ -475,9 +478,7 @@ describe("ngProp*", () => {
     });
 
     it("should clear out action property for a different domain", async () => {
-      const element = $compile('<form ng-prop-action="testUrl"></form>')(
-        $rootScope,
-      );
+      $compile('<form ng-prop-action="testUrl"></form>')($rootScope);
 
       $rootScope.testUrl = "http://a.different.domain.example.com";
       await wait();
@@ -485,9 +486,7 @@ describe("ngProp*", () => {
     });
 
     it("should clear out JS action property", async () => {
-      const element = $compile('<form ng-prop-action="testUrl"></form>')(
-        $rootScope,
-      );
+      $compile('<form ng-prop-action="testUrl"></form>')($rootScope);
 
       $rootScope.testUrl = "javascript:alert(1);";
       await wait();
@@ -509,9 +508,7 @@ describe("ngProp*", () => {
     });
 
     it("should reject invalid RESOURCE_URLs", async () => {
-      const element = $compile(
-        '<link ng-prop-href="testUrl" rel="stylesheet" />',
-      )($rootScope);
+      $compile('<link ng-prop-href="testUrl" rel="stylesheet" />')($rootScope);
 
       $rootScope.testUrl = "https://evil.example.org/css.css";
       await wait();

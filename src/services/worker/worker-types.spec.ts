@@ -1,9 +1,12 @@
 /// <reference types="jasmine" />
 import type { WorkerConfig, WorkerService } from "./worker.ts";
 
+// Compile-time fixtures: this file is checked by tsc, not imported by a browser runner.
+declare function typeFixture<T>(): T;
+
 describe("$worker types", () => {
   it("requires restart for automatic restart configuration", () => {
-    const service = null as unknown as WorkerService;
+    const service = typeFixture<WorkerService>();
     const restarting: WorkerConfig<string> = {
       restart: true,
       restartDelay: 100,

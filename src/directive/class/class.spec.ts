@@ -305,6 +305,8 @@ describe("ngClass", () => {
       '<div class="ng-panel ng-selected" ng-class="dynCls"></div>',
     )($rootScope);
     $rootScope.dynCls = "panel";
+    await wait();
+    expect(element.className).toBe("ng-panel ng-selected panel");
     $rootScope.dynCls = "foo";
     await wait();
     expect(element.className).toBe("ng-panel ng-selected foo");

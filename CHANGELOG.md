@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Modernized `$location` URL normalization, deferred history writes, and listener
+  cleanup. Preserved router integration in HTML5 and hash modes; fixed state-only
+  updates, failed-write retries, router replacement navigation, and initial URL
+  normalization without adding a history entry or losing state.
+
 - Updated vulnerable development dependencies across the framework, docs, and
   VS Code extension. Hardened HarmonyOS bridge script serialization and audit
   parsing; pinned CI to Ubuntu 24.04 and bootstrapped missing OpenHarmony build

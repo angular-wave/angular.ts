@@ -86,14 +86,14 @@ function extractNamespaceTypes(sourcePath, overrides) {
     if (ts.isModuleDeclaration(node)) {
       const nextInNgNamespace =
         inNgNamespace ||
-        (ts.isIdentifier(node.name) && node.name.escapedText.toString() === "ng");
+        (ts.isIdentifier(node.name) && node.name.escapedText === "ng");
 
       if (node.body) visit(node.body, nextInNgNamespace);
       return;
     }
 
     if (inNgNamespace && ts.isTypeAliasDeclaration(node)) {
-      const typeName = node.name.escapedText.toString();
+      const typeName = node.name.escapedText;
       const type = checker.getTypeFromTypeNode(node.type);
 
       types.push({
@@ -101,7 +101,7 @@ function extractNamespaceTypes(sourcePath, overrides) {
         name: typeName,
         typeParameters:
           node.typeParameters?.map((parameter) =>
-            safeKotlinIdentifier(parameter.name.escapedText.toString()),
+            safeKotlinIdentifier(parameter.name.escapedText),
           ) ?? [],
         members: collectMembers(checker, overrides, typeName, type),
       });

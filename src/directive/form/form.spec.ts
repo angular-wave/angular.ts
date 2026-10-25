@@ -595,8 +595,6 @@ describe("form", () => {
     });
 
     it("should prevent form submission", (done) => {
-      const nextTurn = false;
-
       let submitted = false;
 
       let reloadPrevented;
@@ -820,8 +818,6 @@ describe("form", () => {
       const { child } = scope;
 
       const { grandchild } = scope;
-
-      const ggchild = scope.greatgrandchild;
 
       parent.removeControl(child);
 
@@ -1397,8 +1393,6 @@ describe("form", () => {
     });
 
     it("should set valid and invalid to undefined when a validation error state is set as pending", () => {
-      let defer;
-
       const form = getCacheData(doc, "$formController");
 
       const ctrl = {};
@@ -1540,7 +1534,7 @@ describe("form", () => {
 
   describe("setUntouched", () => {
     it("should trigger setUntouched on form controls", () => {
-      const form = $compile(
+      $compile(
         '<form name="myForm">' +
           '<input name="alias" type="text" ng-model="name" />' +
           "</form>",
@@ -1553,7 +1547,7 @@ describe("form", () => {
     });
 
     it("should trigger setUntouched on form controls with nested forms", () => {
-      const form = $compile(
+      $compile(
         '<form name="myForm">' +
           '<div ng-form name="childForm">' +
           '<input name="alias" type="text" ng-model="name" />' +
@@ -1724,17 +1718,6 @@ describe("form", () => {
 
   // TODO After animations
   describe("form animations", () => {
-    function assertValidAnimation(
-      animation,
-      event,
-      classNameAdded,
-      classNameRemoved,
-    ) {
-      expect(animation.event).toBe(event);
-      expect(animation.args[1]).toBe(classNameAdded);
-      expect(animation.args[2]).toBe(classNameRemoved);
-    }
-
     let form;
 
     let $animate;

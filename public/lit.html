@@ -31,7 +31,7 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        var res = window.angular.createModule("lit", []).value("$user", {
+        window.angular.createModule("lit", []).value("$user", {
           name: "Bob",
         });
       });

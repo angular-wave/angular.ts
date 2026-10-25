@@ -86,7 +86,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.4.0")
 
     // JSON
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
 
     // Images
     implementation("io.coil-kt:coil:2.7.0")

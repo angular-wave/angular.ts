@@ -810,7 +810,7 @@ describe("Filter: orderBy", () => {
       window.angular.createModule("myModule", ["ng"]);
       const injector = createInjector(["myModule"]);
 
-      const $filter = injector.get("$filter");
+      injector.get("$filter");
 
       orderBy = function (collection) {
         const args = Array.prototype.slice.call(arguments, 0);

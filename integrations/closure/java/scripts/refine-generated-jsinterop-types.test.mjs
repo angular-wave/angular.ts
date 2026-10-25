@@ -56,10 +56,6 @@ test("parameterizes generated generic callbacks when conditional factory types e
 
 test("restores named callbacks and collection types erased by JsInterop", () => {
   const generated = fixture({
-    Directive: [
-      "package org.angular.ts.ng;",
-      "public interface Directive<TController extends Object>{}",
-    ].join("\n"),
     DirectiveFactoryFn: [
       "package org.angular.ts.ng;",
       "import jsinterop.annotations.JsFunction;",

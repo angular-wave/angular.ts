@@ -1009,16 +1009,7 @@ describe("ngStateRef", () => {
 
 describe("ngStateActive", () => {
   window.location.hash = "";
-  let el,
-    el2,
-    template,
-    scope,
-    $rootScope,
-    $compile,
-    $injector,
-    $timeout,
-    $state,
-    stateRuntime;
+  let el, template, $rootScope, $compile, $injector, $state, stateRuntime;
 
   beforeEach(() => {
     dealoc(document.getElementById("app"));

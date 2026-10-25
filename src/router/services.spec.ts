@@ -15,7 +15,7 @@ describe("router services", () => {
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
-    const module = window.angular.createModule("defaultModule", []).router({
+    window.angular.createModule("defaultModule", []).router({
       name: "home",
       url: "/startup-home",
       template: "home",

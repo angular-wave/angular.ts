@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
@@ -404,13 +405,10 @@ public static unsafe partial class AngularTsAbiExports
 
         if (root.TryGetProperty("delete", out var deleted) && deleted.ValueKind == JsonValueKind.Array)
         {
-            foreach (var path in deleted.EnumerateArray())
+            foreach (var path in deleted.EnumerateArray().Where(path => path.ValueKind == JsonValueKind.String))
             {
-                if (path.ValueKind == JsonValueKind.String)
-                {
-                    ScopeCallbacks.Dispatch(
-                        new ScopeUpdate(scopeHandle, path.GetString()!, "null"));
-                }
+                ScopeCallbacks.Dispatch(
+                    new ScopeUpdate(scopeHandle, path.GetString()!, "null"));
             }
         }
     }
@@ -438,15 +436,9 @@ internal static class ScopeCallbacks
     public static void RemoveScope(uint scopeHandle)
     {
         var prefix = $"{scopeHandle}:";
-        var keys = new List<string>();
-
-        foreach (var key in Callbacks.Keys)
-        {
-            if (key.StartsWith(prefix, StringComparison.Ordinal))
-            {
-                keys.Add(key);
-            }
-        }
+        var keys = Callbacks.Keys
+            .Where(key => key.StartsWith(prefix, StringComparison.Ordinal))
+            .ToArray();
 
         foreach (var key in keys)
         {

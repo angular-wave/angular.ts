@@ -304,13 +304,11 @@ class UrlMatcher {
             const search = segment.substring(i);
             segment = segment.substring(0, i);
             if (search.length > 0) {
-                last = 0;
                 while ((matchArray = SEARCH_PLACEHOLDER_REGEXP.exec(search))) {
                     const id = matchArray[2] || matchArray[3];
                     const paramType = getParamType(pattern, matchArray, true, paramTypes, config);
                     checkParamErrors(id, pattern, this._params);
                     this._params.push(paramFactory.fromSearch(id, paramType, assertInvariantDefined(config.state)));
-                    last = SEARCH_PLACEHOLDER_REGEXP.lastIndex;
                     // check if ?&
                 }
             }

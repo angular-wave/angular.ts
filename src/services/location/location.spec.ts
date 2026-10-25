@@ -139,8 +139,17 @@ describe("$location", () => {
           this.state = structuredClone(state);
           fakeLocation.href = String(url);
         },
+        replaceState(state, _title, url) {
+          this.state = structuredClone(state);
+          fakeLocation.href = String(url);
+        },
       };
       const fakeWindow = {
+        document: {
+          get baseURI() {
+            return initial.base ?? fakeLocation.href;
+          },
+        },
         location: fakeLocation,
         history: fakeHistory,
         addEventListener(name, listener) {
@@ -225,7 +234,6 @@ describe("$location", () => {
       const state = { page: 2 };
 
       harness.location.setState(state);
-      harness.scopeListeners.$updateBrowser();
       await waitUntil(() => harness.fakeHistory.state?.page === 2);
 
       expect(harness.fakeLocation.href).toBe("http://localhost/");
@@ -249,6 +257,73 @@ describe("$location", () => {
       await waitUntil(() => harness.fakeLocation.href.endsWith("/third"));
       expect(harness.fakeHistory.state).toBeNull();
       expect(harness.location.getState()).toBeNull();
+    });
+
+    it("coalesces chained writes into one history entry and event pair", async () => {
+      const harness = createHarness();
+      await wait();
+      const push = spyOn(harness.fakeHistory, "pushState").and.callThrough();
+      harness.broadcasts.length = 0;
+      harness.location
+        .setPath("/first")
+        .setSearch({ flag: true, tag: ["a", "b"] })
+        .setHash("section");
+      harness.location.setPath("/final").setState({ page: 2 });
+      harness.scopeListeners.$updateBrowser();
+      expect(push).not.toHaveBeenCalled();
+      await wait();
+      expect(push.calls.count()).toBe(1);
+      expect(harness.fakeLocation.href).toBe(
+        "http://localhost/final?flag&tag=a&tag=b#section",
+      );
+      expect(harness.broadcasts.map(([name]) => name)).toEqual([
+        "$locationChangeStart",
+        "$locationChangeSuccess",
+      ]);
+      harness.scopeListeners.$updateBrowser();
+      await wait();
+      expect(push.calls.count()).toBe(1);
+      expect(harness.broadcasts.length).toBe(2);
+    });
+
+    it("normalizes an initial hashbang using replacement while preserving browser state", async () => {
+      const harness = createHarness(
+        {},
+        { url: "http://localhost/#!/route", state: { page: 1 } },
+      );
+      const push = spyOn(harness.fakeHistory, "pushState").and.callThrough();
+      expect(harness.fakeLocation.href).toBe("http://localhost/route");
+      expect(harness.fakeHistory.state).toEqual({ page: 1 });
+      expect(harness.location.getState()).toBe(harness.fakeHistory.state);
+      await wait();
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("deduplicates writes and supports relative runtime URLs", async () => {
+      const harness = createHarness();
+      await wait();
+      const push = spyOn(harness.fakeHistory, "pushState").and.callThrough();
+      expect(harness.runtime.setUrl(undefined)).toBe(harness.runtime);
+      harness.runtime.setUrl("/relative");
+      harness.runtime.setUrl("http://localhost/relative#");
+      harness.windowListeners.popstate();
+      await wait();
+      expect(push.calls.count()).toBe(1);
+      expect(harness.location.getPath()).toBe("/");
+      expect(harness.fakeLocation.href).toBe("http://localhost/relative");
+    });
+
+    it("keeps equivalent browser state references stable across duplicate native events", async () => {
+      const harness = createHarness({}, { state: { page: 1 } });
+      await wait();
+      const state = harness.location.getState();
+      harness.broadcasts.length = 0;
+      harness.fakeHistory.state = { page: 1 };
+      harness.windowListeners.popstate();
+      harness.windowListeners.hashchange();
+      await wait();
+      expect(harness.location.getState()).toBe(state);
+      expect(harness.broadcasts).toEqual([]);
     });
 
     it("does not write history when only an empty fragment is cleared", async () => {
@@ -406,6 +481,8 @@ describe("$location", () => {
         { href: "http://localhost/next", ctrlKey: true },
         { href: "http://localhost/next", metaKey: true },
         { href: "http://localhost/next", shiftKey: true },
+        { href: "http://localhost/next", altKey: true },
+        { href: "http://localhost/next", button: 1 },
         { href: "http://localhost/next", button: 2 },
         { href: "http://localhost/next", defaultPrevented: true },
       ];
@@ -506,6 +583,48 @@ describe("$location", () => {
       expect(harness.exceptions[0]).toEqual(jasmine.any(Error));
     });
 
+    it("retries failed history writes without reporting navigation success", async () => {
+      const harness = createHarness({}, { state: { page: 1 } });
+      await wait();
+      const originalPush = harness.fakeHistory.pushState;
+      const push = spyOn(harness.fakeHistory, "pushState").and.throwError(
+        "history failed",
+      );
+      harness.broadcasts.length = 0;
+      harness.location.setPath("/retry").setState({ page: 2 });
+      await wait();
+      expect(harness.location.getPath()).toBe("/");
+      expect(harness.location.getState()).toEqual({ page: 1 });
+      expect(harness.broadcasts.map(([name]) => name)).toEqual([
+        "$locationChangeStart",
+      ]);
+      push.and.callFake(originalPush);
+      harness.location.setPath("/retry").setState({ page: 2 });
+      await wait();
+      expect(harness.fakeLocation.href).toBe("http://localhost/retry");
+      expect(harness.location.getState()).toEqual({ page: 2 });
+      expect(
+        harness.broadcasts.filter(([name]) => name === "$locationChangeSuccess")
+          .length,
+      ).toBe(1);
+    });
+
+    it("leaves download links to the browser", () => {
+      const harness = createHarness();
+      const link = document.createElement("a");
+      link.href = "http://localhost/download";
+      link.setAttribute("download", "");
+      harness.rootElement.append(link);
+      const event = {
+        target: link,
+        button: 0,
+        preventDefault: jasmine.createSpy("preventDefault"),
+      };
+      harness.runtime._rootClickHandler(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(harness.location.getPath()).toBe("/");
+    });
+
     it("rewrites only eligible application links", () => {
       const harness = createHarness({
         html5Mode: { rewriteLinks: "data-internal" },
@@ -571,28 +690,36 @@ describe("$location", () => {
 
     it("normalizes SVG animated link hrefs", () => {
       const harness = createHarness();
+      const link = document.createElementNS("http://www.w3.org/2000/svg", "a");
+      link.setAttribute("href", "/vector");
+      harness.rootElement.append(link);
       const event = {
         button: 0,
-        ctrlKey: false,
-        defaultPrevented: false,
-        metaKey: false,
         preventDefault() {
           this.defaultPrevented = true;
         },
-        shiftKey: false,
-        target: {
-          href: { animVal: "http://localhost/vector" },
-          getAttribute(name) {
-            return name === "href" ? "/vector" : null;
-          },
-          nodeName: "a",
-        },
+        target: link,
       };
 
       harness.runtime._rootClickHandler(event);
 
       expect(event.defaultPrevented).toBeTrue();
       expect(harness.location.getPath()).toBe("/vector");
+    });
+
+    it("resolves relative SVG links against the document base URL", () => {
+      const harness = createHarness({}, { base: "http://localhost/base/" });
+      const link = document.createElementNS("http://www.w3.org/2000/svg", "a");
+      link.setAttribute("href", "vector");
+      harness.rootElement.append(link);
+      const event = {
+        button: 0,
+        target: link,
+        preventDefault: jasmine.createSpy("preventDefault"),
+      };
+      harness.runtime._rootClickHandler(event);
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(harness.location.getPath()).toBe("/base/vector");
     });
 
     it("cancels and redirects incoming browser navigation", async () => {
@@ -656,6 +783,78 @@ describe("$location", () => {
 
       expect(harness.location.getPath()).toBe("/");
       expect(harness.windowListeners.popstate).toBeUndefined();
+    });
+
+    it("disconnects root listeners and cancels pending history writes on destruction", async () => {
+      const harness = createHarness();
+      await wait();
+      const flush = harness.scopeListeners.$updateBrowser;
+      const destroy = harness.scopeListeners.$destroy;
+      const push = spyOn(harness.fakeHistory, "pushState").and.callThrough();
+      harness.location.setPath("/queued");
+      destroy();
+      destroy();
+      flush();
+      harness.location.setPath("/after-destroy");
+      await wait();
+      expect(push).not.toHaveBeenCalled();
+      expect(harness.scopeListeners.$updateBrowser).toBeUndefined();
+      expect(harness.scopeListeners.$destroy).toBeUndefined();
+      expect(harness.windowListeners.popstate).toBeUndefined();
+      expect(harness.windowListeners.hashchange).toBeUndefined();
+    });
+
+    it("replaces a service on another root without keeping the old service alive", async () => {
+      const harness = createHarness();
+      await wait();
+      const oldDestroy = harness.scopeListeners.$destroy;
+      const root = document.createElement("div");
+      const listeners = {};
+      const scope = {
+        on(name, callback) {
+          listeners[name] = callback;
+          return () => delete listeners[name];
+        },
+        broadcast() {
+          return { defaultPrevented: false };
+        },
+      };
+      const replacement = harness.runtime.createService(scope, root, () => {});
+      const link = document.createElement("a");
+      link.href = "http://localhost/replacement";
+      root.append(link);
+      oldDestroy();
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+      link.dispatchEvent(event);
+      await wait();
+      expect(event.defaultPrevented).toBeTrue();
+      expect(replacement.getPath()).toBe("/replacement");
+      expect(harness.fakeLocation.href).toBe("http://localhost/replacement");
+      expect(harness.location.getPath()).toBe("/");
+      expect(harness.location._updateBrowser).toBeUndefined();
+      expect(harness.scopeListeners).toEqual({});
+    });
+
+    it("does not commit browser navigation when its start listener destroys the root", async () => {
+      const harness = createHarness();
+      await wait();
+      harness.broadcasts.length = 0;
+      harness.setBroadcastHandler((name, event) => {
+        if (name === "$locationChangeStart") {
+          event.preventDefault();
+          harness.scopeListeners.$destroy();
+        }
+      });
+      harness.fakeLocation.href = "http://localhost/destroyed";
+      harness.windowListeners.popstate();
+      await wait();
+      expect(harness.fakeLocation.href).toBe("http://localhost/destroyed");
+      expect(harness.broadcasts.map(([name]) => name)).toEqual([
+        "$locationChangeStart",
+      ]);
     });
 
     it("sends browser navigation outside the application to the platform", async () => {
@@ -2010,6 +2209,16 @@ describe("$location", () => {
       document.head.removeChild(base); // cleanup
     });
 
+    it("uses native normalization for default ports, dot segments, and Unicode hosts", () => {
+      expect(
+        urlsEqual("http://EXAMPLE.com:80/a/../b#", "http://example.com/b"),
+      ).toBeTrue();
+      expect(
+        urlsEqual("https://särver/path", "https://xn--srver-gra/path"),
+      ).toBeTrue();
+      expect(urlsEqual("http://example.com/", "http://example.com")).toBeTrue();
+    });
+
     it("returns false for different paths", () => {
       expect(
         urlsEqual("http://example.com/foo", "http://example.com/bar"),
@@ -2224,12 +2433,6 @@ describe("$location", () => {
       expect(locationUrl.absUrl).toBe("http://server/next/index.html");
     });
   });
-
-  function expectThrowOnStateChange(location) {
-    expect(() => {
-      location.setState({ a: 2 });
-    }).toThrowError(/nostate/);
-  }
 
   function parseLinkAndReturn(location, url, relHref) {
     if (location.parseLinkUrl(url, relHref)) {

@@ -31,7 +31,6 @@
           .service("Greeter", Greeter)
           .component("counterButton", {
             view: (res) => {
-              const { scope } = res;
               res.scope.$ctrl.count = 0;
               return angular.view.tags.button(
                 { onclick: () => res.scope.$ctrl.count++ },

@@ -318,6 +318,9 @@ jobs:
   csharp-wasm:
     needs: package
     runs-on: ubuntu-24.04
+    env:
+      DOTNET_VERSION: "8.0.427"
+      DOTNET_AZURE_FEED: https://dotnetcli.blob.core.windows.net/dotnet
     steps:
       - uses: actions/checkout@v5
 
@@ -325,10 +328,6 @@ jobs:
         with:
           node-version: lts/*
           package-manager-cache: false
-
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: "8.0.x"
 
       - name: Restore node_modules and Playwright cache
         uses: actions/cache@v5
@@ -345,10 +344,16 @@ jobs:
         with:
           path: |
             ~/.nuget/packages
-            ~/.dotnet
-          key: csharp-wasm-${{ runner.os }}-${{ hashFiles('integrations/wasm/csharp/**/*.csproj', 'package-lock.json') }}
+            integrations/wasm/csharp/.dotnet
+          key: csharp-wasm-${{ runner.os }}-${{ env.DOTNET_VERSION }}-${{ hashFiles('integrations/wasm/csharp/**/*.csproj', 'integrations/wasm/csharp/global.json', 'integrations/wasm/csharp/tool/install-dotnet-sdk.mjs', 'package-lock.json') }}
           restore-keys: |
-            csharp-wasm-${{ runner.os }}-
+            csharp-wasm-${{ runner.os }}-${{ env.DOTNET_VERSION }}-
+
+      - name: Install .NET SDK
+        run: |
+          make -C integrations/wasm/csharp local-sdk
+          echo "$GITHUB_WORKSPACE/integrations/wasm/csharp/.dotnet" >> "$GITHUB_PATH"
+          echo "DOTNET_ROOT=$GITHUB_WORKSPACE/integrations/wasm/csharp/.dotnet" >> "$GITHUB_ENV"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps

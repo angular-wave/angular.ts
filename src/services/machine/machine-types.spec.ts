@@ -15,6 +15,9 @@ import type {
   MachineStateMap,
 } from "./machine.ts";
 
+// Compile-time fixtures: this file is checked by tsc, not imported by a browser runner.
+declare function typeFixture<T>(): T;
+
 interface SessionData {
   roomId: string;
   error: string;
@@ -75,14 +78,14 @@ describe("$machine contract types", () => {
         },
       },
       policy(context) {
-        context.payload;
+        void context.payload;
         // @ts-expect-error policy data is readonly.
         context.data.error = "denied";
 
         return context.to === "playing" ? "deny" : "allow";
       },
     };
-    const service = null as unknown as MachineService;
+    const service = typeFixture<MachineService>();
     const machine = service(config);
 
     machine.send("join", { roomId: "abc" });
@@ -100,7 +103,7 @@ describe("$machine contract types", () => {
   });
 
   it("types snapshots, results, and extraction helpers from the contract", () => {
-    const machine = null as unknown as Machine<SessionMachine>;
+    const machine = typeFixture<Machine<SessionMachine>>();
     const snapshot: MachineSnapshot<SessionMachine> = machine.snapshot();
     const result: MachineSendResult<SessionMachine["state"]> = machine.send(
       "join",
@@ -108,7 +111,7 @@ describe("$machine contract types", () => {
     );
     const status: MachineSendStatus = result.status;
     const data: MachineDataOf<typeof machine> = snapshot.data;
-    const events = null as unknown as MachineEventsOf<typeof machine>;
+    const events = typeFixture<MachineEventsOf<typeof machine>>();
     const eventName: MachineEventNamesOf<typeof machine> = "join";
     const mode: MachineStatesOf<typeof machine> = snapshot.state;
 
@@ -140,7 +143,7 @@ describe("$machine contract types", () => {
         on: { on: { toggle: { to: "off" } } },
       },
     };
-    const service = null as unknown as MachineService;
+    const service = typeFixture<MachineService>();
     const machine = service(config);
 
     machine.send("toggle");
@@ -165,7 +168,7 @@ describe("$machine contract types", () => {
   });
 
   it("infers ordinary inline machine state and event names", () => {
-    const service = null as unknown as MachineService;
+    const service = typeFixture<MachineService>();
     const machine = service({
       initial: "idle",
       data: { count: 0 },

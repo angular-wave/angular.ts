@@ -2550,7 +2550,6 @@ describe("ngView controllers or onEnter handlers", () => {
 
 describe("angular 1.5+ style .component()", () => {
   let el = document.getElementById("app"),
-    app,
     scope,
     log,
     svcs,

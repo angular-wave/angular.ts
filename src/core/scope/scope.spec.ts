@@ -3403,25 +3403,6 @@ describe("Scope", () => {
     });
 
     logs = [];
-    function setupWatches(scope, log) {
-      scope.watch(() => {
-        logs.push("w1");
-
-        return scope.w1;
-      }, log("w1action"));
-      scope.watch(() => {
-        logs.push("w2");
-
-        return scope.w2;
-      }, log("w2action"));
-      scope.watch(() => {
-        logs.push("w3");
-
-        return scope.w3;
-      }, log("w3action"));
-      console.error(logs.length);
-      logs = [];
-    }
   });
 
   describe("$parse expression evaluation", () => {
@@ -3644,11 +3625,11 @@ describe("Scope", () => {
 
           const listener2 = jasmine.createSpy("listener2");
 
-          const remove2 = scope.on("abc", listener2);
+          scope.on("abc", listener2);
 
           const listener3 = jasmine.createSpy("listener3");
 
-          const remove3 = scope.on("abc", listener3);
+          scope.on("abc", listener3);
 
           scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
@@ -3672,11 +3653,11 @@ describe("Scope", () => {
 
           const listener2 = jasmine.createSpy().and.callFake(remove1);
 
-          const remove2 = scope.on("abc", listener2);
+          scope.on("abc", listener2);
 
           const listener3 = jasmine.createSpy();
 
-          const remove3 = scope.on("abc", listener3);
+          scope.on("abc", listener3);
 
           scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
@@ -3696,13 +3677,13 @@ describe("Scope", () => {
         it("should not call listener when removed by previous", () => {
           const listener1 = jasmine.createSpy("listener1");
 
-          const remove1 = scope.on("abc", listener1);
+          scope.on("abc", listener1);
 
           const listener2 = jasmine.createSpy("listener2").and.callFake(() => {
             remove3();
           });
 
-          const remove2 = scope.on("abc", listener2);
+          scope.on("abc", listener2);
 
           const listener3 = jasmine.createSpy("listener3");
 
@@ -3710,7 +3691,7 @@ describe("Scope", () => {
 
           const listener4 = jasmine.createSpy("listener4");
 
-          const remove4 = scope.on("abc", listener4);
+          scope.on("abc", listener4);
 
           scope.broadcast("abc");
           expect(listener1).toHaveBeenCalled();
@@ -3854,7 +3835,7 @@ describe("Scope", () => {
 
         const remove1 = child.on("evt", spy1);
 
-        const remove2 = child.on("evt", spy2);
+        child.on("evt", spy2);
 
         const remove3 = child.on("evt", spy3);
 
@@ -3891,7 +3872,7 @@ describe("Scope", () => {
 
         const remove1 = child.on("evt", spy1);
 
-        const remove2 = child.on("evt", spy2);
+        child.on("evt", spy2);
 
         const remove3 = child.on("evt", spy3);
 
@@ -4810,6 +4791,9 @@ describe("Scope", () => {
       child1.on("$destroy", onDestroy1);
       child2.on("$destroy", onDestroy2);
       scope.items = [child1, child2];
+      expect(scope.items).toEqual([child1, child2]);
+      expect(onDestroy1).not.toHaveBeenCalled();
+      expect(onDestroy2).not.toHaveBeenCalled();
 
       scope.items = [];
 

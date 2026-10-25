@@ -635,7 +635,7 @@ describe("annotate", () => {
       this.v = this.getValue();
     }
     Type.prototype = BaseType.prototype;
-    const module = angular.createModule("myModule", []);
+    angular.createModule("myModule", []);
 
     const injector = createInjector(["myModule"]);
 

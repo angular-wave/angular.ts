@@ -1242,7 +1242,7 @@ describe("WasmScopeAbi", () => {
 
     listenForGuestUpdates(exports, guest, (update) => updates.push(update));
 
-    const firstScope = abi.createScope(rootScope, { name: "todoList:first" });
+    abi.createScope(rootScope, { name: "todoList:first" });
     const secondScope = abi.createScope(rootScope, { name: "todoList:second" });
     const path = guest.write("count");
     const value = guest.writeJson(2);

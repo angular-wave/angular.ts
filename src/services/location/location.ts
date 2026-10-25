@@ -1,4 +1,4 @@
-import { trimEmptyHash, urlResolve } from "../../shared/url-utils/url-utils.ts";
+import { trimEmptyHash } from "../../shared/url-utils/url-utils.ts";
 import {
   encodeUriSegment,
   deleteProperty,
@@ -32,9 +32,9 @@ export type UrlChangeListener = (url: string, state: unknown) => void;
  */
 export interface Html5Mode {
   /**
-   * If true, will rely on `history.pushState` to change URLs where supported.
-   * Falls back to hash-prefixed paths in browsers that do not support `pushState`.
-   * @default false
+   * Uses path-based browser URLs when enabled, or hash-prefixed routes when disabled.
+   * Both modes use the native History API.
+   * @default true
    */
   enabled: boolean;
 
@@ -42,7 +42,7 @@ export interface Html5Mode {
    * When html5Mode is enabled, specifies whether or not a `<base>` tag is required to be present.
    * If both `enabled` and `requireBase` are true, and a `<base>` tag is not present,
    * an error will be thrown when `$location` is injected.
-   * @default true
+   * @default false
    */
   requireBase: boolean;
 
@@ -136,6 +136,8 @@ export class Location {
   _hash = "";
   /** @internal */
   _urlUpdatedByLocation = false;
+  /** @internal Whether the pending router navigation replaces its history entry. */
+  _replace = false;
   /**
    * @param appBase application base URL
    * @param appBaseNoFile application base URL stripped of any filename
@@ -315,17 +317,15 @@ export class Location {
       ? this.appBaseNoFile + this._url.substring(1)
       : this.appBase + (this._url ? (this.hashPrefix ?? "") + this._url : "");
     this._urlUpdatedByLocation = true;
-    setTimeout(() => this._updateBrowser?.());
+    this._updateBrowser?.();
   }
 
   /**
    * Set the history state object and return `$location`.
-   * The state object is later passed to `pushState` or `replaceState`.
+   * The state object is cloned by the browser when the scheduled history update commits.
    * See {@link https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state|History.state}
    *
-   * NOTE: This method is supported only in HTML5 mode and only in browsers supporting
-   * the HTML5 History API (i.e. methods `pushState` and `replaceState`). If you need to support
-   * older browsers (like IE9 or Android < 4.0), don't use this method.
+   * Supported only in HTML5 mode. State-only changes are scheduled just like URL changes.
    *
    * @returns The `Location` instance.
    */
@@ -336,11 +336,9 @@ export class Location {
         "History API state support is available only in HTML5 mode",
       );
     }
-    // The user might modify `stateObject` after invoking `$location.setState(stateObject)`
-    // but we're changing the _statereference to $browser.state() during the $digest
-    // so the modification window is narrow.
     this._state = state;
     this._urlUpdatedByLocation = true;
+    this._updateBrowser?.();
 
     return this;
   }
@@ -489,7 +487,6 @@ export class LocationRuntimeState {
   _rootClickHandler?: EventListener;
   /** @internal */
   _serviceCleanup?: () => void;
-  lastCachedState: unknown;
   /** @internal */
   _destroyed: boolean;
   /** @internal */
@@ -512,38 +509,35 @@ export class LocationRuntimeState {
     this._lastHistoryState = null;
     this._destroyed = false;
     this._window = browserWindow;
-    this._lastBrowserUrl = browserWindow.location.href;
+    this._lastBrowserUrl = this.getBrowserUrl();
     this._cacheState();
   }
-
-  /// ///////////////////////////////////////////////////////////
-  // URL API
-  /// ///////////////////////////////////////////////////////////
 
   /**
    * Updates the browser's current URL and history state.
    *
    * @param url - The target URL to navigate to.
    * @param [state=null] - Optional history state object to associate with the new URL.
+   * @param [replace=false] - Replace the current history entry during initial URL normalization.
    * @returns The runtime state.
    */
-  setUrl(url: string | undefined, state?: unknown) {
-    if (state === undefined) {
-      state = null;
+  setUrl(url: string | undefined, state: unknown = null, replace = false) {
+    if (!url) return this;
+
+    const resolved = trimEmptyHash(
+      new URL(url, this._window.location.href).href,
+    );
+
+    if (this._lastBrowserUrl === resolved && this._lastHistoryState === state) {
+      return this;
     }
 
-    if (url) {
-      url = new URL(url).href;
+    const method = replace ? "replaceState" : "pushState";
 
-      if (this._lastBrowserUrl === url && this._lastHistoryState === state) {
-        return this;
-      }
-
-      this._lastBrowserUrl = url;
-      this._lastHistoryState = state;
-      this._window.history.pushState(state, "", url);
-      this._cacheState();
-    }
+    this._window.history[method](state, "", resolved);
+    // Failed writes must leave these caches intact so the same URL can be retried.
+    this._lastBrowserUrl = resolved;
+    this._cacheState(true);
 
     return this;
   }
@@ -571,14 +565,13 @@ export class LocationRuntimeState {
    *
    * @internal
    */
-  private _cacheState() {
+  private _cacheState(force = false) {
     const currentState: unknown = this._window.history.state ?? null;
 
-    if (!equals(currentState, this.lastCachedState)) {
+    if (force || !equals(currentState, this._cachedState)) {
       this._cachedState = currentState;
-      this.lastCachedState = currentState;
-      this._lastHistoryState = currentState;
     }
+    this._lastHistoryState = this._cachedState;
   }
 
   /**
@@ -589,17 +582,17 @@ export class LocationRuntimeState {
     const prevLastHistoryState: unknown = this._lastHistoryState;
 
     this._cacheState();
+    const url = this.getBrowserUrl();
 
     if (
-      this._lastBrowserUrl === this.getBrowserUrl() &&
+      this._lastBrowserUrl === url &&
       prevLastHistoryState === this._cachedState
     ) {
       return;
     }
-    this._lastBrowserUrl = this.getBrowserUrl();
-    this._lastHistoryState = this._cachedState;
+    this._lastBrowserUrl = url;
     this._urlChangeListeners.forEach((listener: UrlChangeListener) => {
-      listener(trimEmptyHash(this._window.location.href), this._cachedState);
+      listener(url, this._cachedState);
     });
   }
 
@@ -659,31 +652,37 @@ export class LocationRuntimeState {
     $location._state = this.state();
 
     let destroyed = false;
+    const isActive = () => !destroyed;
+    let pendingUpdate: ReturnType<typeof setTimeout> | undefined;
 
     const IGNORE_URI_REGEXP = /^\s*(javascript|mailto):/i;
 
+    this._serviceCleanup?.();
     locationCleanupByRootElement.get($rootElement)?.();
 
     const setBrowserUrlWithFallback = (
       url: string | undefined,
       state: unknown,
+      replace = false,
     ) => {
       const oldUrl = this.getBrowserUrl();
 
-      const oldState: unknown = $location._state;
+      const oldState = this.state();
 
       try {
-        this.setUrl(url, state);
+        this.setUrl(url, state, replace);
 
-        // Make sure $location.getState() returns referentially identical (not just deeply equal)
-        // state object; this makes possible quick checking if the state changed in the digest
-        // loop. Checking deep equality would be too expensive.
+        // Expose the browser's cloned state with a stable identity.
         $location._state = this.state();
+
+        return true;
       } catch (err) {
         // Restore old values if pushState fails
         $location.parse(oldUrl);
         $location._state = oldState;
         $exceptionHandler(err);
+
+        return false;
       }
     };
 
@@ -694,15 +693,13 @@ export class LocationRuntimeState {
 
     const clickHandler = ((event: MouseEvent) => {
       const { rewriteLinks } = this.config.html5Mode;
-      // TODO(vojta): rewrite link when opening in new tab/window (in legacy browser)
-      // currently we open nice url link and redirect then
-
       if (
         !isLinkRewritingEnabled(rewriteLinks) ||
         event.ctrlKey ||
         event.metaKey ||
         event.shiftKey ||
-        event.button === 2
+        event.altKey ||
+        event.button !== 0
       ) {
         return;
       }
@@ -730,13 +727,18 @@ export class LocationRuntimeState {
       if (!isString(absHref) && "animVal" in absHref) {
         // SVGAnimatedString.animVal should be identical to SVGAnimatedString.baseVal, unless during
         // an animation.
-        absHref = new URL(absHref.animVal).href;
+        absHref = new URL(absHref.animVal, this._window.document.baseURI).href;
       }
 
       // Ignore when url is started with javascript: or mailto:
       if (IGNORE_URI_REGEXP.test(absHref)) return;
 
-      if (absHref && !elm.getAttribute("target") && !event.defaultPrevented) {
+      if (
+        absHref &&
+        !elm.getAttribute("target") &&
+        !elm.hasAttribute("download") &&
+        !event.defaultPrevented
+      ) {
         if ($location.parseLinkUrl(absHref, relHref)) {
           // We do a preventDefault for all urls that are part of the AngularTS application,
           // in html5mode and also without, so that we are able to abort navigation without
@@ -750,45 +752,32 @@ export class LocationRuntimeState {
     $rootElement.addEventListener("click", clickHandler);
 
     const cleanupLocation = () => {
+      if (!isActive()) return;
+
       destroyed = true;
-
-      if (this._rootClickHandler) {
-        $rootElement.removeEventListener("click", this._rootClickHandler);
-        this._rootClickHandler = undefined;
-      }
-
-      if (this._urlChangeHandler) {
-        this._window.removeEventListener("popstate", this._urlChangeHandler);
-        this._window.removeEventListener("hashchange", this._urlChangeHandler);
-        this._urlChangeHandler = undefined;
-      }
-
-      this._urlChangeInit = false;
-      this._urlChangeListeners.length = 0;
-
-      if (this._serviceCleanup === cleanupLocation) {
-        this._serviceCleanup = undefined;
-      }
-
-      if (locationCleanupByRootElement.get($rootElement) === cleanupLocation) {
-        locationCleanupByRootElement.delete($rootElement);
-      }
+      clearTimeout(pendingUpdate);
+      $location._updateBrowser = undefined;
+      $rootElement.removeEventListener("click", clickHandler);
+      this._rootClickHandler = undefined;
+      this._disconnectUrlChanges();
+      removeScopeUpdate();
+      removeScopeDestroy();
+      this._serviceCleanup = undefined;
+      locationCleanupByRootElement.delete($rootElement);
     };
 
     this._serviceCleanup = cleanupLocation;
     locationCleanupByRootElement.set($rootElement, cleanupLocation);
-    $rootScope.on("$destroy", () => {
-      cleanupLocation();
-    });
 
     // rewrite hashbang url <> html5 url
     if ($location.absUrl !== initialUrl) {
-      this.setUrl($location.absUrl, true);
+      this.setUrl($location.absUrl, this.state(), true);
+      $location._state = this.state();
     }
 
     let initializing = true;
 
-    // update $location when $browser url changes
+    // Read browser navigation asynchronously before notifying the router.
     this._onUrlChange((newUrl: string, newState: unknown) => {
       if (!startsWith(newUrl, appBaseNoFile)) {
         // If we are navigating outside of the app then force a reload
@@ -798,7 +787,7 @@ export class LocationRuntimeState {
       }
 
       queueMicrotask(() => {
-        if (destroyed) return;
+        if (!isActive()) return;
 
         const oldUrl = $location.absUrl;
 
@@ -817,7 +806,7 @@ export class LocationRuntimeState {
 
         // if the location was changed by a `$locationChangeStart` handler then stop
         // processing this location change
-        if ($location.absUrl !== newUrl) return;
+        if (!isActive() || $location.absUrl !== newUrl) return;
 
         if (defaultPrevented) {
           $location.parse(oldUrl);
@@ -830,67 +819,69 @@ export class LocationRuntimeState {
       });
     });
 
-    // update browser
     const updateBrowser = () => {
-      if (initializing || $location._urlUpdatedByLocation) {
-        $location._urlUpdatedByLocation = false;
+      pendingUpdate = undefined;
+      if (!initializing && !$location._urlUpdatedByLocation) return;
 
-        const oldUrl = this.getBrowserUrl();
+      $location._urlUpdatedByLocation = false;
+      const replace = $location._replace;
+      $location._replace = false;
+      const oldUrl = this.getBrowserUrl();
+      const newUrl = $location.absUrl;
+      const oldState = this.state();
+      const urlOrStateChanged =
+        !urlsEqual(oldUrl, newUrl) ||
+        ($location.html5 && oldState !== $location._state);
 
-        let newUrl = $location.absUrl;
+      if (!initializing && !urlOrStateChanged) return;
 
-        const oldState: unknown = this.state();
+      initializing = false;
+      const { defaultPrevented } = broadcastRootScopeEvent(
+        "$locationChangeStart",
+        newUrl,
+        oldUrl,
+        $location._state,
+        oldState,
+      );
 
-        const urlOrStateChanged =
-          !urlsEqual(oldUrl, newUrl) ||
-          ($location.html5 && oldState !== $location._state);
+      // A listener may redirect or dispose the root before the write commits.
+      if (!isActive() || $location.absUrl !== newUrl) return;
 
-        if (initializing || urlOrStateChanged) {
-          initializing = false;
+      if (defaultPrevented) {
+        $location.parse(oldUrl);
+        $location._state = oldState;
+      } else {
+        if (
+          urlOrStateChanged &&
+          !setBrowserUrlWithFallback(
+            newUrl,
+            oldState === $location._state ? null : $location._state,
+            replace,
+          )
+        )
+          return;
 
-          setTimeout(() => {
-            if (destroyed) return;
-
-            newUrl = $location.absUrl;
-
-            const { defaultPrevented } = broadcastRootScopeEvent(
-              "$locationChangeStart",
-              $location.absUrl,
-              oldUrl,
-              $location._state,
-              oldState,
-            );
-
-            // if the location was changed by a `$locationChangeStart` handler then stop
-            // processing this location change
-            if ($location.absUrl !== newUrl) return;
-
-            if (defaultPrevented) {
-              $location.parse(oldUrl);
-              $location._state = oldState;
-            } else {
-              if (urlOrStateChanged) {
-                setBrowserUrlWithFallback(
-                  newUrl,
-                  oldState === $location._state ? null : $location._state,
-                );
-              }
-              afterLocationChange(oldUrl, oldState);
-            }
-          });
-        }
+        afterLocationChange(oldUrl, oldState);
       }
     };
 
-    $location._updateBrowser = updateBrowser;
-    updateBrowser();
-    $rootScope.on("$updateBrowser", updateBrowser);
+    const scheduleBrowserUpdate = () => {
+      if (!isActive() || pendingUpdate !== undefined) return;
+
+      pendingUpdate = setTimeout(updateBrowser);
+    };
+
+    $location._updateBrowser = scheduleBrowserUpdate;
+    scheduleBrowserUpdate();
+    const removeScopeUpdate = $rootScope.on(
+      "$updateBrowser",
+      scheduleBrowserUpdate,
+    );
+    const removeScopeDestroy = $rootScope.on("$destroy", cleanupLocation);
 
     return $location;
 
     function afterLocationChange(oldUrl: string, oldState: unknown) {
-      if (destroyed) return;
-
       broadcastRootScopeEvent(
         "$locationChangeSuccess",
         $location.absUrl,
@@ -909,15 +900,19 @@ export class LocationRuntimeState {
     this._serviceCleanup?.();
     this._serviceCleanup = undefined;
 
+    this._disconnectUrlChanges();
+    this._rootClickHandler = undefined;
+  }
+
+  /** @internal */
+  private _disconnectUrlChanges(): void {
     if (this._urlChangeHandler) {
       this._window.removeEventListener("popstate", this._urlChangeHandler);
       this._window.removeEventListener("hashchange", this._urlChangeHandler);
       this._urlChangeHandler = undefined;
     }
-
     this._urlChangeInit = false;
     this._urlChangeListeners.length = 0;
-    this._rootClickHandler = undefined;
   }
 
   /** @internal */
@@ -1096,7 +1091,7 @@ export function parseAppUrl(
   if (prefixed) {
     url = `/${url}`;
   }
-  const match = urlResolve(url);
+  const match = new URL(url, window.location.href);
 
   const path =
     prefixed && match.pathname.startsWith("/")
@@ -1112,8 +1107,8 @@ export function parseAppUrl(
 
   return {
     path: parsedPath,
-    search: parseKeyValue(match.search),
-    hash: decodeURIComponent(match.hash),
+    search: parseKeyValue(match.search.slice(1)),
+    hash: decodeURIComponent(match.hash.slice(1)),
   };
 }
 
@@ -1189,7 +1184,7 @@ export function serverBase(url: string): string {
 /**
  * @internal
  * Determines if two URLs are equal despite potential differences in encoding,
- * trailing slashes, or empty hash fragments, such as between $location.absUrl() and $browser.url().
+ * trailing slashes, or empty hash fragments in application and browser URLs.
  *
  * @param x - First URL to compare.
  * @param y - Second URL to compare.
@@ -1201,18 +1196,14 @@ export function urlsEqual(x: string, y: string): boolean {
 
 /**
  * @internal
- * Normalizes a URL by resolving it via a DOM anchor element,
+ * Normalizes a URL with the native URL parser and the document base URI,
  * removing trailing slashes (except root), and trimming empty hashes.
  *
  * @param url - URL to normalize.
  * @returns The normalized URL string.
  */
 function normalizeUrl(url: string): string {
-  const anchor = document.createElement("a");
-
-  anchor.href = url;
-
-  let normalized = anchor.href;
+  let normalized = new URL(url, document.baseURI).href;
 
   // Remove trailing slash unless it's root (e.g., https://example.com/)
   if (normalized.endsWith("/") && !/^https?:\/\/[^/]+\/$/.test(normalized)) {

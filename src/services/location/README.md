@@ -57,12 +57,16 @@ The main flow is:
 - Root destruction disconnects service listeners for that application root.
 - Runtime destruction disposes remaining listeners and rejects later setup or
   configuration.
+- Replacing the service disconnects its previous root; queued writes and scope
+  subscriptions are disposed with their owner.
 
 ## Reactivity Contract
 
 - Browser navigation broadcasts `$locationChangeStart` and
   `$locationChangeSuccess` through the root scope.
-- Application URL writes are scheduled and then reflected into browser history.
+- URL and state setters share one deferred history write per turn.
+- Initial URL normalization replaces the current entry and preserves history state.
+- Failed writes restore the previous URL and state without emitting success.
 - Router synchronization consumes the same `$location` service state.
 
 ## Policy Contract
@@ -92,11 +96,15 @@ The main flow is:
 ## Scheduling And Ordering
 
 - Browser `popstate` and `hashchange` processing enters through a microtask.
-- Application-driven browser updates are deferred until the current state
-  mutation completes.
+- Application-driven browser updates are coalesced until the current state
+  mutation completes, including state-only updates in HTML5 mode.
 - `$locationChangeStart` may cancel a change before it is committed.
 
 ## Native Interop
+
+The native `URL` parser resolves and normalizes URLs without allocating DOM
+anchors. The existing query codec retains bare flags and repeated values, and
+path encoding preserves encoded separators in HTML5 mode.
 
 The native boundary is `window.location`, `window.history`, root `click`,
 `popstate`, and `hashchange`. Applications needing direct browser operations may

@@ -4,7 +4,7 @@ import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("ngViewport", () => {
-  let $compile: any, $rootScope: any, el: any, $test, $log;
+  let $compile: any, $rootScope: any, el: any;
 
   class FakeIntersectionObserver {
     static instances: FakeIntersectionObserver[] = [];
@@ -65,8 +65,7 @@ describe("ngViewport", () => {
     angular.bootstrap(el, ["default"]).invoke([
       "$compile",
       "$rootScope",
-      "$log",
-      (_$compile_: any, _$rootScope_: any, _$log_: any) => {
+      (_$compile_: any, _$rootScope_: any) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },

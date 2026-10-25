@@ -2753,8 +2753,6 @@ describe("ngOptions", () => {
     });
 
     it("should be possible to use ngIf in the blank option", async () => {
-      let option;
-
       await createSingleSelect(
         '<option ng-if="isBlank" value="">blank</option>',
       );
@@ -3493,8 +3491,6 @@ describe("ngOptions", () => {
       }
 
       await wait();
-
-      const options = element.querySelectorAll("option");
 
       await wait();
 

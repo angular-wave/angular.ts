@@ -63,7 +63,7 @@ describe("ngSrcset", () => {
   it("should not throw an error if undefined", async () => {
     element = $compile('<img ng-attr-srcset="{{undefined}}">')($scope);
     await wait();
-    expect().toBe();
+    expect(element.getAttribute("srcset")).toBeNull();
   });
 
   it("should interpolate the expression and bind to srcset", async () => {

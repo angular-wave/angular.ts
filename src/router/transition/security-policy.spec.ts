@@ -791,7 +791,7 @@ describe("transition canExit policy", () => {
     $state = bootstrapCanExitStates([
       "context",
       (context) => {
-        context.operation;
+        expect(context.operation).toBe("canExit");
 
         return false;
       },
@@ -805,7 +805,7 @@ describe("transition canExit policy", () => {
     $state = bootstrapCanExitStates([
       "context",
       (context) => {
-        context.operation;
+        expect(context.operation).toBe("canExit");
 
         return context.to.name === "home" ? true : false;
       },
@@ -819,7 +819,7 @@ describe("transition canExit policy", () => {
     $state = bootstrapCanExitStates([
       "context",
       (context) => {
-        context.operation;
+        expect(context.operation).toBe("canExit");
 
         return context.to.name === "home"
           ? $state.target("confirm")
@@ -835,7 +835,7 @@ describe("transition canExit policy", () => {
     $state = bootstrapCanExitStates([
       "context",
       (context) => {
-        context.operation;
+        expect(context.operation).toBe("canExit");
 
         return context.to.name === "home" ? 123 : true;
       },

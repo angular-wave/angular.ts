@@ -239,6 +239,8 @@ describe("ngController", () => {
     $rootScope = injector.get("$rootScope");
 
     $rootScope.expr = "first";
+    await waitUntil(() => element.textContent === "first");
+    expect(count).toBe(1);
     $rootScope.expr = "second";
     await waitUntil(() => element.textContent === "second");
     expect(count).toBe(1);

@@ -656,7 +656,7 @@ function refineProperties(
     const hasGetter = getterPattern.test(source);
     const hasSetter = setterPattern.test(source);
     const hasField = fieldPattern.test(source);
-    let replacementType = "Object";
+    let replacementType;
 
     if (!hasGetter && !hasSetter && !hasField) continue;
 

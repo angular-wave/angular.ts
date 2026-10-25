@@ -189,7 +189,7 @@ describe("toDebugString", () => {
     expect(toDebugString({ a: { b: "c" } })).toEqual('{"a":{"b":"c"}}');
     expect(
       toDebugString(function fn() {
-        const a = 10;
+        return 10;
       }),
     ).toEqual("function fn()");
     expect(toDebugString()).toEqual("undefined");

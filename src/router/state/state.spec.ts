@@ -179,7 +179,7 @@ describe("$state", () => {
   });
 
   describe(".transitionTo()", function () {
-    let $rootScope, $state, $transitions, $q, $location;
+    let $rootScope, $state, $transitions, $location;
 
     const errorLog = [];
 

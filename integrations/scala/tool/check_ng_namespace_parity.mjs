@@ -71,14 +71,14 @@ function extractNamespaceTypes(sourceText) {
     if (ts.isModuleDeclaration(node)) {
       const nextInNgNamespace =
         inNgNamespace ||
-        (ts.isIdentifier(node.name) && node.name.escapedText.toString() === "ng");
+        (ts.isIdentifier(node.name) && node.name.escapedText === "ng");
 
       if (node.body) visit(node.body, nextInNgNamespace);
       return;
     }
 
     if (inNgNamespace && ts.isTypeAliasDeclaration(node)) {
-      types.push(node.name.escapedText.toString());
+      types.push(node.name.escapedText);
       return;
     }
 

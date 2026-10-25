@@ -37,7 +37,7 @@ kotlin {
 
 dependencies {
     api(project(":navigation-fragments"))
-    api("androidx.paging:paging-runtime-ktx:3.5.1")
+    api("androidx.paging:paging-runtime-ktx:3.5.3")
     implementation("androidx.recyclerview:recyclerview:1.4.0")
 
     testImplementation("androidx.test:core:1.7.0")

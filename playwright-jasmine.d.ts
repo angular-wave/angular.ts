@@ -35,3 +35,9 @@ export function runJasminePage(
   url: string,
   options?: JasmineRunOptions,
 ): Promise<JasmineDiagnostics>;
+
+export function withPageCoverage<T>(
+  page: Page,
+  label: string,
+  action: () => T | Promise<T>,
+): Promise<T>;

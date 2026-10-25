@@ -504,9 +504,9 @@ describe("ng-get", () => {
       await waitUntil(() => el.lastChild.textContent === "Hello");
       const found = el.querySelector("#found");
 
-      const next = found.nextSibling;
-
-      expect(el.lastChild.textContent).toBe("Hello");
+      expect(found.textContent).toBe("World");
+      expect(found.nextSibling).toBe(el.lastChild);
+      expect(found.nextSibling.textContent).toBe("Hello");
     });
   });
 

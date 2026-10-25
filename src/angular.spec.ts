@@ -401,7 +401,7 @@ describe("angular", () => {
   });
 
   describe("getScopeByName", () => {
-    let module, injector, $rootScope, $compile, angular;
+    let module, injector, angular;
 
     beforeEach(() => {
       angular = new Angular();

@@ -11,6 +11,11 @@ Install .NET 8 and the WebAssembly workload:
 dotnet workload install wasm-tools
 ```
 
+`make local-sdk` installs an SDK into `.dotnet` for development. Set
+`DOTNET_VERSION` to request an exact SDK version and `DOTNET_AZURE_FEED` to
+select its download feed. CI uses these options to download .NET 8 directly
+from Microsoft's public blob feed.
+
 ## Add the binding
 
 This binding is distributed as source. Add a project reference to

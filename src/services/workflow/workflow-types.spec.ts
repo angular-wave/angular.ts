@@ -26,6 +26,9 @@ import type {
 } from "./worker-adapter.ts";
 import type { WorkerHandle } from "../worker/worker.ts";
 
+// Compile-time fixtures: this file is checked by tsc, not imported by a browser runner.
+declare function typeFixture<T>(): T;
+
 interface BuildData {
   output: string;
   error: string;
@@ -83,7 +86,7 @@ const buildConfig: WorkflowConfig<BuildWorkflow> = {
 
 describe("$workflow contract types", () => {
   it("carries commands, states, inputs, and outputs in one contract", async () => {
-    const service = null as unknown as WorkflowService;
+    const service = typeFixture<WorkflowService>();
     const workflow = service(buildConfig);
     const build = await workflow.run("build", "index.html");
     const publish = await workflow.run("publish", { file: "index.html" });
@@ -153,7 +156,7 @@ describe("$workflow contract types", () => {
   });
 
   it("infers ordinary definitions without positional generics", async () => {
-    const service = null as unknown as WorkflowService;
+    const service = typeFixture<WorkflowService>();
     const config = defineWorkflow({
       id: "inferred",
       initial: "idle",
@@ -217,11 +220,11 @@ describe("$workflow contract types", () => {
       id: "pipeline",
       workflows: {
         build: buildConfig,
-        release: null as unknown as Workflow<BuildWorkflow>,
+        release: typeFixture<Workflow<BuildWorkflow>>(),
       },
       persistence,
     };
-    const supervisor = null as unknown as WorkflowSupervisor<Workflows>;
+    const supervisor = typeFixture<WorkflowSupervisor<Workflows>>();
 
     supervisor.workflow("build").run("build", "index.html");
     supervisor.snapshot().workflows.release.data.output.toUpperCase();
@@ -231,11 +234,11 @@ describe("$workflow contract types", () => {
   });
 
   it("keeps worker host and client APIs on public workflow contracts", () => {
-    const workflow = null as unknown as Workflow<BuildWorkflow>;
+    const workflow = typeFixture<Workflow<BuildWorkflow>>();
     const host: WorkflowWorkerHost = createWorkflowWorkerHost({
       workflows: { build: workflow },
     });
-    const connection = null as unknown as WorkerHandle;
+    const connection = typeFixture<WorkerHandle>();
     const client: WorkflowWorkerClient = createWorkflowWorkerClient(connection);
     const diagnostic: WorkflowDiagnostic = {
       code: "workflow.failed",

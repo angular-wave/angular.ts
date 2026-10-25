@@ -1070,7 +1070,6 @@ describe("EventBus", function () {
 
       eventBus.subscribe(SOME_TOPIC, () => {
         called = true;
-        0;
       });
 
       eventBus.publish(SOME_TOPIC);

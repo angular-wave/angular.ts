@@ -4108,12 +4108,10 @@ base class GeneratedNgLocationService extends GeneratedNgFacade {
         raw.callMethodVarArgs('getSearch'.toJS, const <JSAny?>[]));
   }
 
-  /// Set the history state object and return `$location`. The state object is later passed to
-  /// `pushState` or `replaceState`. See {@link
-  /// https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state} NOTE:
-  /// This method is supported only in HTML5 mode and only in browsers supporting the HTML5 History
-  /// API (i.e. methods `pushState` and `replaceState`). If you need to support older browsers (like
-  /// IE9 or Android &lt; 4.0), don't use this method.
+  /// Set the history state object and return `$location`. The state object is cloned by the browser
+  /// when the scheduled history update commits. See {@link
+  /// https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state History.state}
+  /// Supported only in HTML5 mode. State-only changes are scheduled just like URL changes.
   ///
   /// Parameters:
   /// - [state]: Value supplied for the state parameter.

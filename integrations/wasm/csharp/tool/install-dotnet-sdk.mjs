@@ -6,6 +6,8 @@ const root = resolve(import.meta.dirname, "..");
 const installDir = resolve(process.env.DOTNET_INSTALL_DIR || join(root, ".dotnet"));
 const scriptDir = resolve(process.env.DOTNET_INSTALL_SCRIPT_DIR || join(root, ".dotnet-install"));
 const channel = process.env.DOTNET_CHANNEL || "8.0";
+const version = process.env.DOTNET_VERSION;
+const azureFeed = process.env.DOTNET_AZURE_FEED;
 const dotnet = join(installDir, "dotnet");
 const installScript = join(scriptDir, "dotnet-install.sh");
 const installUrl = "https://dot.net/v1/dotnet-install.sh";
@@ -47,13 +49,20 @@ function download() {
   run("wget", ["--quiet", "--output-document", installScript, installUrl]);
 }
 
-if (!existsSync(dotnet)) {
+const installedSdks = existsSync(dotnet)
+  ? spawnSync(dotnet, ["--list-sdks"], { encoding: "utf8" })
+  : undefined;
+const requestedSdkInstalled = installedSdks?.status === 0 && (
+  !version || installedSdks.stdout.split("\n").some((line) => line.startsWith(`${version} [`))
+);
+
+if (!requestedSdkInstalled) {
   download();
   chmodSync(installScript, 0o755);
   run("bash", [
     installScript,
-    "--channel",
-    channel,
+    ...(version ? ["--version", version] : ["--channel", channel]),
+    ...(azureFeed ? ["--azure-feed", azureFeed] : []),
     "--install-dir",
     installDir,
     "--no-path",

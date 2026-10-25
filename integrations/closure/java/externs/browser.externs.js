@@ -1,5 +1,6 @@
 /**
- * Minimal browser extern surface for jsinterop-generator.
+ * @fileoverview Minimal browser extern surface for jsinterop-generator.
+ * @externs
  *
  * AngularTS's Closure externs intentionally reuse browser-native names instead
  * of duplicating DOM APIs. Closure Compiler supplies those browser externs when

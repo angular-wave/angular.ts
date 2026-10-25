@@ -451,8 +451,6 @@ describe("ngModel", () => {
             "</form>",
         )($rootScope);
 
-        const inputElm = element.querySelector("input");
-
         const ctrl = $rootScope.myForm.myControl;
 
         let parserIsFailing = false;
@@ -706,8 +704,6 @@ describe("ngModel", () => {
 
         it("should run the model -> view pipeline", () => {
           const log = [];
-
-          const input = ctrl._element;
 
           ctrl.formatters.unshift((value) => {
             log.push(value);
@@ -1560,8 +1556,6 @@ describe("ngModel", () => {
       });
 
       it("should set the given options", () => {
-        const { options } = ctrl;
-
         ctrl.overrideModelOptions({ debounce: 1000, updateOn: "blur" });
         expect(ctrl.options.getOption("debounce")).toEqual(1000);
         expect(ctrl.options.getOption("updateOn")).toEqual("blur");
@@ -1605,9 +1599,6 @@ describe("ngModel", () => {
   });
 
   describe("CSS classes", () => {
-    const EMAIL_REGEXP =
-      /^[a-z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i;
-
     it("should set ng-empty or ng-not-empty when the view value changes", async () => {
       const element = $compile('<input ng-model="value" />')($rootScope);
 

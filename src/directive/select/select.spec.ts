@@ -271,8 +271,6 @@ describe("select", () => {
         expect(element.classList.contains("ng-valid")).toBeTrue();
         expect(ngModelCtrl.error.required).toBeFalsy();
 
-        let options = element.querySelectorAll("option");
-
         // view -> model
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-invalid")).toBeTrue();
@@ -285,7 +283,7 @@ describe("select", () => {
         // // model -> view
         scope.selection = null;
         await wait();
-        options = element.querySelectorAll("option");
+        const options = element.querySelectorAll("option");
         expect(options[0].selected).toBe(true);
         expect(element.classList.contains("ng-invalid")).toBeTrue();
         expect(ngModelCtrl.error.required).toBeTruthy();
@@ -302,7 +300,6 @@ describe("select", () => {
 
         scope.required = false;
         await wait();
-        const options = element.querySelectorAll("option");
 
         setSelectValue(element, 0);
         expect(element.classList.contains("ng-valid")).toBeTrue();

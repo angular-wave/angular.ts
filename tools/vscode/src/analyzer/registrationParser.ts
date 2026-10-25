@@ -66,7 +66,10 @@ export function parseAngularTsRegistrations(
   return registrations.sort((left, right) => left.offset - right.offset);
 }
 
-function parseRouteRegistrations(text: string, file: string): ParsedRegistration[] {
+function parseRouteRegistrations(
+  text: string,
+  file: string,
+): ParsedRegistration[] {
   const routes: ParsedRegistration[] = [];
   let match: RegExpExecArray | null;
 
@@ -154,8 +157,7 @@ function parseRouterObjectRoutes(
   if (!nameLiteral) return [];
 
   const name = resolveRouteName(parentName, nameLiteral.value);
-  const nameStart =
-    objectOffset + nameProperty.valueStart + nameLiteral.start;
+  const nameStart = objectOffset + nameProperty.valueStart + nameLiteral.start;
   const routes = [
     createRouteRegistration(
       sourceText,
@@ -169,7 +171,9 @@ function parseRouterObjectRoutes(
 
   const childrenProperty = findTopLevelProperty(objectText, "children");
   if (childrenProperty) {
-    for (const child of readTopLevelObjectLiterals(childrenProperty.valueText)) {
+    for (const child of readTopLevelObjectLiterals(
+      childrenProperty.valueText,
+    )) {
       routes.push(
         ...parseRouterObjectRoutes(
           sourceText,
@@ -194,7 +198,12 @@ function createRouteRegistration(
   declarationOffset: number,
 ): ParsedRegistration {
   const location = offsetToLocation(sourceText, nameOffset);
-  const params = parseRouteParams(sourceText, declarationText, file, declarationOffset);
+  const params = parseRouteParams(
+    sourceText,
+    declarationText,
+    file,
+    declarationOffset,
+  );
   const routeComponent = parseRouteComponent(
     sourceText,
     declarationText,
@@ -295,31 +304,34 @@ function parseRouteResolves(
   const resolveObject = unwrapObject(resolveProperty.valueText);
   if (!resolveObject) return undefined;
 
-  const resolves = readTopLevelProperties(resolveObject.text).map((property) => {
-    const sourceOffset =
-      declarationOffset +
-      resolveProperty.valueStart +
-      resolveObject.bodyStart +
-      property.nameStart;
-    const valueStart =
-      declarationOffset +
-      resolveProperty.valueStart +
-      resolveObject.bodyStart +
-      property.valueStart;
-    const value = property.valueText.trim();
-    const leadingWhitespace = property.valueText.match(/^\s*/)?.[0].length ?? 0;
-    return {
-      name: property.name,
-      value,
-      valueStart: valueStart + leadingWhitespace,
-      valueEnd: valueStart + leadingWhitespace + value.length,
-      source: {
-        file,
-        ...offsetToLocation(sourceText, sourceOffset),
-      },
-      sourceOffset,
-    };
-  });
+  const resolves = readTopLevelProperties(resolveObject.text).map(
+    (property) => {
+      const sourceOffset =
+        declarationOffset +
+        resolveProperty.valueStart +
+        resolveObject.bodyStart +
+        property.nameStart;
+      const valueStart =
+        declarationOffset +
+        resolveProperty.valueStart +
+        resolveObject.bodyStart +
+        property.valueStart;
+      const value = property.valueText.trim();
+      const leadingWhitespace =
+        property.valueText.match(/^\s*/)?.[0].length ?? 0;
+      return {
+        name: property.name,
+        value,
+        valueStart: valueStart + leadingWhitespace,
+        valueEnd: valueStart + leadingWhitespace + value.length,
+        source: {
+          file,
+          ...offsetToLocation(sourceText, sourceOffset),
+        },
+        sourceOffset,
+      };
+    },
+  );
 
   return resolves.length ? resolves : undefined;
 }
@@ -346,12 +358,15 @@ function createRegistration(
       ? parseDefinitionMetadata(callText)
       : {};
   const restrict =
-    kind === "component" ? "E" : kind === "directive" ? parseRestrict(callText) : undefined;
+    kind === "component"
+      ? "E"
+      : kind === "directive"
+        ? parseRestrict(callText)
+        : undefined;
   const allowedLocations = restrict
     ? restrictToAllowedLocations(restrict)
     : undefined;
-  const normalizedName =
-    kind === "directive" ? directiveNormalize(name) : name;
+  const normalizedName = kind === "directive" ? directiveNormalize(name) : name;
   const htmlName =
     kind === "component"
       ? componentHtmlName(name)
@@ -396,7 +411,10 @@ function createRegistration(
   };
 }
 
-function readLeadingDocComment(text: string, offset: number): string | undefined {
+function readLeadingDocComment(
+  text: string,
+  offset: number,
+): string | undefined {
   const before = text.slice(0, offset);
   const commentStart = before.lastIndexOf("/**");
   if (commentStart < 0) return undefined;
@@ -431,7 +449,10 @@ function describeRegistration(
 
   if ((kind === "component" || kind === "directive") && bindings?.length) {
     const bindingList = bindings
-      .map((binding) => `${binding.name}: ${binding.mode}${binding.optional ? "?" : ""}`)
+      .map(
+        (binding) =>
+          `${binding.name}: ${binding.mode}${binding.optional ? "?" : ""}`,
+      )
       .join(", ");
     details.unshift(`bindings ${bindingList}`);
   }
@@ -538,15 +559,15 @@ function splitTopLevelArguments(
   const close = findMatchingDelimiter(callText, open, "(", ")");
   if (close < 0) return [];
 
-  const body = callText.slice(open + 1, close);
+  const body = `${callText.slice(open + 1, close)},`;
   const args: Array<{ text: string; start: number; end: number }> = [];
   let start = 0;
   let depth = 0;
   let quote: string | undefined;
   let escaped = false;
 
-  for (let index = 0; index <= body.length; index++) {
-    const char = body[index] ?? ",";
+  for (let index = 0; index < body.length; index++) {
+    const char = body[index];
 
     if (quote) {
       if (escaped) {
@@ -677,9 +698,7 @@ function parseRouteParams(
   );
 }
 
-function parseUrlRouteParams(
-  url: string,
-): Array<{
+function parseUrlRouteParams(url: string): Array<{
   name: string;
   optional: boolean;
   valueType?: RouteParamInfo["valueType"];
@@ -702,10 +721,14 @@ function parseUrlRouteParams(
   for (const match of pathWithoutTypedParams.matchAll(/:([A-Za-z_$][\w$]*)/g)) {
     add(match[1], false);
   }
-  for (const match of pathPart.matchAll(/\{\s*([A-Za-z_$][\w$]*)\s*(?::\s*([^}]+))?\}/g)) {
+  for (const match of pathPart.matchAll(
+    /\{\s*([A-Za-z_$][\w$]*)\s*(?::\s*([^}]+))?\}/g,
+  )) {
     add(match[1], false, paramTypeNameToValueType(match[2]));
   }
-  for (const match of queryPart.matchAll(/(?:^|[&?])\s*\{?\s*([A-Za-z_$][\w$]*)/g)) {
+  for (const match of queryPart.matchAll(
+    /(?:^|[&?])\s*\{?\s*([A-Za-z_$][\w$]*)/g,
+  )) {
     add(match[1], true);
   }
 
@@ -713,7 +736,9 @@ function parseUrlRouteParams(
 }
 
 function isOptionalParamDeclaration(valueText: string): boolean {
-  return /\bvalue\s*:/.test(valueText) || /\boptional\s*:\s*true\b/.test(valueText);
+  return (
+    /\bvalue\s*:/.test(valueText) || /\boptional\s*:\s*true\b/.test(valueText)
+  );
 }
 
 function parseParamDeclarationValueType(
@@ -725,14 +750,19 @@ function parseParamDeclarationValueType(
   const typeLiteral = parseStringLiteral(typeProperty.valueText.trim());
   if (typeLiteral) return paramTypeNameToValueType(typeLiteral.value);
 
-  const typeIdentifier = /^([A-Za-z_$][\w$]*)/.exec(typeProperty.valueText.trim());
+  const typeIdentifier = /^([A-Za-z_$][\w$]*)/.exec(
+    typeProperty.valueText.trim(),
+  );
   return paramTypeNameToValueType(typeIdentifier?.[1]);
 }
 
 function paramTypeNameToValueType(
   typeName: string | undefined,
 ): RouteParamInfo["valueType"] | undefined {
-  const normalized = typeName?.trim().replace(/^['"`]|['"`]$/g, "").toLowerCase();
+  const normalized = typeName
+    ?.trim()
+    .replace(/^['"`]|['"`]$/g, "")
+    .toLowerCase();
   switch (normalized) {
     case "bool":
     case "boolean":
@@ -996,9 +1026,10 @@ function parseBindings(
   file: string,
   callOffset: number,
 ): BindingInfo[] | undefined {
-  const objectMatch = /\b(?:bindings|scope|bindToController)\s*:\s*\{([\s\S]*?)\}/m.exec(
-    callText,
-  );
+  const objectMatch =
+    /\b(?:bindings|scope|bindToController)\s*:\s*\{([\s\S]*?)\}/m.exec(
+      callText,
+    );
   if (!objectMatch) return undefined;
 
   const body = objectMatch[1];
@@ -1072,9 +1103,7 @@ function parseFilterParameters(callText: string): string[] {
   if (functionMatch) return parseParameterNames(functionMatch[1]);
 
   const arrowMatch =
-    /\breturn\s+(?:async\s*)?\(([\s\S]*?)\)\s*(?::\s*[^=]+)?=>/m.exec(
-      callText,
-    );
+    /\breturn\s+(?:async\s*)?\(([\s\S]*?)\)\s*(?::\s*[^=]+)?=>/m.exec(callText);
   if (arrowMatch) return parseParameterNames(arrowMatch[1]);
 
   const singleArrowMatch =
@@ -1093,7 +1122,10 @@ function parseFilterParameters(callText: string): string[] {
   return parseNamedFilterParameters(callText, returnedIdentifierMatch[1]);
 }
 
-function parseNamedFilterParameters(callText: string, identifier: string): string[] {
+function parseNamedFilterParameters(
+  callText: string,
+  identifier: string,
+): string[] {
   const escapedIdentifier = escapeRegExp(identifier);
   const functionMatch = new RegExp(
     `\\bfunction\\s+${escapedIdentifier}\\s*\\(([\\s\\S]*?)\\)`,
@@ -1167,8 +1199,13 @@ function parseController(
   return undefined;
 }
 
-function parseStringProperty(callText: string, propertyName: string): string | undefined {
-  const match = new RegExp(`\\b${propertyName}\\s*:\\s*(['"\`])`).exec(callText);
+function parseStringProperty(
+  callText: string,
+  propertyName: string,
+): string | undefined {
+  const match = new RegExp(`\\b${propertyName}\\s*:\\s*(['"\`])`).exec(
+    callText,
+  );
   if (!match) return undefined;
 
   const quote = match[1];

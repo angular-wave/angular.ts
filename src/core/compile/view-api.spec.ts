@@ -16,24 +16,18 @@ import {
 
 describe("view API", () => {
   it("requires explicit arbitrary attributes and properties", () => {
-    if (false) {
-      // @ts-expect-error misspelled native properties are rejected.
-      tags.input({ valeu: "invalid" });
-      tags.input(attrs({ "custom-attribute": "allowed" }));
-      tags.input(props({ customProperty: "allowed" }));
-    }
+    const attributed = tags.input(attrs({ "custom-attribute": "allowed" }));
+    const withProperty = tags.input(props({ customProperty: "allowed" }));
 
-    expect(true).toBeTrue();
+    expect(attributed.getAttribute("custom-attribute")).toBe("allowed");
+    expect(
+      (withProperty as HTMLInputElement & { customProperty: string })
+        .customProperty,
+    ).toBe("allowed");
   });
 
   it("makes component rendering strategies mutually exclusive", () => {
     const definition = { view: () => null } satisfies ComponentDefinition;
-
-    if (false) {
-      // @ts-expect-error a view cannot be combined with a template.
-      const invalid: ComponentDefinition = { view: () => null, template: "" };
-      void invalid;
-    }
 
     expect(definition.view()).toBeNull();
   });

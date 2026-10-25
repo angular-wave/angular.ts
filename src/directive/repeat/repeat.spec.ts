@@ -1521,7 +1521,7 @@ describe("ngRepeat", () => {
   });
 
   describe("ngRepeat and transcludes", () => {
-    it("should allow access to directive controller from children when used in a replace template", () => {
+    it("should allow access to directive controller from children when used in a replace template", async () => {
       let controller;
 
       compileRegistry
@@ -1539,7 +1539,7 @@ describe("ngRepeat", () => {
           },
         }));
 
-      injector.invoke([
+      await injector.invoke([
         "$compile",
         "$rootScope",
         async ($compile, $rootScope) => {
@@ -1552,7 +1552,6 @@ describe("ngRepeat", () => {
           dealoc(element);
         },
       ]);
-      expect().toBe();
     });
 
     it("should use the correct transcluded scope", async () => {
@@ -1610,7 +1609,7 @@ describe("ngRepeat", () => {
         replace: true,
         transclude: true,
       }));
-      injector.invoke([
+      await injector.invoke([
         "$compile",
         "$rootScope",
         async ($compile, $rootScope) => {
@@ -1627,7 +1626,6 @@ describe("ngRepeat", () => {
           dealoc(element);
         },
       ]);
-      expect().toBe();
     });
   });
   it("registers explicitly proxied repeated values as foreign proxies", async () => {

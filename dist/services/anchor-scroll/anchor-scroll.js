@@ -76,14 +76,13 @@ function createAnchorScrollService(state, $location, $rootScope, runtimeDocument
             : isNumber(hashOrElement)
                 ? hashOrElement.toString()
                 : $location.getHash();
-        let element;
         if (!hash) {
             scrollTo();
+            return;
         }
-        else if ((element = runtimeDocument.getElementById(hash) ?? undefined)) {
-            scrollTo(element);
-        }
-        else if ((element = getFirstAnchor(runtimeDocument.getElementsByName(hash)))) {
+        const element = runtimeDocument.getElementById(hash) ??
+            getFirstAnchor(runtimeDocument.getElementsByName(hash));
+        if (element) {
             scrollTo(element);
         }
         else if (hash === "top") {

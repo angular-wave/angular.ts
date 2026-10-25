@@ -33,7 +33,7 @@ kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 dependencies {
     api(project(":navigation-fragments"))
     implementation("androidx.startup:startup-runtime:1.2.0")
-    implementation("com.google.android.gms:play-services-maps:20.0.0")
+    implementation("com.google.android.gms:play-services-maps:20.1.0")
     kapt(project(":native-elements-compiler"))
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

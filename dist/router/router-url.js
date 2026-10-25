@@ -37,10 +37,9 @@ class RouterUrlRuntime {
         return this._location.getUrl();
     }
     /** @internal */
-    _setUrl(newUrl, state) {
+    _setUrl(newUrl, replace) {
         this._location.setUrl(decodeURIComponent(newUrl));
-        if (state)
-            this._location.setState(state);
+        this._location._replace = replace;
         return this._getUrl();
     }
     /** @internal */
@@ -74,7 +73,7 @@ class RouterUrlRuntime {
         if (!options.absolute || !url) {
             return url;
         }
-        const slash = !isHtml5 && url ? "/" : "";
+        const slash = isHtml5 ? "" : "/";
         return [
             `${window.location.protocol}//`,
             window.location.host,

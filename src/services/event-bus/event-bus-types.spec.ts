@@ -3,6 +3,9 @@ import type { Scope } from "../../core/scope/scope.ts";
 import type { EventBusListener } from "./event-bus.ts";
 import { EventBus } from "./event-bus.ts";
 
+// Compile-time fixtures: this file is checked by tsc, not imported by a browser runner.
+declare function typeFixture<T>(): T;
+
 interface CounterContext {
   count: number;
   label: string;
@@ -10,9 +13,9 @@ interface CounterContext {
 
 describe("$eventBus types", () => {
   it("typechecks unbound and context-bound listeners", () => {
-    const eventBus = null as unknown as EventBus;
+    const eventBus = typeFixture<EventBus>();
     const context: CounterContext = { count: 0, label: "cart" };
-    const scope = null as unknown as Scope;
+    const scope = typeFixture<Scope>();
 
     eventBus.subscribe("cart:item-added", (...args) => {
       const values: unknown[] = args;
@@ -70,7 +73,7 @@ describe("$eventBus types", () => {
       "cart:item-added",
       function () {
         // @ts-expect-error context-bound this rejects missing properties.
-        this.missing;
+        void this.missing;
       },
       context,
     );

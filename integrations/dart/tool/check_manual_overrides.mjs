@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readdirSync, readFileSync } from "node:fs";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 
 const repoRoot = resolve(dirname(new URL(import.meta.url).pathname), "../../..");
 const dartSrcRoot = resolve(repoRoot, "integrations/dart/lib/src");

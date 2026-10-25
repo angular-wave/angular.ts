@@ -44,7 +44,7 @@ describe("$templateCache", () => {
     expect(templateCache.get("test")).toEqual("hello");
   });
 
-  it("should can be accessed via `ng-include`", async () => {
+  it("should be accessed via `ng-include`", async () => {
     el.innerHTML = `
         <div ng-include="'test'">test</div>
     `;
@@ -54,7 +54,7 @@ describe("$templateCache", () => {
     expect(el.innerText).toEqual("hello");
   });
 
-  it("can be leader via `text/ng-template`", async () => {
+  it("can be loaded via `text/ng-template`", async () => {
     el.innerHTML = `
       <script type="text/ng-template" id="templateId.html">
         <p>This is the content of the template</p>

@@ -31,7 +31,7 @@ function extractNamespaceTypes(sourcePath) {
       const name = node.name;
       const nextInNgNamespace =
         inNgNamespace ||
-        (ts.isIdentifier(name) && name.escapedText.toString() === "ng");
+        (ts.isIdentifier(name) && name.escapedText === "ng");
 
       if (node.body) visit(node.body, nextInNgNamespace);
       return;
@@ -41,9 +41,9 @@ function extractNamespaceTypes(sourcePath) {
       const type = checker.getTypeFromTypeNode(node.type);
       types.push({
         documentation: typeDocumentation(checker, node, type),
-        name: node.name.escapedText.toString(),
+        name: node.name.escapedText,
         parameters: node.typeParameters?.map((parameter) =>
-          parameter.name.escapedText.toString(),
+          parameter.name.escapedText,
         ) ?? [],
       });
       return;

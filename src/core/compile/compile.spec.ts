@@ -3201,7 +3201,7 @@ describe("$compile", () => {
       reloadModules();
       const el = $("<div my-directive></div>");
 
-      const linkFunction = $compile(el)($rootScope); // link first
+      $compile(el)($rootScope); // link first
 
       await waitUntil(() => linkSpy.calls.any());
       expect(linkSpy).toHaveBeenCalled();
@@ -4286,14 +4286,14 @@ describe("$compile", () => {
       }).toThrowError();
     });
 
-    it("denormalizes directive templates", () => {
+    it("denormalizes directive templates", async () => {
       module
         .config({ $interpolate: { startSymbol: "[[", endSymbol: "]]" } })
         .directive("myDirective", () => ({
           template: "Value is {{myExpr}}",
         }));
 
-      createInjector(["ng", "test1"]).invoke([
+      await createInjector(["ng", "test1"]).invoke([
         "$compile",
         "$rootScope",
         async ($compile, $rootScope) => {
@@ -4306,7 +4306,6 @@ describe("$compile", () => {
           expect(el.innerHTML).toEqual("Value is 42");
         },
       ]);
-      expect().toBe();
     });
   });
 
@@ -7450,7 +7449,6 @@ describe("$compile", () => {
             );
           },
         ]);
-        expect().toBe();
         await wait();
         const child = ELEMENT.firstChild;
 
@@ -7973,8 +7971,6 @@ describe("$compile", () => {
     });
 
     describe("interpolation", () => {
-      let observeSpy;
-
       let module;
 
       beforeEach(() => {
@@ -9891,8 +9887,6 @@ describe("$compile", () => {
               await wait();
               expect(componentScope.reference).toBe(literalValue);
             }
-
-            expect().toBe();
           });
         });
       });

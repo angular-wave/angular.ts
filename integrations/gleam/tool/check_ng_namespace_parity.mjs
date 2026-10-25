@@ -31,14 +31,14 @@ function extractNamespaceTypes(sourceText) {
       const name = node.name;
       const nextInNgNamespace =
         inNgNamespace ||
-        (ts.isIdentifier(name) && name.escapedText.toString() === "ng");
+        (ts.isIdentifier(name) && name.escapedText === "ng");
 
       if (node.body) visit(node.body, nextInNgNamespace);
       return;
     }
 
     if (inNgNamespace && ts.isTypeAliasDeclaration(node)) {
-      types.push(node.name.escapedText.toString());
+      types.push(node.name.escapedText);
       return;
     }
 

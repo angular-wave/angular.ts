@@ -87,6 +87,18 @@ describe("UrlMatcher", () => {
     expect(hashRuntime._href(matcher, {}, {})).toBe("#!/docs");
     expect(booleanHashRuntime._href(matcher, {}, {})).toBe("#!/docs");
     expect(defaultRuntime._href(matcher, {}, {})).toBe("/docs");
+
+    const origin = `${window.location.protocol}//${window.location.host}`;
+
+    expect(hashRuntime._href(matcher, {}, { absolute: true })).toBe(
+      `${origin}/#!/docs`,
+    );
+    expect(booleanHashRuntime._href(matcher, {}, { absolute: true })).toBe(
+      `${origin}/#!/docs`,
+    );
+    expect(defaultRuntime._href(matcher, {}, { absolute: true })).toBe(
+      `${origin}/docs`,
+    );
   });
 
   it("should match static URLs", () => {
@@ -259,8 +271,6 @@ describe("UrlMatcher", () => {
 
     it("should allow embedded capture groups", () => {
       const shouldPass = {
-        "/url/{matchedParam:(?:[a-z]+)}/child/{childParam}":
-          "/url/someword/child/childParam",
         "/url/{matchedParam:(?:[a-z]+)}/child/{childParam}":
           "/url/someword/child/childParam",
       };

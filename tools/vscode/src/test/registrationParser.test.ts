@@ -240,11 +240,37 @@ test("extracts leading JSDoc for custom registration descriptions", () => {
   const component = entries.find((entry) => entry.name === "userProfile");
   const filter = entries.find((entry) => entry.name === "activeSummary");
 
-  assert.match(component?.description ?? "", /Displays the current user profile/);
+  assert.match(
+    component?.description ?? "",
+    /Displays the current user profile/,
+  );
   assert.doesNotMatch(component?.description ?? "", /@internal/);
   assert.match(component?.description ?? "", /Custom AngularTS component/);
   assert.match(filter?.description ?? "", /Formats active users/);
 });
+
+for (const trailingComma of ["", ","]) {
+  test(`parses the final state argument with trailing comma '${trailingComma}'`, () => {
+    const text = `.state("last", {
+      url: "/last",
+      component: "lastPage",
+      params: { label: { value: "left,right" } }
+    }${trailingComma})`;
+
+    const [route] = parseAngularTsRegistrations(text, "/workspace/app.ts");
+
+    assert.equal(route?.name, "last");
+    assert.equal(route?.routeComponent?.name, "lastPage");
+    assert.deepEqual(
+      route?.routeParams?.map((param) => param.name),
+      ["label"],
+    );
+    assert.equal(
+      text.slice(route.offset, route.offset + route.name.length),
+      "last",
+    );
+  });
+}
 
 test("parses state and router route declarations with params", () => {
   const text = `
@@ -406,7 +432,10 @@ test("extracts JSDoc from supported object-map registration entries", () => {
   const active = entries.find((entry) => entry.name === "activeWhen");
   const passive = entries.find((entry) => entry.name === "passiveWhen");
 
-  assert.match(active?.description ?? "", /Shows content while the flag is active/);
+  assert.match(
+    active?.description ?? "",
+    /Shows content while the flag is active/,
+  );
   assert.doesNotMatch(
     passive?.description ?? "",
     /Shows content while the flag is active/,

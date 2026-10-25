@@ -26,7 +26,7 @@ $location.getPath(); // "/dashboard"
 $location.getSearch(); // { tab: "overview" }
 $location.getHash(); // "summary"
 $location.getUrl(); // "/dashboard?tab=overview#summary"
-$location.absUrl(); // "https://app.example.com/dashboard?tab=overview#summary"
+$location.absUrl; // "https://app.example.com/dashboard?tab=overview#summary"
 ```
 
 Setter methods return `$location`, so related URL changes can be chained.

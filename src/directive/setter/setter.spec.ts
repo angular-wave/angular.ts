@@ -43,9 +43,7 @@ describe("setter", () => {
 
   it("should handle initial content in the element", async () => {
     $rootScope.testModel = "";
-    const element = $compile(
-      '<div ng-setter="testModel">Initial content</div>',
-    )($rootScope);
+    $compile('<div ng-setter="testModel">Initial content</div>')($rootScope);
 
     await wait();
 

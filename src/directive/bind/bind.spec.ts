@@ -12,8 +12,6 @@ describe("ng-bind", () => {
 
   let element;
 
-  let scope;
-
   beforeEach(() => {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();

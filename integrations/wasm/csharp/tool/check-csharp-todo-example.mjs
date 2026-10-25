@@ -171,8 +171,10 @@ const files = [
     path: "../../../../.github/workflows/ci.yml",
     fragments: [
       "csharp-wasm:",
-      "actions/setup-dotnet@v5",
-      "dotnet-version: \"8.0.x\"",
+      'DOTNET_VERSION: "8.0.427"',
+      "DOTNET_AZURE_FEED: https://dotnetcli.blob.core.windows.net/dotnet",
+      "make -C integrations/wasm/csharp local-sdk",
+      'echo "$GITHUB_WORKSPACE/integrations/wasm/csharp/.dotnet" >> "$GITHUB_PATH"',
       "dotnet workload install wasm-tools",
       "working-directory: integrations/wasm/csharp",
       "make -C integrations/wasm/csharp ci-check",

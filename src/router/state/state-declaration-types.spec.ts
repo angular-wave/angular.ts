@@ -52,6 +52,7 @@ const aliasUserParams: ParamsOf<AppRouteMap, "admin.users"> = {
   page: 1,
   query: "active",
 };
+void aliasUserParams;
 
 const profileParams: ParamsOf<AppRouteMap, "admin.profile"> = {
   userId: "42",
@@ -61,28 +62,34 @@ const invalidUserParams: ParamsOf<AppRouteMap, "admin.users"> = {
   // @ts-expect-error route params reject unknown keys
   userId: "42",
 };
+void invalidUserParams;
 
 // @ts-expect-error required params stay required for route maps
 const missingProfileParams: ParamsOf<AppRouteMap, "admin.profile"> = {};
+void missingProfileParams;
 
 const roleResolves: ResolvesOf<AppRouteMap, "admin.roles"> = {
   roles: [{ id: 1, name: "admin" }],
 };
+void roleResolves;
 
 const userResolves: ResolvesOf<AppRouteMap, "admin.users"> = {
   users: [{ id: "1" }],
   total: 1,
 };
+void userResolves;
 
 const aliasUserResolves: ResolvesOf<AppRouteMap, "admin.users"> = {
   users: [{ id: "1" }],
   total: 1,
 };
+void aliasUserResolves;
 
 // @ts-expect-error route resolves reject missing required resolve keys
 const missingUserResolves: ResolvesOf<AppRouteMap, "admin.users"> = {
   users: [{ id: "1" }],
 };
+void missingUserResolves;
 
 declare const stateService: StateService<AppRouteMap>;
 
@@ -132,6 +139,7 @@ const invalidResolves: ResolvesOf<AppRouteMap, "admin.roles"> = {
   // @ts-expect-error resolve map keys are strictly inferred
   invalidRole: { name: "x" },
 };
+void invalidResolves;
 
 type StaticNgStateLiteral<
   TRouteMap extends RouteMap,
@@ -159,8 +167,10 @@ const invalidStaticNgStateProfileLink: StaticNgStateLiteral<
   // @ts-expect-error quoted literal ng-state examples can mirror typed route params
   params: { page: 1 },
 };
+void invalidStaticNgStateProfileLink;
 
 const typedStateByName = stateService.getState("admin.users");
+void typedStateByName;
 
 declare const $transition$: Transition<
   AppRouteMap,
@@ -179,13 +189,13 @@ transitionSourceParams.query?.toUpperCase();
 void transitionRetainedParams["anyRuntimeParam"];
 
 // @ts-expect-error target params reject source-only keys
-transitionTargetParams.page;
+void transitionTargetParams.page;
 
 // @ts-expect-error explicit target params reject source-only keys
-transitionExplicitTargetParams.query;
+void transitionExplicitTargetParams.query;
 
 // @ts-expect-error source params reject target-only keys
-transitionSourceParams.userId;
+void transitionSourceParams.userId;
 
 declare const untypedTransition: Transition;
 const untypedTransitionParams = untypedTransition.params();
@@ -318,6 +328,7 @@ const inferredRouterTree = {
 
 const inferredRouterTreeDeclaration: RouterModuleDeclaration =
   inferredRouterTree;
+void inferredRouterTreeDeclaration;
 
 type InferredRouterTreeRoutes = RoutesOf<typeof inferredRouterTree>;
 type InferredRouterTreeRoutesAlias = RoutesOf<typeof inferredRouterTree>;
@@ -449,6 +460,7 @@ const inferredUserResolves: ResolvesOf<
   users: [{ id: "1" }],
   total: 1,
 };
+void inferredUserResolves;
 
 const namespaceProfileParams: ng.ParamsOf<
   NamespaceInferredRouterTreeRoutes,
@@ -456,6 +468,7 @@ const namespaceProfileParams: ng.ParamsOf<
 > = {
   userId: "42",
 };
+void namespaceProfileParams;
 
 const namespaceAliasProfileParams: ng.ParamsOf<
   NamespaceInferredRouterTreeRoutesAlias,
@@ -463,6 +476,7 @@ const namespaceAliasProfileParams: ng.ParamsOf<
 > = {
   userId: "42",
 };
+void namespaceAliasProfileParams;
 
 const namespaceProfileResolves: ng.ResolvesOf<
   NamespaceInferredRouterTreeRoutes,
@@ -470,6 +484,7 @@ const namespaceProfileResolves: ng.ResolvesOf<
 > = {
   profile: { id: "42" },
 };
+void namespaceProfileResolves;
 
 const namespaceAliasProfileResolves: ng.ResolvesOf<
   NamespaceInferredRouterTreeRoutesAlias,
@@ -477,6 +492,7 @@ const namespaceAliasProfileResolves: ng.ResolvesOf<
 > = {
   profile: { id: "42" },
 };
+void namespaceAliasProfileResolves;
 
 // @ts-expect-error object-style resolve return types are inferred from the tree
 const invalidInferredUserResolves: ResolvesOf<
@@ -485,6 +501,7 @@ const invalidInferredUserResolves: ResolvesOf<
 > = {
   users: [{ id: "1" }],
 };
+void invalidInferredUserResolves;
 
 const transitionPolicyDeclaration: StateDeclaration = {
   name: "workflow",
@@ -494,11 +511,11 @@ const transitionPolicyDeclaration: StateDeclaration = {
       canExit: [
         "context",
         (context: StateTransitionPolicyContext) => {
-          context.operation;
-          context.from;
-          context.to;
-          context.state;
-          context.transition;
+          void context.operation;
+          void context.from;
+          void context.to;
+          void context.state;
+          void context.transition;
 
           return { state: "workflow.confirm", params: { step: "1" } };
         },
@@ -530,9 +547,9 @@ const dirtyTransitionPolicyDeclaration: StateDeclaration = {
         when: [
           "context",
           (context: StateTransitionPolicyContext) => {
-            context.state;
-            context.operation;
-            context.transition;
+            void context.state;
+            void context.operation;
+            void context.transition;
 
             return false;
           },
@@ -568,11 +585,11 @@ const retryTransitionPolicy: StateDeclaration = {
       retry: [
         "context",
         (context: StateTransitionRetryPolicyContext) => {
-          context.operation;
-          context.from;
-          context.to;
-          context.attempt;
-          context.state;
+          void context.operation;
+          void context.from;
+          void context.to;
+          void context.attempt;
+          void context.state;
 
           return 2;
         },
@@ -589,7 +606,7 @@ const retryPolicyAsBool: StateDeclaration = {
       retry: [
         "context",
         (context: StateTransitionRetryPolicyContext) => {
-          context.state;
+          void context.state;
 
           return false;
         },
@@ -654,6 +671,7 @@ const transitionErrorBoundaryPolicy: StateDeclaration = {
     },
   },
 };
+void transitionErrorBoundaryPolicy;
 
 const transitionErrorBoundaryPolicyWithPolicy: StateDeclaration = {
   name: "with-error-boundary-policy",
@@ -663,9 +681,9 @@ const transitionErrorBoundaryPolicyWithPolicy: StateDeclaration = {
       errorBoundary: [
         "context",
         (context: StateTransitionErrorPolicyContext) => {
-          context.operation;
-          context.error;
-          context.state;
+          void context.operation;
+          void context.error;
+          void context.state;
 
           return {
             state: "error",
@@ -676,6 +694,7 @@ const transitionErrorBoundaryPolicyWithPolicy: StateDeclaration = {
     },
   },
 };
+void transitionErrorBoundaryPolicyWithPolicy;
 
 const transitionErrorTargetPolicy: StateDeclaration = {
   name: "with-error-target",
@@ -686,6 +705,7 @@ const transitionErrorTargetPolicy: StateDeclaration = {
     },
   },
 };
+void transitionErrorTargetPolicy;
 
 const transitionLoadingPolicy: StateDeclaration = {
   name: "with-loading-policy",
@@ -695,8 +715,8 @@ const transitionLoadingPolicy: StateDeclaration = {
       loading: [
         "context",
         (context: StateTransitionLoadingPolicyContext) => {
-          context.operation;
-          context.state;
+          void context.operation;
+          void context.state;
 
           return true;
         },
@@ -704,6 +724,7 @@ const transitionLoadingPolicy: StateDeclaration = {
     },
   },
 };
+void transitionLoadingPolicy;
 
 const invalidErrorBoundaryPolicy: StateDeclaration = {
   name: "invalid.error-boundary",
@@ -714,7 +735,7 @@ const invalidErrorBoundaryPolicy: StateDeclaration = {
         "context",
         // @ts-expect-error errorBoundary supports only route targets or boundary policy
         (context: StateTransitionErrorPolicyContext) => {
-          context.state;
+          void context.state;
 
           return false;
         },
@@ -722,6 +743,7 @@ const invalidErrorBoundaryPolicy: StateDeclaration = {
     },
   },
 };
+void invalidErrorBoundaryPolicy;
 
 const invalidErrorBoundaryTargetPolicy: StateDeclaration = {
   name: "invalid.error-boundary-target",
@@ -732,7 +754,7 @@ const invalidErrorBoundaryTargetPolicy: StateDeclaration = {
         "context",
         // @ts-expect-error errorBoundary supports only route targets or boundary policy
         (context: StateTransitionErrorPolicyContext) => {
-          context.state;
+          void context.state;
 
           return false;
         },
@@ -740,6 +762,7 @@ const invalidErrorBoundaryTargetPolicy: StateDeclaration = {
     },
   },
 };
+void invalidErrorBoundaryTargetPolicy;
 
 const invalidLoadingPolicy: StateDeclaration = {
   name: "invalid.loading",
@@ -750,7 +773,7 @@ const invalidLoadingPolicy: StateDeclaration = {
         "context",
         // @ts-expect-error loading supports only boolean, string, or policy callable
         (context: StateTransitionLoadingPolicyContext) => {
-          context.from;
+          void context.from;
 
           return { invalid: true } as const;
         },
@@ -758,9 +781,10 @@ const invalidLoadingPolicy: StateDeclaration = {
     },
   },
 };
+void invalidLoadingPolicy;
 
 const typedRetryPolicy: StateRetryPolicy = (context) => {
-  context.attempt;
+  void context.attempt;
 
   return 1;
 };
@@ -809,7 +833,7 @@ const deregisteredDeclarations: StateDeclaration[] =
   registry.deregister("home");
 
 // @ts-expect-error public state declarations do not expose built-state internals
-declaration._state;
+void declaration._state;
 
 // @ts-expect-error registry getStates returns declarations, not built states
 const builtFromGetStates: BuiltStateDeclaration[] = registry.getStates();

@@ -124,11 +124,9 @@ describe("parser", () => {
         expect(evaluateExpression(scope, "true==2<3")).toEqual(2 < 3);
         expect(evaluateExpression(scope, "true===2<3")).toEqual(2 < 3);
 
-        expect(evaluateExpression(scope, "true===3===3")).toEqual(
-          (true === 3) === 3,
-        );
+        expect(evaluateExpression(scope, "true===3===3")).toEqual(false);
         expect(evaluateExpression(scope, "3===3===true")).toEqual(true);
-        expect(evaluateExpression(scope, "3 >= 3 > 2")).toEqual(3 >= 3 > 2);
+        expect(evaluateExpression(scope, "3 >= 3 > 2")).toEqual(false);
       });
 
       it("should parse logical", () => {
@@ -258,23 +256,23 @@ describe("parser", () => {
         expect(evaluateExpression(scope, "1||0?0:0")).toEqual(1 || 0 ? 0 : 0);
 
         expect(evaluateExpression(scope, "0?0&&1:2")).toEqual(0 ? 0 && 1 : 2);
-        expect(evaluateExpression(scope, "0?1&&1:2")).toEqual(0 ? 1 && 1 : 2);
-        expect(evaluateExpression(scope, "0?0||0:1")).toEqual(0 ? 0 || 0 : 1);
+        expect(evaluateExpression(scope, "0?1&&1:2")).toEqual(2);
+        expect(evaluateExpression(scope, "0?0||0:1")).toEqual(1);
         expect(evaluateExpression(scope, "0?0||1:2")).toEqual(0 ? 0 || 1 : 2);
 
         expect(evaluateExpression(scope, "1?0&&1:2")).toEqual(1 ? 0 && 1 : 2);
-        expect(evaluateExpression(scope, "1?1&&1:2")).toEqual(1 ? 1 && 1 : 2);
-        expect(evaluateExpression(scope, "1?0||0:1")).toEqual(1 ? 0 || 0 : 1);
+        expect(evaluateExpression(scope, "1?1&&1:2")).toEqual(1);
+        expect(evaluateExpression(scope, "1?0||0:1")).toEqual(0);
         expect(evaluateExpression(scope, "1?0||1:2")).toEqual(1 ? 0 || 1 : 2);
 
         expect(evaluateExpression(scope, "0?1:0&&1")).toEqual(0 ? 1 : 0 && 1);
-        expect(evaluateExpression(scope, "0?2:1&&1")).toEqual(0 ? 2 : 1 && 1);
-        expect(evaluateExpression(scope, "0?1:0||0")).toEqual(0 ? 1 : 0 || 0);
+        expect(evaluateExpression(scope, "0?2:1&&1")).toEqual(1);
+        expect(evaluateExpression(scope, "0?1:0||0")).toEqual(0);
         expect(evaluateExpression(scope, "0?2:0||1")).toEqual(0 ? 2 : 0 || 1);
 
         expect(evaluateExpression(scope, "1?1:0&&1")).toEqual(1 ? 1 : 0 && 1);
-        expect(evaluateExpression(scope, "1?2:1&&1")).toEqual(1 ? 2 : 1 && 1);
-        expect(evaluateExpression(scope, "1?1:0||0")).toEqual(1 ? 1 : 0 || 0);
+        expect(evaluateExpression(scope, "1?2:1&&1")).toEqual(2);
+        expect(evaluateExpression(scope, "1?1:0||0")).toEqual(1);
         expect(evaluateExpression(scope, "1?2:0||1")).toEqual(1 ? 2 : 0 || 1);
 
         // Function calls.
@@ -1432,7 +1430,7 @@ describe("parser", () => {
           return input;
         });
 
-        const date = (scope.date = new Date());
+        scope.date = new Date();
 
         let watcherCalls = 0;
 
@@ -1827,7 +1825,7 @@ describe("parser", () => {
 
     describe("that does NOT support valueOf()", () => {
       it("should not be reevaluated", async () => {
-        const obj = (scope.obj = {});
+        scope.obj = {};
 
         let watcherCalls = 0;
 
@@ -1845,7 +1843,7 @@ describe("parser", () => {
 
     describe("that does support valueOf()", () => {
       it("should not be reevaluated", async () => {
-        const date = (scope.date = new Date());
+        scope.date = new Date();
 
         let watcherCalls = 0;
 

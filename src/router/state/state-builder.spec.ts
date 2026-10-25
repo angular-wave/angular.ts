@@ -1,6 +1,5 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
-import { StateBuilder } from "./state-builder.ts";
 import { StateObject } from "./state-object.ts";
 import { createResolveInvocationLocals } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";

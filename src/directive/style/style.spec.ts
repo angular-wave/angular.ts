@@ -15,7 +15,7 @@ describe("ng-style", () => {
   beforeEach(() => {
     window.angular = new Angular();
     window.angular.createModule("myModule", ["ng"]);
-    const injector = createInjector(["myModule"]).invoke([
+    createInjector(["myModule"]).invoke([
       "$rootScope",
       "$compile",
       ($rootScope, _$compile_) => {

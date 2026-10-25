@@ -5,7 +5,6 @@ import { angular } from "./index.ts";
 import { _security, _serviceWorker, _workflow } from "./injection-tokens.ts";
 import { PublicInjectionTokens } from "./interface.ts";
 import * as namespaceApi from "./namespace.ts";
-import { waitUntil } from "./shared/test-utils.ts";
 
 const exports = publicApi as Record<string, unknown>;
 const docsExports = docsApi as Record<string, unknown>;

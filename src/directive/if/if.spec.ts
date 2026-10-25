@@ -94,10 +94,11 @@ describe("ngIf", () => {
     it("should immediately remove the element and replace it with comment node if condition is falsy", async () => {
       makeIf("false", "undefined", "null", "NaN", "''", "0");
       await wait();
-      Array.from(element.children).forEach((node) => {
+      expect(element.children.length).toBe(0);
+      expect(element.childNodes.length).toBe(6);
+      Array.from(element.childNodes).forEach((node) => {
         expect(node.nodeType).toBe(Node.COMMENT_NODE);
       });
-      expect().toBe();
     });
 
     it("should leave the element if condition is true", async () => {
@@ -434,9 +435,9 @@ describe("ngIf", () => {
 
     localRootScope.shown = false;
 
-    const element = localCompile(
-      '<div ng-if="shown" data-animate="true">Content</div>',
-    )(localRootScope);
+    localCompile('<div ng-if="shown" data-animate="true">Content</div>')(
+      localRootScope,
+    );
 
     await wait();
     expect(animate.enter).not.toHaveBeenCalled();

@@ -152,15 +152,16 @@ export function createAnchorScrollService(
         ? hashOrElement.toString()
         : $location.getHash();
 
-    let element: HTMLElement | undefined;
-
     if (!hash) {
       scrollTo();
-    } else if ((element = runtimeDocument.getElementById(hash) ?? undefined)) {
-      scrollTo(element);
-    } else if (
-      (element = getFirstAnchor(runtimeDocument.getElementsByName(hash)))
-    ) {
+      return;
+    }
+
+    const element =
+      runtimeDocument.getElementById(hash) ??
+      getFirstAnchor(runtimeDocument.getElementsByName(hash));
+
+    if (element) {
       scrollTo(element);
     } else if (hash === "top") {
       scrollTo();

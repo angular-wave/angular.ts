@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <base href="/" />
+    <title>Location and router compatibility</title>
+    <script type="module">
+      import { Angular } from "/src/angular.ts";
+      import { Transition } from "/src/router/transition/transition.ts";
+
+      const html5Mode =
+        new URL(location.href).searchParams.get("mode") !== "hash";
+      const angular = new Angular();
+      window.angular = angular;
+      angular
+        .createModule("locationCompatibility", [])
+        .config({ $location: { html5Mode, hashPrefix: "~" } })
+        .controller("FixtureController", [
+          "$location",
+          "$rootScope",
+          "$state",
+          "$transitions",
+          function ($location, $rootScope, $state, $transitions) {
+            this.blocked = false;
+            this.otherHref = `${html5Mode ? "" : location.href.split("#")[0] + "#~"}/items/7?tag=native`;
+            this.routerBlocks = 0;
+            this.blockedHref = this.otherHref.replace(
+              "/items/7?tag=native",
+              "/items/blocked?tag=blocked",
+            );
+            $transitions.onBefore({ to: "item" }, (transition) => {
+              if (transition.params().id === "blocked") {
+                this.routerBlocks += 1;
+                return false;
+              }
+            });
+            this.saveState = () => $location.setState({ page: 2 });
+            this.redirect = () => $location.setUrl("/redirect");
+            this.replace = () =>
+              $state.go(
+                "item",
+                { id: "replacement", tag: ["replaced"] },
+                { location: "replace" },
+              );
+            $rootScope.on("$locationChangeStart", (event) => {
+              if (this.blocked) event.preventDefault();
+              if ($location.getPath() === "/redirect") {
+                event.preventDefault();
+                $location.setUrl("/items/redirected?tag=after");
+              }
+            });
+          },
+        ])
+        .router({
+          name: "home",
+          url: "/src/router/location-compatibility.html",
+          template: "<h1>Home</h1>",
+        })
+        .router({
+          name: "item",
+          url: "/items/{id}?tag",
+          params: { tag: { array: true } },
+          resolve: [
+            {
+              token: "itemId",
+              deps: [Transition],
+              resolveFn: (transition) => transition.params().id,
+            },
+          ],
+          controller: [
+            "$scope",
+            "itemId",
+            function ($scope, itemId) {
+              $scope.itemId = itemId;
+            },
+          ],
+          template: "<h1>Item {{itemId}}</h1>",
+        });
+      const context = angular.bootstrap(document.getElementById("app"), [
+        "locationCompatibility",
+      ]);
+      context.get("$state").go("home");
+    </script>
+  </head>
+  <body>
+    <main id="app" ng-controller="FixtureController as fixture">
+      <a
+        ng-state="'item'"
+        ng-state-params="{id: '42', tag: ['first', 'second']}"
+        >Open item</a
+      >
+      <a ng-href="{{fixture.otherHref}}">Native item</a>
+      <a ng-href="{{fixture.blockedHref}}">Blocked item</a>
+      <output data-testid="router-blocks">{{fixture.routerBlocks}}</output>
+      <button ng-click="fixture.blocked = !fixture.blocked">
+        Toggle block
+      </button>
+      <button ng-click="fixture.saveState()">Save state</button>
+      <button ng-click="fixture.redirect()">Redirect</button>
+      <button ng-click="fixture.replace()">Replace</button>
+      <ng-view></ng-view>
+    </main>
+  </body>
+</html>

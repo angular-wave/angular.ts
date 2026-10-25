@@ -57,7 +57,7 @@ function extractNamespace(sourcePath) {
     if (ts.isModuleDeclaration(node)) {
       const nextInNgNamespace =
         inNgNamespace ||
-        (ts.isIdentifier(node.name) && node.name.escapedText.toString() === "ng");
+        (ts.isIdentifier(node.name) && node.name.escapedText === "ng");
 
       if (node.body) visit(node.body, nextInNgNamespace);
       return;
@@ -67,11 +67,11 @@ function extractNamespace(sourcePath) {
       const type = checker.getTypeFromTypeNode(node.type);
       types.push({
         documentation: typeDocumentation(checker, node, type),
-        name: node.name.escapedText.toString(),
+        name: node.name.escapedText,
       });
       collectMethods(
         checker,
-        node.name.escapedText.toString(),
+        node.name.escapedText,
         type,
         methods,
         seenMethods,
