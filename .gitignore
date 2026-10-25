@@ -20,3 +20,7 @@ angular.ts.iml
 /integrations/android/**/build/
 
 /tools/vscode/.vscode-test/
+
+.scala-build/
+
+.bloop/
