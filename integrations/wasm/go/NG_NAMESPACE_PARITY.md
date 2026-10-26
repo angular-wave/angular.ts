@@ -341,6 +341,12 @@ reference example makes one necessary.
 | `NativeEventMessage` | deferred |
 | `NativeReplyMessage` | deferred |
 | `NativeService` | deferred |
+| `ModelValidationContext` | deferred |
+| `ModelParser` | deferred |
+| `ModelFormatter` | deferred |
+| `ModelValidators` | deferred |
+| `AsyncModelValidators` | deferred |
+| `TemplateRequestOptions` | covered |
 | `NgModelController` | deferred |
 | `HtmlCanvasConfig` | deferred |
 | `StorageBackend` | covered |
@@ -426,3 +432,8 @@ These value types are inventoried for future typed Go bindings.
 | `NativeWindowDisplayFeature` | deferred |
 | `NativeWindowInsets` | deferred |
 | `NativeWindowStatus` | deferred |
+
+Template request cancellation uses the optional `TemplateRequestOptions` argument
+to `Request`; `Signal` is a native browser AbortSignal. Form controllers and their
+validator callbacks remain deferred browser-owned APIs. The new callback aliases
+do not change the guest ABI or serialize signals into guest messages.

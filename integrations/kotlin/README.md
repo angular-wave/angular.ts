@@ -32,3 +32,17 @@ registered reactive model. `ng.getModel(cartToken)` uses the token's typed
 conversion and returns the same instance as dependency injection. Mutating the
 returned proxy updates observing views. Unknown names, ordinary services, and
 uninitialized or destroyed apps throw runtime errors.
+
+## Typed form controls and cancellation
+
+`NgModelController<TModel, TView>` declares the model and displayed value domains.
+Use `ModelParser<TModel, TView>` and `ModelFormatter<TModel, TView>` for pipeline
+callbacks. `addParser` converts a null parser result into AngularTS's native
+`undefined` parse failure. Validator dictionaries preserve those domains; async validators also
+receive `ModelValidationContext` and its native `signal`. Pass the signal through
+HTTP options to cancel work when another validation run replaces it or the linked
+control is destroyed. Declarative form markup remains unchanged.
+
+`TemplateRequestService(url, TemplateRequestOptions(signal = signal))` cancels one
+consumer of a template. Other consumers of the same download remain active.
+Calling the service with just a URL continues to work.

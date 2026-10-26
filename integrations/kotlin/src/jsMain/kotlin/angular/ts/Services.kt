@@ -747,11 +747,22 @@ public class TemplateCacheService internal constructor(
     }
 }
 
+/** Cancellation for one consumer of a shared template download. */
+public data class TemplateRequestOptions public constructor(
+    public val signal: Any? = null,
+)
+
 public class TemplateRequestService internal constructor(
     internal val raw: RawTemplateRequestService,
 ) {
     public operator fun invoke(templateUrl: String): dynamic =
         callJsFunction(raw, null, arrayOf(templateUrl))
+
+    public operator fun invoke(templateUrl: String, options: TemplateRequestOptions): dynamic {
+        val config = js("({})")
+        if (options.signal != null) config.signal = options.signal
+        return callJsFunction(raw, null, arrayOf(templateUrl, config))
+    }
 }
 
 private fun CookieOptions.toJs(): dynamic {

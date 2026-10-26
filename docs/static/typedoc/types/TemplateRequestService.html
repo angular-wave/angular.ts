@@ -91,11 +91,23 @@
         <div class="tsd-signature">
           <span class="tsd-kind-type-alias">TemplateRequestService</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-symbol">(</span
-          ><span class="tsd-kind-parameter">templateUrl</span
+          <span class="tsd-signature-symbol">(</span><br />    <span
+            class="tsd-kind-parameter"
+            >templateUrl</span
           ><span class="tsd-signature-symbol">:</span>
           <span class="tsd-signature-type">string</span
-          ><span class="tsd-signature-symbol">)</span>
+          ><span class="tsd-signature-symbol">,</span><br />    <span
+            class="tsd-kind-parameter"
+            >options</span
+          ><span class="tsd-signature-symbol">?:</span>
+          <a
+            href="../interfaces/TemplateRequestOptions.html"
+            class="tsd-signature-type tsd-kind-interface"
+            >TemplateRequestOptions</a
+          ><span class="tsd-signature-symbol">,</span><br /><span
+            class="tsd-signature-symbol"
+            >)</span
+          >
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">Promise</span
           ><span class="tsd-signature-symbol">&lt;</span
@@ -106,10 +118,12 @@
           <p>
             Returns cached template text or downloads it through
             <code>$http</code> and stores it in <code>$templateCache</code>.
-            Concurrent requests for the same URL share one promise.
-            <code>$compile.resourceUrlPolicy</code> validates or rewrites the
-            URL before lookup. HTTP failures reject; an empty successful
-            response is returned unchanged.
+            Concurrent requests for the same URL share one download. A consumer
+            signal cancels only its own wait; the download is aborted after
+            every consumer has cancelled. Calls without a signal keep the
+            download alive. <code>$compile.resourceUrlPolicy</code> validates or
+            rewrites the URL before lookup. HTTP failures reject; an empty
+            successful response is returned unchanged.
           </p>
         </div>
         <div class="tsd-type-declaration">
@@ -122,6 +136,13 @@
                   ><span class="tsd-kind-parameter">templateUrl</span
                   ><span class="tsd-signature-symbol">:</span>
                   <span class="tsd-signature-type">string</span
+                  ><span class="tsd-signature-symbol">,</span>
+                  <span class="tsd-kind-parameter">options</span
+                  ><span class="tsd-signature-symbol">?:</span>
+                  <a
+                    href="../interfaces/TemplateRequestOptions.html"
+                    class="tsd-signature-type tsd-kind-interface"
+                    >TemplateRequestOptions</a
                   ><span class="tsd-signature-symbol">)</span
                   ><span class="tsd-signature-symbol">:</span>
                   <span class="tsd-signature-type">Promise</span
@@ -140,6 +161,20 @@
                         >
                         <div class="tsd-comment tsd-typography">
                           <p>The template URL.</p>
+                        </div>
+                      </li>
+                      <li>
+                        <span
+                          ><code class="tsd-tag">Optional</code
+                          ><span class="tsd-kind-parameter">options</span>:
+                          <a
+                            href="../interfaces/TemplateRequestOptions.html"
+                            class="tsd-signature-type tsd-kind-interface"
+                            >TemplateRequestOptions</a
+                          ></span
+                        >
+                        <div class="tsd-comment tsd-typography">
+                          <p>Cancellation for this consumer.</p>
                         </div>
                       </li>
                     </ul>

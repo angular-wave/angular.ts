@@ -549,6 +549,12 @@ type InvocationDetail struct {
 	Arguments  []any
 }
 
+// TemplateRequestOptions controls cancellation for one template consumer.
+type TemplateRequestOptions struct {
+	// Signal is a native AbortSignal when running in the browser.
+	Signal jsValue
+}
+
 // TemplateRequestService is the injectable AngularTS $templateRequest facade.
 type TemplateRequestService struct{ value jsValue }
 

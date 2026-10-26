@@ -15,7 +15,8 @@
     "FilterFactory": "Object?",
     "Injectable": "Object?",
     "LazyStateLoader": "Object?",
-    "Scope": "Scope<Object?>"
+    "Scope": "Scope<Object?>",
+    "TemplateRequestOptions": "TemplateRequestOptions"
   },
   "renames": {
     "CookieService.get": "get",

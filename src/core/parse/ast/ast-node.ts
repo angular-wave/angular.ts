@@ -1,199 +1,178 @@
-import type { ASTNodeType } from "../ast-type.ts";
+import type { ASTType } from "../ast-type.ts";
+import type { CompiledExpression } from "../parse.ts";
 
-/** Base properties for all AST nodes */
-interface BaseNode {
-  /** The type of the AST node. */
-  /** @internal */
-  _type: ASTNodeType;
-
-  /** Indicates whether the node depends on non-shallow state. */
+/** Analysis metadata shared by the parser and interpreter. */
+interface NodeMetadata {
   /** @internal */
   _isPure?: boolean;
-
-  /** Indicates whether the expression is a constant. */
   /** @internal */
   _constant?: boolean;
-
-  /** Watch targets collected during AST decoration. */
   /** @internal */
   _toWatch?: ASTNode[];
-
-  /** Generic expression payload fields used across legacy node shapes. */
   /** @internal */
-  _expression?: ASTNode;
-  /** @internal */
-  _left?: ASTNode;
-  /** @internal */
-  _right?: ASTNode;
-  /** @internal */
-  _argument?: ASTNode;
-  /** @internal */
-  _test?: ASTNode;
-  /** @internal */
-  _alternate?: ASTNode;
-  /** @internal */
-  _consequent?: ASTNode;
-  /** @internal */
-  _callee?: ASTNode;
-  /** @internal */
-  _arguments?: ASTNode[];
-  /** @internal */
-  _object?: ASTNode;
-  /** @internal */
-  _property?: ASTNode;
-  /** @internal */
-  _computed?: boolean;
-  /** @internal */
-  _operator?: string;
-  /** @internal */
-  _filter?: boolean;
-  /** @internal */
-  _prefix?: boolean;
-  /** @internal */
-  _name?: string;
-  /** @internal */
-  _value?: unknown;
-  /** @internal */
-  _elements?: ASTNode[];
-  /** @internal */
-  _properties?: ASTNode[];
-  /** @internal */
-  _body?: ASTNode[];
-  /** @internal */
-  _key?: ASTNode;
-  /** @internal */
-  _input?: unknown;
+  _input?: CompiledExpression;
   /** @internal */
   _watchId?: string;
 }
 
-/** A node that contains a list of statements, e.g., Program or BlockStatement */
-export interface BodyNode extends BaseNode {
-  /** The body of the program or block. Always present; empty if no statements. */
+export interface BodyNode extends NodeMetadata {
   /** @internal */
-  _body: ASTNode[];
-
-  /** Optional list of expressions to observe for changes (Angular-specific). */
+  _type: typeof ASTType._Program;
   /** @internal */
-  _toWatch: ASTNode[];
+  _body: ExpressionStatementNode[];
 }
 
-/** Expression nodes, e.g., BinaryExpression, UnaryExpression, ConditionalExpression, CallExpression, MemberExpression */
-export interface ExpressionNode extends BaseNode {
-  /** The single expression contained by an ExpressionStatement. */
+export interface ExpressionStatementNode extends NodeMetadata {
   /** @internal */
-  _expression?: ASTNode;
-
-  /** The left-hand side of a binary or logical expression. */
+  _type: typeof ASTType._ExpressionStatement;
   /** @internal */
-  _left?: ASTNode;
+  _expression: ExpressionNode;
+}
 
-  /** The right-hand side of a binary or logical expression. */
+export interface IdentifierNode extends NodeMetadata {
   /** @internal */
-  _right?: ASTNode;
-
-  /** The argument of a unary expression. */
+  _type: typeof ASTType._Identifier;
   /** @internal */
-  _argument?: ASTNode;
+  _name: string;
+}
 
-  /** The test expression of a conditional expression. */
+export interface LiteralNode extends NodeMetadata {
   /** @internal */
-  _test?: ASTNode;
-
-  /** The alternate expression of a conditional expression. */
+  _type: typeof ASTType._Literal;
   /** @internal */
-  _alternate?: ASTNode;
+  _value: unknown;
+}
 
-  /** The consequent expression of a conditional expression. */
+export interface ContextNode extends NodeMetadata {
   /** @internal */
-  _consequent?: ASTNode;
+  _type:
+    | typeof ASTType._ThisExpression
+    | typeof ASTType._LocalsExpression
+    | typeof ASTType._NGValueParameter;
+}
 
-  /** The callee of a function or method call expression. */
+export interface UnaryNode extends NodeMetadata {
   /** @internal */
-  _callee?: ASTNode;
-
-  /** The arguments of a function or method call expression. */
+  _type: typeof ASTType._UnaryExpression;
   /** @internal */
-  _arguments?: ASTNode[];
-
-  /** The object of a member expression (e.g., `obj` in `obj.prop`). */
+  _operator: string;
   /** @internal */
-  _object?: ASTNode;
-
-  /** The property of a member expression (e.g., `prop` in `obj.prop`). */
+  _prefix: boolean;
   /** @internal */
-  _property?: ASTNode;
+  _argument: ExpressionNode;
+}
 
-  /** Indicates if the member expression is computed (`obj[prop]` vs `obj.prop`). */
+export interface BinaryNode extends NodeMetadata {
   /** @internal */
-  _computed?: boolean;
-
-  /** The operator of a binary or logical expression, e.g., "+", "*", "&&". */
+  _type: typeof ASTType._BinaryExpression | typeof ASTType._LogicalExpression;
   /** @internal */
-  _operator?: string;
+  _operator: string;
+  /** @internal */
+  _left: ExpressionNode;
+  /** @internal */
+  _right: ExpressionNode;
+}
 
-  /** Indicates if the expression should be filtered (Angular-specific). */
+export interface AssignmentNode extends NodeMetadata {
+  /** @internal */
+  _type: typeof ASTType._AssignmentExpression;
+  /** @internal */
+  _operator: "=";
+  /** @internal */
+  _left: AssignableNode;
+  /** @internal */
+  _right: ExpressionNode;
+}
+
+export interface ConditionalNode extends NodeMetadata {
+  /** @internal */
+  _type: typeof ASTType._ConditionalExpression;
+  /** @internal */
+  _test: ExpressionNode;
+  /** @internal */
+  _alternate: ExpressionNode;
+  /** @internal */
+  _consequent: ExpressionNode;
+}
+
+export interface CallNode extends NodeMetadata {
+  /** @internal */
+  _type: typeof ASTType._CallExpression;
+  /** @internal */
+  _callee: ExpressionNode;
+  /** @internal */
+  _arguments: ExpressionNode[];
   /** @internal */
   _filter?: boolean;
-
-  /** Indicates if the unary operator is a prefix, e.g., `++i` vs `i++`. */
-  /** @internal */
-  _prefix?: boolean;
 }
 
-/** Leaf node representing a literal or identifier */
-export interface LiteralNode extends BaseNode {
-  /** The value of a literal node, e.g., number, string, boolean. */
+export interface MemberNode extends NodeMetadata {
   /** @internal */
-  _value?: unknown;
-
-  /** The name of an identifier node. */
+  _type: typeof ASTType._MemberExpression;
   /** @internal */
-  _name?: string;
-}
-
-/** Node representing an array literal */
-export interface ArrayNode extends BaseNode {
-  /** The elements of the array. */
+  _object: ExpressionNode;
   /** @internal */
-  _elements: ASTNode[];
-}
-
-/** Node representing an object literal */
-export interface ObjectNode extends BaseNode {
-  /** The properties of the object. */
-  /** @internal */
-  _properties: ASTNode[];
-}
-
-/** Node representing a single property of an object literal */
-export interface ObjectPropertyNode extends BaseNode {
-  /** Property key: identifier, literal, or expression */
-  /** @internal */
-  _key: ASTNode;
-
-  /** Property value expression */
-  /** @internal */
-  _value: ASTNode;
-
-  /** Whether the property key is computed (`{ [expr]: value }`) */
+  _property: ExpressionNode;
   /** @internal */
   _computed: boolean;
 }
 
-/** Statement node that wraps an expression */
-export interface ExpressionStatementNode extends BaseNode {
-  /** The expression contained in this statement. */
+export type AssignableNode = IdentifierNode | MemberNode;
+
+export interface UpdateNode extends NodeMetadata {
   /** @internal */
-  _expression: ASTNode;
+  _type: typeof ASTType._UpdateExpression;
+  /** @internal */
+  _operator: string;
+  /** @internal */
+  _prefix: boolean;
+  /** @internal */
+  _argument: AssignableNode;
 }
 
-/** The union type covering all AST nodes */
+export interface ArrayNode extends NodeMetadata {
+  /** @internal */
+  _type: typeof ASTType._ArrayExpression;
+  /** @internal */
+  _elements: ExpressionNode[];
+}
+
+export interface ObjectNode extends NodeMetadata {
+  /** @internal */
+  _type: typeof ASTType._ObjectExpression;
+  /** @internal */
+  _properties: ObjectPropertyNode[];
+}
+
+export interface ObjectPropertyNode extends NodeMetadata {
+  /** @internal */
+  _type: typeof ASTType._Property;
+  /** @internal */
+  _key: ExpressionNode;
+  /** @internal */
+  _value: ExpressionNode;
+  /** @internal */
+  _computed: boolean;
+}
+
+/** Expressions are distinguished by their required payload and node tag. */
+export type ExpressionNode =
+  | IdentifierNode
+  | LiteralNode
+  | ContextNode
+  | UnaryNode
+  | BinaryNode
+  | AssignmentNode
+  | ConditionalNode
+  | CallNode
+  | MemberNode
+  | UpdateNode
+  | ArrayNode
+  | ObjectNode;
+
+/** Every parser node, including the program and object-property wrappers. */
 export type ASTNode =
   | BodyNode
-  | ExpressionNode
-  | LiteralNode
-  | ArrayNode
-  | ObjectNode
+  | ExpressionStatementNode
   | ObjectPropertyNode
-  | ExpressionStatementNode;
+  | ExpressionNode;

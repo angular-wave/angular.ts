@@ -629,7 +629,7 @@ function loadEnteringViews(transition) {
         return undefined;
     const promises = new Array(enteringViews.length);
     enteringViews.forEach((view, i) => {
-        promises[i] = loadViewConfig(view);
+        promises[i] = loadViewConfig(view, transition._getTemplateSignal());
     });
     return Promise.all(promises).then(noop);
 }

@@ -33,13 +33,13 @@ class TemplateFactoryService {
      * Resolves a state's view config into either concrete template HTML or a component name.
      */
     /** @internal */
-    async _fromConfig(config, params) {
+    async _fromConfig(config, params, signal) {
         const { template, templateUrl, component } = config;
         if (isDefined(template)) {
             return asTemplate(TemplateFactoryService._fromString(template, params));
         }
         if (isDefined(templateUrl)) {
-            return asTemplate(this._fromUrl(templateUrl, params));
+            return asTemplate(this._fromUrl(templateUrl, params, signal));
         }
         if (isString(component)) {
             return asComponent(component);
@@ -60,10 +60,12 @@ class TemplateFactoryService {
      * Fetches a template from a static URL or a URL factory.
      */
     /** @internal */
-    _fromUrl(url, params) {
+    _fromUrl(url, params, signal) {
         const templateUrl = isFunction(url) ? url(params) : url;
         if (isNullOrUndefined(templateUrl))
             return null;
+        if (signal)
+            return this._getTemplateRequest()(templateUrl, { signal });
         let promise = this._templatePromises.get(templateUrl);
         if (!promise) {
             promise = this._getTemplateRequest()(templateUrl).catch((error) => {

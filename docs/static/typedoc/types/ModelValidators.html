@@ -86,7 +86,7 @@
           <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
             <li><a href="" aria-current="page">ModelValidators</a></li>
           </ul>
-          <h1>Type Alias ModelValidators</h1>
+          <h1>Type Alias ModelValidators&lt;TModel, TView&gt;</h1>
         </div>
         <div class="tsd-signature">
           <span class="tsd-kind-type-alias">ModelValidators</span
@@ -100,11 +100,19 @@
             >(</span
           ><span class="tsd-kind-parameter">modelValue</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">unknown</span
+          <a class="tsd-signature-type tsd-kind-type-parameter" href="#tmodel"
+            >TModel</a
+          >
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">undefined</span
           ><span class="tsd-signature-symbol">,</span>
           <span class="tsd-kind-parameter">viewValue</span
           ><span class="tsd-signature-symbol">:</span>
-          <span class="tsd-signature-type">unknown</span
+          <a class="tsd-signature-type tsd-kind-type-parameter" href="#tview"
+            >TView</a
+          >
+          <span class="tsd-signature-symbol">|</span>
+          <span class="tsd-signature-type">undefined</span
           ><span class="tsd-signature-symbol">)</span>
           <span class="tsd-signature-symbol">=&gt;</span>
           <span class="tsd-signature-type">unknown</span
@@ -113,6 +121,33 @@
             >&gt;</span
           >
         </div>
+        <div class="tsd-comment tsd-typography">
+          <p>
+            A synchronous validator receives the parsed model and original
+            control value.
+          </p>
+        </div>
+        <section class="tsd-panel">
+          <h4>Type Parameters</h4>
+          <ul class="tsd-type-parameter-list">
+            <li>
+              <span id="tmodel"
+                ><span class="tsd-kind-type-parameter">TModel</span> =
+                <span class="tsd-signature-type">unknown</span></span
+              >
+            </li>
+            <li>
+              <span id="tview"
+                ><span class="tsd-kind-type-parameter">TView</span> =
+                <a
+                  class="tsd-signature-type tsd-kind-type-parameter"
+                  href="#tmodel"
+                  >TModel</a
+                ></span
+              >
+            </li>
+          </ul>
+        </section>
       </div>
       <div class="col-sidebar">
         <div class="page-menu">

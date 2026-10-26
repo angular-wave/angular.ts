@@ -366,10 +366,14 @@ pub type SwapMode
 pub type TemplateCacheService
 
 /// Returns cached template text or downloads it through `$http` and stores it in `$templateCache`.
-/// Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates
-/// or rewrites the URL before lookup. HTTP failures reject; an empty successful response is
-/// returned unchanged.
+/// Concurrent requests for the same URL share one download. A consumer signal cancels only its own
+/// wait; the download is aborted after every consumer has cancelled. Calls without a signal keep
+/// the download alive. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup.
+/// HTTP failures reject; an empty successful response is returned unchanged.
 pub type TemplateRequestService
+
+/// Options for one template consumer.
+pub type TemplateRequestOptions
 
 /// This interface specifies the api for registering Transition Hooks. Both the
 /// [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note:
@@ -514,7 +518,22 @@ pub type WorkflowSupervisorPersistence(a)
 pub type WorkflowSupervisorSnapshot(a)
 
 /// Public AngularTS NgModelController contract exposed through the ng namespace.
-pub type NgModelController
+pub type NgModelController(a, b)
+
+/// Lifetime shared by asynchronous validators in one validation run.
+pub type ModelValidationContext
+
+/// Converts the control value to the model domain; undefined indicates a parse failure.
+pub type ModelParser(a, b)
+
+/// Converts a possibly empty model value to the control's view domain.
+pub type ModelFormatter(a, b)
+
+/// A synchronous validator receives the parsed model and original control value.
+pub type ModelValidators(a, b)
+
+/// Rejection marks a validation failure; superseded runs cannot change validity.
+pub type AsyncModelValidators(a, b)
 
 /// Plain, serializable location data written by the `geolocation` directive.
 pub type GeolocationValue

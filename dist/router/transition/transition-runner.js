@@ -55,6 +55,7 @@ const TransitionRunner = {
         transition.success = false;
         transition._deferred.reject(rejection);
         transition._error = rejection;
+        transition._cancelTemplateRequests(rejection);
         const hooks = transition._getHooksFor(TransitionHookPhase._ERROR);
         TransitionHook._runAllHooks(hooks);
     },

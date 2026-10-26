@@ -1,5 +1,5 @@
 import { stringify } from '../../shared/strings.js';
-import { assign, assertInvariantDefined, isUndefined, isObject, keys } from '../../shared/utils.js';
+import { assign, assertInvariantDefined, isUndefined, deProxy, isObject, keys } from '../../shared/utils.js';
 import { TransitionHookPhase, TransitionHook } from './transition-hook.js';
 import { buildHooksForPhase } from './hook-builder.js';
 import { TransitionRunner } from './transition-runner.js';
@@ -7,6 +7,7 @@ import { buildToPath, treeChanges, applyViewConfigs, matching, nonDynamicParams 
 import { Rejection } from './reject-factory.js';
 
 const REDIRECT_MAX = 20;
+const templateControllers = new WeakMap();
 function createDeferredPromise() {
     let resolve;
     let reject;
@@ -307,9 +308,13 @@ class Transition {
     /** @internal */
     async _startTransition() {
         const { _routerState } = this;
+        const previous = _routerState._transition;
         _routerState._lastStartedTransitionId = this.id;
         _routerState._transition = this;
         _routerState._lastStartedTransition = this;
+        if (previous && previous !== this && previous.success === undefined) {
+            previous._cancelTemplateRequests(Rejection.superseded(this));
+        }
         return Promise.resolve();
     }
     /**
@@ -347,7 +352,22 @@ class Transition {
         // Do not set flag if the transition is already complete
         if (isUndefined(this.success)) {
             this._aborted = true;
+            this._cancelTemplateRequests(Rejection.aborted());
         }
+    }
+    /** @internal */
+    _getTemplateSignal() {
+        const transition = deProxy(this);
+        let controller = templateControllers.get(transition);
+        if (!controller) {
+            controller = new AbortController();
+            templateControllers.set(transition, controller);
+        }
+        return controller.signal;
+    }
+    /** @internal */
+    _cancelTemplateRequests(reason) {
+        templateControllers.get(deProxy(this))?.abort(reason);
     }
     /**
      * The Transition error reason.

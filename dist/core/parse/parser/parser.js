@@ -21,14 +21,11 @@ function isLiteral(ast) {
     if (body.length !== 1) {
         return true;
     }
-    switch (body[0]._expression?._type) {
+    switch (body[0]._expression._type) {
         case ASTType._Literal:
         case ASTType._ArrayExpression:
         case ASTType._ObjectExpression:
             return true;
-        case undefined:
-        case ASTType._Program:
-        case ASTType._ExpressionStatement:
         case ASTType._AssignmentExpression:
         case ASTType._ConditionalExpression:
         case ASTType._LogicalExpression:
@@ -38,7 +35,6 @@ function isLiteral(ast) {
         case ASTType._MemberExpression:
         case ASTType._Identifier:
         case ASTType._LocalsExpression:
-        case ASTType._Property:
         case ASTType._ThisExpression:
         case ASTType._NGValueParameter:
         case ASTType._UpdateExpression:

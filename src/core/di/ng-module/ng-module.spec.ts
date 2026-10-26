@@ -836,6 +836,7 @@ describe("NgModule", () => {
     await injector.get("$templateRequest")("configured.html");
     expect($http.get).toHaveBeenCalledOnceWith("configured.html", {
       transformResponse: [],
+      signal: jasmine.any(AbortSignal),
       headers: {
         Accept: "text/html",
         "X-Template": "configured",

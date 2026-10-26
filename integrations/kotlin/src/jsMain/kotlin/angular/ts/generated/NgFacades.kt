@@ -2730,8 +2730,9 @@ public external interface InjectionTokenMap {
     /**
      * The $templateRequest member of ng.InjectionTokenMap.
      * @param templateUrl Value supplied for the templateUrl parameter.
+     * @param options Value supplied for the options parameter.
      */
-    public fun `$templateRequest`(templateUrl: String = definedExternally): dynamic
+    public fun `$templateRequest`(templateUrl: String = definedExternally, options: TemplateRequestOptions = definedExternally): dynamic
     /**
      * The $transitions member of ng.InjectionTokenMap.
      */
@@ -3677,16 +3678,29 @@ public external interface TemplateCacheService
 
 /**
  * Returns cached template text or downloads it through `$http` and stores it in
- * `$templateCache`. Concurrent requests for the same URL share one promise.
- * `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures
- * reject; an empty successful response is returned unchanged.
+ * `$templateCache`. Concurrent requests for the same URL share one download. A consumer
+ * signal cancels only its own wait; the download is aborted after every consumer has
+ * cancelled. Calls without a signal keep the download alive. `$compile.resourceUrlPolicy`
+ * validates or rewrites the URL before lookup. HTTP failures reject; an empty successful
+ * response is returned unchanged.
  */
 public external interface TemplateRequestService {
     /**
      * Calls the ng.TemplateRequestService function.
      * @param templateUrl Value supplied for the templateUrl parameter.
+     * @param options Value supplied for the options parameter.
      */
-    public operator fun invoke(templateUrl: String = definedExternally): dynamic
+    public operator fun invoke(templateUrl: String = definedExternally, options: TemplateRequestOptions = definedExternally): dynamic
+}
+
+/**
+ * Options for one template consumer.
+ */
+public external interface TemplateRequestOptions {
+    /**
+     * Cancels this consumer without cancelling other consumers of the same URL.
+     */
+    public var signal: dynamic
 }
 
 /**
@@ -4826,7 +4840,7 @@ public external interface WorkflowSupervisorSnapshot<TWorkflowSnapshots> {
 /**
  * Public AngularTS NgModelController contract exposed through the ng namespace.
  */
-public external interface NgModelController {
+public external interface NgModelController<TModel, TView> {
     /**
      * The _target member of ng.NgModelController.
      */
@@ -4834,7 +4848,7 @@ public external interface NgModelController {
     /**
      * The asyncValidators member of ng.NgModelController.
      */
-    public var asyncValidators: dynamic
+    public var asyncValidators: AsyncModelValidators<TModel, TView>
     /**
      * Commit a pending update to the `modelValue`. Updates may be pending by a debounced event
      * or because the input is waiting for a some future event defined in `ng-model-options`.
@@ -4857,7 +4871,7 @@ public external interface NgModelController {
     /**
      * The formatters member of ng.NgModelController.
      */
-    public var formatters: Array<(dynamic) -> dynamic>
+    public var formatters: Array<(TModel?) -> TView>
     /**
      * The invalid member of ng.NgModelController.
      */
@@ -4875,7 +4889,7 @@ public external interface NgModelController {
     /**
      * The modelValue member of ng.NgModelController.
      */
-    public var modelValue: dynamic
+    public var modelValue: TModel?
     /**
      * The options member of ng.NgModelController.
      */
@@ -4895,7 +4909,7 @@ public external interface NgModelController {
     /**
      * The parsers member of ng.NgModelController.
      */
-    public var parsers: Array<(dynamic) -> dynamic>
+    public var parsers: Array<(TView) -> TModel?>
     /**
      * The pending member of ng.NgModelController.
      */
@@ -5028,7 +5042,7 @@ public external interface NgModelController {
      * @param value value from the view.
      * @param trigger Event that triggered the update.
      */
-    public fun setViewValue(value: dynamic = definedExternally, trigger: String = definedExternally): Unit
+    public fun setViewValue(value: TView = definedExternally, trigger: String = definedExternally): Unit
     /**
      * The touched member of ng.NgModelController.
      */
@@ -5056,7 +5070,7 @@ public external interface NgModelController {
     /**
      * The validators member of ng.NgModelController.
      */
-    public var validators: dynamic
+    public var validators: ModelValidators<TModel, TView>
     /**
      * The validity member of ng.NgModelController.
      */
@@ -5068,8 +5082,50 @@ public external interface NgModelController {
     /**
      * The viewValue member of ng.NgModelController.
      */
-    public var viewValue: dynamic
+    public var viewValue: TView?
 }
+
+/**
+ * Lifetime shared by asynchronous validators in one validation run.
+ */
+public external interface ModelValidationContext {
+    /**
+     * Aborted when a newer validation run replaces this one or the control is destroyed.
+     */
+    public var signal: dynamic
+}
+
+/**
+ * Converts the control value to the model domain; undefined indicates a parse failure.
+ */
+public external interface ModelParser<TModel, TView> {
+    /**
+     * Calls the ng.ModelParser function.
+     * @param value Value supplied for the value parameter.
+     */
+    public operator fun invoke(value: TView = definedExternally): TModel
+}
+
+/**
+ * Converts a possibly empty model value to the control's view domain.
+ */
+public external interface ModelFormatter<TModel, TView> {
+    /**
+     * Calls the ng.ModelFormatter function.
+     * @param value Value supplied for the value parameter.
+     */
+    public operator fun invoke(value: TModel = definedExternally): TView
+}
+
+/**
+ * A synchronous validator receives the parsed model and original control value.
+ */
+public external interface ModelValidators<TModel, TView>
+
+/**
+ * Rejection marks a validation failure; superseded runs cannot change validity.
+ */
+public external interface AsyncModelValidators<TModel, TView>
 
 /**
  * Plain, serializable location data written by the `geolocation` directive.

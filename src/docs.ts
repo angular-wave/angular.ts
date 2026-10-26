@@ -417,6 +417,7 @@ export type {
 export type {
   TemplateRequestConfig,
   TemplateRequestService,
+  TemplateRequestOptions,
 } from "./services/template-request/template-request.ts";
 export type {
   PersistentStoreConfig,
@@ -541,6 +542,9 @@ export type {
 export { NgModelController } from "./directive/model/model.ts";
 export type {
   AsyncModelValidators,
+  ModelValidationContext,
+  ModelParser,
+  ModelFormatter,
   ModelValidators,
   NgModelOptions,
 } from "./directive/model/model.ts";

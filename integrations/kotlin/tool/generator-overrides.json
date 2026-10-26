@@ -5,7 +5,13 @@
     "GeolocationValue.altitude": "Double?",
     "GeolocationValue.altitudeAccuracy": "Double?",
     "GeolocationValue.heading": "Double?",
-    "GeolocationValue.speed": "Double?"
+    "GeolocationValue.speed": "Double?",
+    "NgModelController.asyncValidators": "AsyncModelValidators<TModel, TView>",
+    "NgModelController.formatters": "Array<(TModel?) -> TView>",
+    "NgModelController.modelValue": "TModel?",
+    "NgModelController.parsers": "Array<(TView) -> TModel?>",
+    "NgModelController.validators": "ModelValidators<TModel, TView>",
+    "NgModelController.viewValue": "TView?"
   },
   "renames": {},
   "returnTypes": {},
@@ -13,7 +19,11 @@
     "Element": "org.w3c.dom.Element",
     "Event": "org.w3c.dom.events.Event",
     "HTMLElement": "org.w3c.dom.HTMLElement",
-    "Node": "org.w3c.dom.Node"
+    "Node": "org.w3c.dom.Node",
+    "TModel": "TModel",
+    "TView": "TView",
+    "ModelValidationContext": "ModelValidationContext",
+    "TemplateRequestOptions": "TemplateRequestOptions"
   },
   "unsupported": []
 }

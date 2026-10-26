@@ -57,7 +57,47 @@ export type PublicValidationState = boolean | undefined | null;
 
 export type CustomValidationState = "valid" | "invalid" | "pending" | "skipped";
 
-export type FormControlController = FormController | NgModelController;
+interface FormControlLifecycle {
+  /** @internal */
+  _target: FormControlTarget;
+  /** @internal */
+  _parentForm: ParentFormController;
+  /** @internal */
+  _syncNativeViewValue: NgModelController["_syncNativeViewValue"];
+  /** @internal */
+  _hasNativeValidity(): boolean;
+}
+
+/** Heterogeneous form bookkeeping does not depend on a control's value domains. */
+export type FormControlController =
+  | FormController
+  | (Pick<
+      NgModelController,
+      | "controlName"
+      | "valid"
+      | "invalid"
+      | "dirty"
+      | "pristine"
+      | "touched"
+      | "untouched"
+      | "error"
+      | "pending"
+      | "validity"
+      | "validationMessage"
+      | "validate"
+      | "setValidity"
+      | "setNativeValidity"
+      | "setCustomValidity"
+      | "setDirty"
+      | "setTouched"
+      | "render"
+      | "isEmpty"
+      | "rollbackViewValue"
+      | "commitViewValue"
+      | "setPristine"
+      | "setUntouched"
+    > &
+      FormControlLifecycle);
 
 export type ValidityOwner = FormControlController | object;
 
@@ -297,8 +337,8 @@ export class FormController {
   /** @internal */
   _syncNativeViewValue(trigger = "reset"): void {
     this._controls.forEach((control) => {
-      if (isFunction(control._syncNativeViewValue)) {
-        callFunction(control._syncNativeViewValue, control, trigger);
+      if (typeof control._syncNativeViewValue === "function") {
+        control._syncNativeViewValue(trigger);
       }
     });
   }

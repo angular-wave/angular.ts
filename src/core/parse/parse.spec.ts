@@ -1,5 +1,6 @@
 // @ts-nocheck
 /// <reference types="jasmine" />
+import { ASTInterpreter } from "./interpreter.ts";
 import { isFunction } from "../../shared/utils.ts";
 import { createInjector } from "../di/injector.ts";
 import { Angular } from "../../angular.ts";
@@ -60,6 +61,25 @@ describe("parser", () => {
         $parse = _$parse_;
       },
     ]);
+  });
+
+  it("preserves constant analysis for assignments to members of literal objects", () => {
+    const constant = $parse("({ value: 0 }).value = 1");
+    expect(constant._constant).toBeTrue();
+    expect(constant({})).toBe(1);
+    const dynamic = $parse("({ value: 0 }).value = amount");
+    expect(dynamic._constant).toBeFalse();
+    expect(dynamic({ amount: 2 })).toBe(2);
+  });
+
+  it("rejects unknown node tags at interpreter and decoration boundaries", () => {
+    const interpreter = new ASTInterpreter(() => undefined);
+    expect(() => interpreter._recurse({ _type: 999 })).toThrowError(
+      /Unknown AST type 999/,
+    );
+    expect(() => interpreter._compile({ _type: 999 })).toThrowError(
+      /Unknown AST node type/,
+    );
   });
 
   [true, false].forEach((cspEnabled) => {

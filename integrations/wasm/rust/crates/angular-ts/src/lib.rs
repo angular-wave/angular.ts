@@ -63,10 +63,10 @@ pub use services::{
     RestBackend, RestFactory, RestOptions, RestRequest, RestResponse, RestService,
     RootScopeService, Service, SseConfig, SseConnection, SseService, StateDeclaration,
     StateRegistryService, StateResolveArray, StateResolveObject, StateService, StorageBackend,
-    StorageType, SwapMode, TemplateCacheService, TemplateRequestService, Transition,
-    WebSocketConfig, WebSocketConnection, WebSocketService, WorkerConfig, WorkerCredentials,
-    WorkerError, WorkerErrorCode, WorkerHandle, WorkerModelMessage, WorkerRequest,
-    WorkerRequestOptions, WorkerResponse, WorkerService, WorkerStatus, WorkerType,
+    StorageType, SwapMode, TemplateCacheService, TemplateRequestOptions, TemplateRequestService,
+    Transition, WebSocketConfig, WebSocketConnection, WebSocketService, WorkerConfig,
+    WorkerCredentials, WorkerError, WorkerErrorCode, WorkerHandle, WorkerModelMessage,
+    WorkerRequest, WorkerRequestOptions, WorkerResponse, WorkerService, WorkerStatus, WorkerType,
 };
 #[cfg(target_arch = "wasm32")]
 pub use services::{HttpServiceExt, TemplateRequestServiceExt};

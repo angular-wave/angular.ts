@@ -398,6 +398,12 @@ Rust reference example makes one necessary.
 | `NativeWindowDisplayFeature` | covered |
 | `NativeWindowInsets` | covered |
 | `NativeWindowStatus` | covered |
+| `ModelValidationContext` | deferred |
+| `ModelParser` | deferred |
+| `ModelFormatter` | deferred |
+| `ModelValidators` | deferred |
+| `AsyncModelValidators` | deferred |
+| `TemplateRequestOptions` | covered |
 | `NgModelController` | deferred |
 | `HtmlCanvasConfig` | deferred |
 | `HtmlCanvasRuntimeSupport` | deferred |
@@ -437,3 +443,9 @@ Rust reference example makes one necessary.
    complete.
 7. The required Rust porting entries above block all active non-Rust Wasm
    implementation work until they are covered and tested.
+
+Template request cancellation uses `TemplateRequestOptions::with_signal` and
+`request_template_with`; the signal is a native browser value. Form controller
+and validator callbacks remain deferred browser-owned APIs, matching the existing
+`NgModelController` mapping. Their new callback aliases do not change the guest
+ABI or serialize cancellation signals into guest messages.

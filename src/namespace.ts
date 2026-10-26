@@ -29,7 +29,10 @@ import type { AnchorScrollService as TAnchorScrollService } from "./services/anc
 import type { ControllerService as TControllerService } from "./core/controller/controller.ts";
 import type { ExceptionHandler as TExceptionHandler } from "./services/exception/exception.ts";
 import type { ParseService as TParseService } from "./core/parse/parse.ts";
-import type { TemplateRequestService as TTemplateRequestService } from "./services/template-request/template-request.ts";
+import type {
+  TemplateRequestService as TTemplateRequestService,
+  TemplateRequestOptions as TTemplateRequestOptions,
+} from "./services/template-request/template-request.ts";
 import type { TemplateCacheService as TTemplateCacheService } from "./services/template-cache/template-cache.ts";
 import type {
   SecurityConfig as TSecurityConfig,
@@ -250,7 +253,14 @@ import type {
   RestRevalidateEvent as TRestRevalidateEvent,
   RestService as TRestService,
 } from "./services/rest/rest.ts";
-import type { NgModelController as TNgModelController } from "./directive/model/model.ts";
+import type {
+  NgModelController as TNgModelController,
+  ModelValidationContext as TModelValidationContext,
+  ModelParser as TModelParser,
+  ModelFormatter as TModelFormatter,
+  ModelValidators as TModelValidators,
+  AsyncModelValidators as TAsyncModelValidators,
+} from "./directive/model/model.ts";
 import type { GeolocationValue as TGeolocationValue } from "./directive/geolocation/geolocation.ts";
 import type {
   NativeBridgeAdapter as TNativeBridgeAdapter,
@@ -628,6 +638,7 @@ declare global {
     export type TemplateCacheService = TTemplateCacheService;
 
     export type TemplateRequestService = TTemplateRequestService;
+    export type TemplateRequestOptions = TTemplateRequestOptions;
 
     export type TransitionsService = TTransitionService;
 
@@ -798,7 +809,27 @@ declare global {
       >,
     > = TWorkflowSupervisorSnapshot<TWorkflowSnapshots>;
 
-    export type NgModelController = TNgModelController;
+    export type NgModelController<
+      TModel = unknown,
+      TView = TModel,
+    > = TNgModelController<TModel, TView>;
+    export type ModelValidationContext = TModelValidationContext;
+    export type ModelParser<TModel = unknown, TView = TModel> = TModelParser<
+      TModel,
+      TView
+    >;
+    export type ModelFormatter<
+      TModel = unknown,
+      TView = TModel,
+    > = TModelFormatter<TModel, TView>;
+    export type ModelValidators<
+      TModel = unknown,
+      TView = TModel,
+    > = TModelValidators<TModel, TView>;
+    export type AsyncModelValidators<
+      TModel = unknown,
+      TView = TModel,
+    > = TAsyncModelValidators<TModel, TView>;
 
     export type GeolocationValue = TGeolocationValue;
 

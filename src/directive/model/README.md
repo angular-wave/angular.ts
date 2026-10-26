@@ -22,8 +22,9 @@ and parent form propagation.
 
 ## Public Surface
 
-- `NgModelController`: controller class exposed to input, select, custom form
-  controls, validators, and forms.
+- `NgModelController<TModel, TView>`: controller class exposed to input, select,
+  custom controls, validators, and forms. Model and view domains default to
+  `unknown` and the model domain respectively.
 - `ngModelDirective()`: builds the `ngModel` attribute directive and wires the
   controller into compile/link lifecycle.
 - `ngModelError`: error factory for `ngModel`-specific runtime errors.
@@ -31,6 +32,8 @@ and parent form propagation.
   `allowInvalid`.
 - `ModelValidators`, `AsyncModelValidators`, `ModelParser`, `ModelFormatter`,
   and `ModelViewChangeListener`: public pipeline and callback shapes.
+- `ModelValidationContext`: native cancellation signal shared by async validators
+  during one validation run.
 
 Public controller methods include `setViewValue`, `commitViewValue`,
 `rollbackViewValue`, `processModelValue`, `validate`, `setValidity`,
@@ -68,6 +71,9 @@ Important invariants:
 
 - Non-assignable `ng-model` expressions are rejected.
 - Stale asynchronous validator results must not update current validity state.
+- Starting a validation run aborts its pending predecessor before invoking any
+  new validators. Capture the run ID before notifying abort listeners, since an
+  abort listener can synchronously start another validation run.
 - A destroyed controller must not mutate detached elements or parent forms.
 - Validity propagation to parent forms is skipped when the combined state and
   parent validity version have not changed.
@@ -83,7 +89,8 @@ expression for external updates. Post-link installs configured `updateOn`
 events, adds the blur listener that marks the control touched, and registers
 the `ngChange` view-change listener when present.
 
-On scope destruction the controller clears pending debounce timers, removes all
+On scope destruction the controller aborts pending validation, clears debounce
+timers, and removes all
 DOM event listeners, clears view-change listeners, deregisters model watchers,
 removes itself from the parent form, drops the parent form back to
 `nullFormCtrl`, and releases the element reference.
@@ -111,6 +118,9 @@ removes itself from the parent form, drops the parent form back to
 - `error` and `pending`: public transitional validity buckets keyed by
   validator name.
 - `_validationStates`: internal map of explicit validator states.
+- `validationControllers`: private WeakMap from raw control identity to its
+  active AbortController. Native handles stay outside scope proxy storage;
+  completed runs release their entry before invoking the completion callback.
 - `_classCache`: tracks CSS class state to avoid redundant toggles.
 - `_eventRemovers` and `_updateEventRemovers`: cleanup callbacks for control
   and model-option event listeners.
@@ -160,7 +170,10 @@ and clears `_element` so later controller calls become guarded no-ops.
 values.
 
 `AsyncModelValidators`
-: Map of asynchronous validator names to promise-returning functions.
+: Map of asynchronous validator names to thenable-returning functions receiving
+model, view, and a `ModelValidationContext`. Resolution passes, rejection fails,
+and superseded results are ignored. The context signal can be passed to Fetch
+or `$http` to cancel network work.
 
 `ModelParser`
 : Function shape for converting view values before validation and model writes.
@@ -176,7 +189,10 @@ values.
 - `model.spec.ts` covers controller initialization, validity transitions,
   control state classes, normalized attribute reads, parent form integration,
   parser/formatter behavior, model option events, debounce, and teardown.
-- Changes to async validation should test stale promise handling and pending
-  state transitions.
+- Changes to async validation should test cancellation, reentrant abort
+  listeners, stale promise handling, pending state transitions, and destruction.
+- `model-types.spec.ts` verifies model/view pipeline domains and heterogeneous
+  form registration. Published declaration contracts are also checked in
+  `test/public-policy-types-consumer.ts`.
 - Changes to form propagation should test both direct parent forms and nested
   validity parent version changes.

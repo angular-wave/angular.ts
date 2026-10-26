@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- Added model and view type parameters to form controls and validation pipelines.
+  Async validators receive a native cancellation signal; replacing a validation
+  run or destroying a linked control aborts obsolete work.
+- Added consumer cancellation to `$templateRequest` and connected it to includes
+  and router transitions. Shared template downloads remain available to other
+  consumers when one view cancels.
+- Replaced permissive expression AST shapes with discriminated node types and
+  exhaustive interpreter checks while preserving expression syntax.
+
 - Modernized `$location` URL normalization, deferred history writes, and listener
   cleanup. Preserved router integration in HTML5 and hash modes; fixed state-only
   updates, failed-write retries, router replacement navigation, and initial URL

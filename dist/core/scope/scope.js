@@ -541,10 +541,10 @@ function createRootScopeService(appContext, exceptionHandler, parse) {
     return rootScope;
 }
 function getNodeName(node) {
-    return node?._name;
+    return node?._type === ASTType._Identifier ? node._name : undefined;
 }
 function getNodePropertyName(node) {
-    const property = node?._property;
+    const property = node?._type === ASTType._MemberExpression ? node._property : undefined;
     return getNodeName(property);
 }
 function resolveNodeWatchKey(node) {
@@ -597,7 +597,7 @@ function getDirectMemberWatchPlan(watchFn, node, watchProp, parse) {
         const expressionNode = node;
         const objectNode = expressionNode._object;
         const key = getNodePropertyName(node);
-        const parentKey = objectNode?._type === ASTType._Identifier
+        const parentKey = objectNode._type === ASTType._Identifier
             ? getNodeName(objectNode)
             : undefined;
         if (!expressionNode._computed &&
@@ -721,9 +721,6 @@ function collectWatchKeys(node, watchKeys) {
         if (isString(literal._value)) {
             watchKeys.add(literal._value);
         }
-        else if (literal._name) {
-            watchKeys.add(literal._name);
-        }
         return;
     }
     if (node._type === ASTType._MemberExpression) {
@@ -784,7 +781,7 @@ function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
     }
     if (node._type === ASTType._CallExpression) {
         const callee = node._callee;
-        if (callee?._type === ASTType._MemberExpression) {
+        if (callee._type === ASTType._MemberExpression) {
             addMemberExpressionDependency(assertInvariantDefined(callee._object), listener, keySet, seenKeys);
         }
         else {
@@ -820,7 +817,7 @@ function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
 /** @internal Builds reusable registration metadata for a compiled binding. */
 function createScopeWatchPlan(parse, watchProp) {
     const watchFn = parse(watchProp);
-    const expression = watchFn._decoratedNode._body[0]?._expression;
+    const expression = watchFn._decoratedNode._body.at(0)?._expression;
     if (!expression) {
         return undefined;
     }
@@ -856,7 +853,7 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
     }
     if (node._type === ASTType._CallExpression) {
         collectExpressionListenerKeys(node._callee, keySet, seenKeys, listener);
-        const callArguments = node._arguments ?? [];
+        const callArguments = node._arguments;
         for (let i = 0, l = callArguments.length; i < l; i++) {
             collectExpressionListenerKeys(callArguments[i], keySet, seenKeys, listener);
         }
@@ -865,7 +862,7 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
     collectListenerKeys(node, keySet, seenKeys, listener);
 }
 function getFilterInputWatchKeys(expr) {
-    if (!expr._filter) {
+    if (expr._type !== ASTType._CallExpression || !expr._filter) {
         return undefined;
     }
     const toWatch = expr._toWatch;
@@ -2823,7 +2820,7 @@ class Scope {
                 }
                 : undefined;
         }
-        const expr = get._decoratedNode._body[0]?._expression;
+        const expr = get._decoratedNode._body.at(0)?._expression;
         if (!expr) {
             throw new Error("Unable to determine watched expression");
         }
@@ -3040,7 +3037,9 @@ class Scope {
                         const memberExpression = getSimpleMemberExpression(assertInvariantDefined(element)) ??
                             getArrayWatchExpressionElement(watchProp, i);
                         addForeignWatchDescriptor(listener, memberExpression, registerKey);
-                        const parentKey = resolveWatchKey(element._object);
+                        const parentKey = resolveWatchKey(element._type === ASTType._MemberExpression
+                            ? element._object
+                            : undefined);
                         if (parentKey) {
                             pushUniqueListenerKey(keySet, seenKeys, listener, parentKey);
                         }
@@ -3098,11 +3097,8 @@ class Scope {
                 this._bindForeignDependency(listener);
                 break;
             }
-            case ASTType._Program:
-            case ASTType._ExpressionStatement:
             case ASTType._Literal:
             case ASTType._LocalsExpression:
-            case ASTType._Property:
             case ASTType._ThisExpression:
             case ASTType._NGValueParameter:
             case ASTType._UpdateExpression: {

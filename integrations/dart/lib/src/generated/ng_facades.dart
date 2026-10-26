@@ -4981,6 +4981,44 @@ base class GeneratedNgModelChange extends GeneratedNgFacade {
   }
 }
 
+/// Converts a possibly empty model value to the control's view domain.
+///
+/// Raw JavaScript facade for `ng.ModelFormatter`.
+base class GeneratedNgModelFormatter extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ModelFormatter.
+  const GeneratedNgModelFormatter(super.raw);
+
+  /// Calls the ng.ModelFormatter function.
+  ///
+  /// Parameters:
+  /// - [value]: Value supplied for the value parameter.
+  Object? call(Object? value) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(value));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
+/// Converts the control value to the model domain; undefined indicates a parse failure.
+///
+/// Raw JavaScript facade for `ng.ModelParser`.
+base class GeneratedNgModelParser extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ModelParser.
+  const GeneratedNgModelParser(super.raw);
+
+  /// Calls the ng.ModelParser function.
+  ///
+  /// Parameters:
+  /// - [value]: Value supplied for the value parameter.
+  Object? call(Object? value) {
+    final args = <JSAny?>[];
+    args.add(unsafe.dartToJs(value));
+
+    return unsafe.jsToDart<Object?>(_callFunction(raw as JSFunction, args));
+  }
+}
+
 /// Public AngularTS ModelRestoreOptions contract exposed through the ng namespace.
 ///
 /// Raw JavaScript facade for `ng.ModelRestoreOptions`.
@@ -5072,6 +5110,18 @@ base class GeneratedNgModelSyncTarget extends GeneratedNgFacade {
     unsafe.jsToDart<void>(
         raw.callMethodVarArgs('dispose'.toJS, const <JSAny?>[]));
   }
+}
+
+/// Lifetime shared by asynchronous validators in one validation run.
+///
+/// Raw JavaScript facade for `ng.ModelValidationContext`.
+base class GeneratedNgModelValidationContext extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.ModelValidationContext.
+  const GeneratedNgModelValidationContext(super.raw);
+
+  /// Aborted when a newer validation run replaces this one or the control is destroyed.
+  AbortSignal get signal =>
+      unsafe.jsToDart<AbortSignal>(raw.getProperty('signal'.toJS));
 }
 
 /// Availability and enrollment state for native biometric authentication.
@@ -11639,10 +11689,23 @@ base class GeneratedNgSwapMode extends GeneratedNgFacade {
   const GeneratedNgSwapMode(super.raw);
 }
 
+/// Options for one template consumer.
+///
+/// Raw JavaScript facade for `ng.TemplateRequestOptions`.
+base class GeneratedNgTemplateRequestOptions extends GeneratedNgFacade {
+  /// Creates a generated raw facade for ng.TemplateRequestOptions.
+  const GeneratedNgTemplateRequestOptions(super.raw);
+
+  /// Cancels this consumer without cancelling other consumers of the same URL.
+  AbortSignal? get signal =>
+      unsafe.jsToDart<AbortSignal?>(raw.getProperty('signal'.toJS));
+}
+
 /// Returns cached template text or downloads it through `$http` and stores it in `$templateCache`.
-/// Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates
-/// or rewrites the URL before lookup. HTTP failures reject; an empty successful response is
-/// returned unchanged.
+/// Concurrent requests for the same URL share one download. A consumer signal cancels only its own
+/// wait; the download is aborted after every consumer has cancelled. Calls without a signal keep
+/// the download alive. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup.
+/// HTTP failures reject; an empty successful response is returned unchanged.
 ///
 /// Raw JavaScript facade for `ng.TemplateRequestService`.
 base class GeneratedNgTemplateRequestService extends GeneratedNgFacade {
@@ -11653,9 +11716,14 @@ base class GeneratedNgTemplateRequestService extends GeneratedNgFacade {
   ///
   /// Parameters:
   /// - [templateUrl]: Value supplied for the templateUrl parameter.
-  JSPromise<JSAny?> call(String templateUrl) {
+  /// - [options]: Value supplied for the options parameter.
+  JSPromise<JSAny?> call(String templateUrl,
+      [Object? options = _undefinedArgument]) {
     final args = <JSAny?>[];
     args.add(unsafe.dartToJs(templateUrl));
+    if (!identical(options, _undefinedArgument)) {
+      args.add(unsafe.dartToJs(options));
+    }
 
     return _callFunction(raw as JSFunction, args) as JSPromise<JSAny?>;
   }

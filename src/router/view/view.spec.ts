@@ -68,6 +68,25 @@ describe("view", () => {
     });
   }
 
+  it("does not publish a view config whose consumer was cancelled during loading", async () => {
+    const controller = new AbortController();
+    const config = {
+      _path: [],
+      _viewDecl: {},
+      _factory: {
+        _fromConfig: async () => {
+          controller.abort("obsolete view");
+          return { _template: "obsolete" };
+        },
+      },
+    };
+    await expectAsync(
+      loadViewConfig(config, controller.signal),
+    ).toBeRejectedWith("obsolete view");
+    expect(config._loaded).toBeUndefined();
+    expect(config._template).toBeUndefined();
+  });
+
   it("starts without a root context before router state initialization", () => {
     const viewService = createTestViewService({ _currentState: undefined });
 

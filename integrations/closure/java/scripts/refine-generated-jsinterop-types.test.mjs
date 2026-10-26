@@ -235,3 +235,32 @@ test("keeps native dollar property bindings with ordinary Java accessors", () =>
     rmSync(generated.root, { force: true, recursive: true });
   }
 });
+
+test("retains model pipeline domains and native validation cancellation", () => {
+  const generated = fixture({
+    NgModelController: [
+      "package org.angular.ts.ng;",
+      "public interface NgModelController<TModel,TView>{",
+      "Object getParsers();",
+      "Object getFormatters();",
+      "TModel getModelValue();",
+      "TView getViewValue();",
+      "}",
+    ].join("\n"),
+    ModelValidationContext: "package org.angular.ts.ng; public interface ModelValidationContext{ Object getSignal(); }",
+    TemplateRequestOptions: "package org.angular.ts.ng; public interface TemplateRequestOptions{ Object getSignal(); }",
+    ModelValidators: "package org.angular.ts.ng; public interface ModelValidators<TModel,TView>{ }",
+    AsyncModelValidators: "package org.angular.ts.ng; public interface AsyncModelValidators<TModel,TView>{ }",
+  });
+  try {
+    execFileSync(process.execPath, [scriptPath, generated.root]);
+    assert.match(generated.read("NgModelController"), /JsArray<ModelParser<TModel,TView>> getParsers/);
+    assert.match(generated.read("NgModelController"), /JsArray<ModelFormatter<TModel,TView>> getFormatters/);
+    assert.match(generated.read("ModelParser"), /TModel onInvoke\(TView value\)/);
+    assert.match(generated.read("AsyncModelValidators"), /onInvoke\(TModel modelValue,TView viewValue,ModelValidationContext context\)/);
+    assert.match(generated.read("ModelValidationContext"), /elemental2.dom.AbortSignal getSignal/);
+    assert.match(generated.read("TemplateRequestService"), /TemplateRequestOptions options/);
+  } finally {
+    rmSync(generated.root, { force: true, recursive: true });
+  }
+});

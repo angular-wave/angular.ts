@@ -20,22 +20,22 @@ An assignable AngularTS expression. When the user changes the input, the express
 When `ng-model` is applied, AngularTS creates an [`NgModelController`](../../../typedoc/classes/NgModelController.html) accessible as `formName.fieldName` on the scope. It exposes:
 #### `viewValue`
 
-- **Type:** `any`
+- **Type:** `TView | undefined`
 
 The value as seen by the user in the input (always a string for text inputs).
 #### `modelValue`
 
-- **Type:** `any`
+- **Type:** `TModel | undefined`
 
 The value after parsers have run — what is stored on the scope.
 #### `valid`
 
-- **Type:** `boolean`
+- **Type:** `boolean | undefined`
 
 `true` when all validators pass.
 #### `invalid`
 
-- **Type:** `boolean`
+- **Type:** `boolean | undefined`
 
 `true` when any validator fails.
 #### `pristine`
@@ -66,15 +66,32 @@ Map of failing validator names to `true`. E.g., `{ required: true, minlength: tr
 * **Formatters** (`formatters`): Convert `modelValue` → `viewValue`. Applied when scope value changes.
 
 ```js
-  return {
-    require: 'ngModel',
-    link: function(scope, el, attrs, ngModel) {
-      ngModel.parsers.push(function(value) {
-        var n = parseInt(value, 10);
-        ngModel.setValidity('integer', !isNaN(n));
-        return isNaN(n) ? undefined : n;
-      });
-    }
-  };
-});
+angular.createModule('formsDemo', []).directive('integer', () => ({
+  require: 'ngModel',
+  link(scope, element, control) {
+    control.parsers.push((text) => {
+      const value = Number(text);
+      return text !== '' && Number.isInteger(value) ? value : undefined;
+    });
+    control.formatters.push((value) => value === undefined ? '' : String(value));
+  },
+}));
 ```
+
+For TypeScript custom controls, declare the model and view domains with
+[`NgModelController<TModel, TView>`](../../../typedoc/classes/NgModelController.html).
+Parsers return the model domain or `undefined`, formatters return the view domain,
+and validators receive both domains. All form controls retain the same HTML
+binding syntax.
+
+### Asynchronous validators
+
+Register promise-returning callbacks in `asyncValidators`. Each callback receives
+`(modelValue, viewValue, { signal })`. Pass `signal` to Fetch or `$http` to stop
+obsolete requests when validation restarts or the linked scope is destroyed.
+Callbacks that accept only the first two arguments still work. A resolved
+promise passes validation; a rejected promise fails it. Obsolete runs cannot
+change validity, including when their callbacks ignore cancellation.
+
+See the [forms guide]({{< relref "/docs/guides/forms" >}}) for typed parser,
+formatter, and cancellable validation examples.

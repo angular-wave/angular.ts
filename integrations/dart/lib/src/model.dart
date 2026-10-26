@@ -1,24 +1,50 @@
 import 'dart:js_interop';
 
+import 'package:web/web.dart';
+
 import 'unsafe.dart' as unsafe;
+
+@JS('undefined')
+external JSAny? get _undefined;
 
 /// Synchronous validator registered on an `NgModelController`.
 typedef ModelValidator<TModel, TView> = bool Function(
-  TModel modelValue,
-  TView viewValue,
+  TModel? modelValue,
+  TView? viewValue,
 );
 
 /// Asynchronous validator registered on an `NgModelController`.
 typedef AsyncModelValidator<TModel, TView> = Future<Object?> Function(
-  TModel modelValue,
-  TView viewValue,
+  TModel? modelValue,
+  TView? viewValue,
+  ModelValidationContext context,
 );
+
+/// Native cancellation context supplied to each asynchronous validation run.
+final class ModelValidationContext {
+  /// Wraps the runtime validation context.
+  const ModelValidationContext(this.raw);
+
+  /// JavaScript validation context.
+  final JSObject raw;
+
+  /// Native AbortSignal for this run; pass it to Fetch or HTTP requests.
+  AbortSignal get signal => unsafe.getProperty(raw, 'signal') as AbortSignal;
+}
 
 /// Parser that converts a view value into a model value.
 typedef ModelParser<TIn, TOut> = TOut Function(TIn value);
 
 /// Formatter that converts a model value into a view value.
 typedef ModelFormatter<TIn, TOut> = TOut Function(TIn value);
+
+/// Synchronous validator definitions keyed by validation name.
+typedef ModelValidators<TModel, TView>
+    = Map<String, ModelValidator<TModel, TView>>;
+
+/// Asynchronous validator definitions keyed by validation name.
+typedef AsyncModelValidators<TModel, TView>
+    = Map<String, AsyncModelValidator<TModel, TView>>;
 
 /// Listener called after a view change updates the model.
 typedef ModelViewChangeListener = void Function();
@@ -66,7 +92,7 @@ final class NgModelOptions {
 }
 
 /// Runtime facade for AngularTS `NgModelController`.
-final class NgModelController {
+final class NgModelController<TModel, TView> {
   /// Creates a ng model controller.
   const NgModelController(this.raw);
 
@@ -74,10 +100,12 @@ final class NgModelController {
   final JSObject raw;
 
   /// Current value from the control's view.
-  Object? get viewValue => unsafe.getProperty(raw, r'viewValue');
+  TView? get viewValue =>
+      unsafe.jsToDart<TView?>(unsafe.getProperty(raw, r'viewValue'));
 
   /// Current value stored in the bound model.
-  Object? get modelValue => unsafe.getProperty(raw, r'modelValue');
+  TModel? get modelValue =>
+      unsafe.jsToDart<TModel?>(unsafe.getProperty(raw, r'modelValue'));
 
   /// Synchronous validators keyed by validation name.
   Object? get validators => unsafe.getProperty(raw, r'validators');
@@ -94,6 +122,47 @@ final class NgModelController {
   /// Listeners called after view changes.
   Object? get viewChangeListeners =>
       unsafe.getProperty(raw, r'viewChangeListeners');
+
+  /// Registers a typed validator on the runtime control.
+  void setValidator(String name, ModelValidator<TModel, TView> validator) {
+    final callback = ((JSAny? model, JSAny? view) => validator(
+          unsafe.jsToDart<TModel?>(model),
+          unsafe.jsToDart<TView?>(view),
+        ).toJS).toJS;
+    unsafe.setProperty(
+        unsafe.getProperty(raw, 'validators') as JSObject, name, callback);
+  }
+
+  /// Registers an async validator and forwards its native cancellation context.
+  void setAsyncValidator(
+      String name, AsyncModelValidator<TModel, TView> validator) {
+    final callback =
+        ((JSAny? model, JSAny? view, JSObject context) => validator(
+              unsafe.jsToDart<TModel?>(model),
+              unsafe.jsToDart<TView?>(view),
+              ModelValidationContext(context),
+            ).then<JSAny?>(unsafe.dartToJs).toJS).toJS;
+    unsafe.setProperty(
+        unsafe.getProperty(raw, 'asyncValidators') as JSObject, name, callback);
+  }
+
+  /// Adds a parser; a null result reports a native undefined parse failure.
+  void addParser(ModelParser<TView, TModel?> parser) {
+    final callback = ((JSAny? value) {
+      final parsed = parser(unsafe.jsToDart<TView>(value));
+      return parsed == null ? _undefined : unsafe.dartToJs(parsed);
+    }).toJS;
+    unsafe.callMethod(
+        unsafe.getProperty(raw, 'parsers') as JSObject, 'push', callback);
+  }
+
+  /// Adds a formatter that maps the model domain to the view domain.
+  void addFormatter(ModelFormatter<TModel?, TView> formatter) {
+    final callback = ((JSAny? value) =>
+        unsafe.dartToJs(formatter(unsafe.jsToDart<TModel?>(value)))).toJS;
+    unsafe.callMethod(
+        unsafe.getProperty(raw, 'formatters') as JSObject, 'push', callback);
+  }
 
   /// Whether the control has not lost focus yet.
   bool? get untouched {
@@ -224,7 +293,7 @@ final class NgModelController {
   }
 
   /// Sets a new view value, optionally with the triggering event name.
-  void setViewValue(Object? value, [String? trigger]) {
+  void setViewValue(TView value, [String? trigger]) {
     unsafe.callMethod(
       raw,
       r'setViewValue',

@@ -1,6 +1,7 @@
 import { stringify } from "../../shared/strings.ts";
 import {
   assign,
+  deProxy,
   assertInvariantDefined,
   isObject,
   isUndefined,
@@ -38,6 +39,7 @@ import type { RouterRuntimeState } from "../router.ts";
 export type { TransitionOptions } from "./interface.ts";
 
 const REDIRECT_MAX = 20;
+const templateControllers = new WeakMap<object, AbortController>();
 
 interface DeferredPromise<T> {
   promise: Promise<T>;
@@ -503,9 +505,13 @@ export class Transition<
   async _startTransition(): Promise<void> {
     const { _routerState } = this;
 
+    const previous = _routerState._transition;
     _routerState._lastStartedTransitionId = this.id;
     _routerState._transition = this;
     _routerState._lastStartedTransition = this;
+    if (previous && previous !== this && previous.success === undefined) {
+      previous._cancelTemplateRequests(Rejection.superseded(this));
+    }
 
     return Promise.resolve();
   }
@@ -549,7 +555,24 @@ export class Transition<
     // Do not set flag if the transition is already complete
     if (isUndefined(this.success)) {
       this._aborted = true;
+      this._cancelTemplateRequests(Rejection.aborted());
     }
+  }
+
+  /** @internal */
+  _getTemplateSignal(): AbortSignal {
+    const transition = deProxy(this);
+    let controller = templateControllers.get(transition);
+    if (!controller) {
+      controller = new AbortController();
+      templateControllers.set(transition, controller);
+    }
+    return controller.signal;
+  }
+
+  /** @internal */
+  _cancelTemplateRequests(reason: Rejection): void {
+    templateControllers.get(deProxy(this))?.abort(reason);
   }
 
   /**

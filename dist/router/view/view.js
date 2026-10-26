@@ -62,12 +62,13 @@ function getViewTemplate(config, ngView, context) {
         : config._template;
 }
 /** @internal */
-async function loadViewConfig(config) {
+async function loadViewConfig(config, signal) {
     const params = {};
     config._path.forEach((node) => {
         assign(params, node.paramValues);
     });
-    const viewResult = await config._factory._fromConfig(config._viewDecl, params);
+    const viewResult = await config._factory._fromConfig(config._viewDecl, params, signal);
+    signal?.throwIfAborted();
     config._controller = config._viewDecl.controller;
     assign(config, viewResult);
     config._loaded = true;

@@ -44,6 +44,17 @@ describe("Scope", () => {
     scope = $rootScope;
   });
 
+  it("keeps complex member watches reactive when a direct parent plan cannot apply", async () => {
+    scope.account = { profile: { name: "first" } };
+    const listener = jasmine.createSpy("listener");
+    scope._handler.watch("account.profile.name", listener, false, false, false);
+    await wait();
+    expect(listener.calls.mostRecent().args[0]).toBe("first");
+    scope.account.profile.name = "second";
+    await wait();
+    expect(listener.calls.mostRecent().args[0]).toBe("second");
+  });
+
   it("propagates replaced runtime dependencies to child scopes", () => {
     const child = scope.new();
     const parse = jasmine.createSpy("parse");

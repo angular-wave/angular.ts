@@ -17,8 +17,33 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 class AngularTsTest {
+    @Test
+    fun typesModelPipelinesAndForwardsTemplateCancellation() {
+        val raw = js("({modelValue: 12, viewValue: '12', parsers: [], formatters: [], validators: {}, asyncValidators: {}})")
+        raw.setViewValue = { text: String -> raw.viewValue = text }
+        val control = raw.unsafeCast<NgModelController<Double, String>>()
+        val amount: Double? = control.modelValue
+        assertEquals(12.0, amount)
+        val parser: ModelParser<Double, String> = { text -> text.toDoubleOrNull() }
+        control.addParser(parser)
+        assertTrue(control.parsers[0]("invalid").asDynamic() === js("undefined"))
+        control.formatters = arrayOf({ value: Double? -> value?.toString() ?: "" })
+        control.validators["positive"] = { value, text -> (value ?: 0.0) > 0 && text != "" }
+        assertEquals(true, control.validators["positive"]?.invoke(12.0, "12"))
+        assertEquals(24.0, control.parsers[0]("24"))
+        control.setViewValue("24")
+        assertEquals("24", control.viewValue)
+        val abort = js("new AbortController()")
+        var captured: dynamic = null
+        val request: dynamic = { _: String, options: dynamic -> captured = options.signal }
+        val templateRequest = TemplateRequestService(request.unsafeCast<angular.ts.generated.TemplateRequestService>())
+        templateRequest("/template", TemplateRequestOptions(signal = abort.signal))
+        assertSame(abort.signal, captured)
+    }
+
     @Test
     fun retrievesModelsLazilyAndSharesThemWithInjection() {
         val name = "kotlinModelGetterTest"

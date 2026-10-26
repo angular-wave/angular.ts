@@ -255,7 +255,10 @@ export function getViewTemplate(
 }
 
 /** @internal */
-export async function loadViewConfig(config: ViewConfig): Promise<ViewConfig> {
+export async function loadViewConfig(
+  config: ViewConfig,
+  signal?: AbortSignal,
+): Promise<ViewConfig> {
   const params: RawParams = {};
 
   config._path.forEach((node) => {
@@ -265,7 +268,9 @@ export async function loadViewConfig(config: ViewConfig): Promise<ViewConfig> {
   const viewResult = await config._factory._fromConfig(
     config._viewDecl,
     params,
+    signal,
   );
+  signal?.throwIfAborted();
 
   config._controller = config._viewDecl.controller;
   assign(config, viewResult);

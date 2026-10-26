@@ -1,5 +1,5 @@
 import { _parse, _element, _scope, _injector, _interpolate } from '../../injection-tokens.js';
-import { hasAnimate, isString, isFunction, callFunction, validateNotHasOwnPropertyName, shallowCopy, deProxy, deleteProperty, arrayRemove, isObjectEmpty, snakeCase, directiveNormalize, extend, isUndefined } from '../../shared/utils.js';
+import { hasAnimate, isString, validateNotHasOwnPropertyName, shallowCopy, deProxy, deleteProperty, arrayRemove, isFunction, callFunction, isObjectEmpty, snakeCase, directiveNormalize, extend, isUndefined } from '../../shared/utils.js';
 import { VALID_CLASS, INVALID_CLASS, DIRTY_CLASS, PRISTINE_CLASS } from '../../shared/constants.js';
 import { createLazyAnimate } from '../../animations/lazy-animate.js';
 import { getNormalizedAttr, hasNormalizedAttr } from '../../shared/dom.js';
@@ -142,8 +142,8 @@ class FormController {
     /** @internal */
     _syncNativeViewValue(trigger = "reset") {
         this._controls.forEach((control) => {
-            if (isFunction(control._syncNativeViewValue)) {
-                callFunction(control._syncNativeViewValue, control, trigger);
+            if (typeof control._syncNativeViewValue === "function") {
+                control._syncNativeViewValue(trigger);
             }
         });
     }

@@ -7,7 +7,17 @@ import {
 } from "../../../shared/utils.ts";
 import type { Lexer } from "../lexer/lexer.ts";
 import type { Token } from "../lexer/token.ts";
-import type { ASTNode, ObjectPropertyNode } from "./ast-node.ts";
+import type {
+  ExpressionNode,
+  ExpressionStatementNode,
+  BodyNode,
+  IdentifierNode,
+  LiteralNode,
+  ObjectNode,
+  ArrayNode,
+  BinaryNode,
+  ObjectPropertyNode,
+} from "./ast-node.ts";
 
 const $parseError = createErrorFactory("$parse");
 
@@ -43,7 +53,7 @@ const BINARY_BINDING_POWER: Partial<
 
 const PREFIX_BINDING_POWER = 100;
 
-function cloneSelfReferentialNode(node: ASTNode): ASTNode {
+function cloneSelfReferentialNode(node: ExpressionNode): ExpressionNode {
   return { ...node };
 }
 
@@ -51,7 +61,7 @@ export class AST {
   /** @internal */
   _lexer: Lexer;
   /** @internal */
-  _selfReferential: Record<string, ASTNode>;
+  _selfReferential: Record<string, ExpressionNode>;
   /** @internal */
   _index: number;
   /** @internal */
@@ -82,7 +92,7 @@ export class AST {
    * @returns {ASTNode} The root node of the AST.
    */
   /** @internal */
-  _ast(text: string): ASTNode {
+  _ast(text: string): BodyNode {
     this._text = text;
     this._index = 0;
     this._tokens = this._lexer._lex(text);
@@ -101,8 +111,8 @@ export class AST {
    * @returns {ASTNode} The program node.
    */
   /** @internal */
-  _program(): ASTNode {
-    const body: ASTNode[] = [];
+  _program(): BodyNode {
+    const body: ExpressionStatementNode[] = [];
 
     let hasMore = true;
 
@@ -123,7 +133,7 @@ export class AST {
    * @returns {ASTNode} The expression statement node.
    */
   /** @internal */
-  _expressionStatement(): ASTNode {
+  _expressionStatement(): ExpressionStatementNode {
     return {
       _type: ASTType._ExpressionStatement,
       _expression: this._filterChain(),
@@ -135,8 +145,8 @@ export class AST {
    * @returns {ASTNode} The filter chain node.
    */
   /** @internal */
-  _filterChain(): ASTNode {
-    let left: ASTNode = this._expression(0);
+  _filterChain(): ExpressionNode {
+    let left: ExpressionNode = this._expression(0);
 
     while (this._expect("|")) {
       left = this._filter(left);
@@ -150,7 +160,7 @@ export class AST {
    * @returns {ASTNode} The parsed expression node.
    */
   /** @internal */
-  _expression(minBindingPower: number): ASTNode {
+  _expression(minBindingPower: number): ExpressionNode {
     let left = this._prefix();
 
     while (this._index < this._tokens.length) {
@@ -195,7 +205,7 @@ export class AST {
         };
       } else {
         left = {
-          _type: bindingPower.type,
+          _type: bindingPower.type as BinaryNode["_type"],
           _operator: operator,
           _left: left,
           _right: this._expression(bindingPower.right),
@@ -211,7 +221,7 @@ export class AST {
    * @returns {ASTNode}
    */
   /** @internal */
-  _prefix(): ASTNode {
+  _prefix(): ExpressionNode {
     let token: Token | false;
 
     if ((token = this._expect("++", "--"))) {
@@ -246,7 +256,7 @@ export class AST {
    * @returns {ASTNode}
    */
   /** @internal */
-  _postfix(primary: ASTNode): ASTNode {
+  _postfix(primary: ExpressionNode): ExpressionNode {
     let expr = primary;
 
     while (this._index < this._tokens.length) {
@@ -309,8 +319,8 @@ export class AST {
    * @returns {ASTNode} The primary expression node.
    */
   /** @internal */
-  _primary(): ASTNode {
-    let primary: ASTNode;
+  _primary(): ExpressionNode {
+    let primary: ExpressionNode;
 
     const peekToken = this._peekToken();
 
@@ -354,10 +364,10 @@ export class AST {
    * @returns {ASTNode} The filter node.
    */
   /** @internal */
-  _filter(baseExpression: ASTNode): ASTNode {
-    const args: ASTNode[] = [baseExpression];
+  _filter(baseExpression: ExpressionNode): ExpressionNode {
+    const args: ExpressionNode[] = [baseExpression];
 
-    const result = {
+    const result: ExpressionNode = {
       _type: ASTType._CallExpression,
       _callee: this._identifier(),
       _arguments: args,
@@ -376,8 +386,8 @@ export class AST {
    * @returns {ASTNode[]} The arguments array.
    */
   /** @internal */
-  _parseArguments(): ASTNode[] {
-    const args: ASTNode[] = [];
+  _parseArguments(): ExpressionNode[] {
+    const args: ExpressionNode[] = [];
 
     if (this._peekToken()._text !== ")") {
       do {
@@ -393,7 +403,7 @@ export class AST {
    * @returns {ASTNode} The identifier node.
    */
   /** @internal */
-  _identifier(): ASTNode {
+  _identifier(): IdentifierNode {
     const token = this._consume();
 
     if (!token._identifier) {
@@ -408,7 +418,7 @@ export class AST {
    * @returns {ASTNode} The constant node.
    */
   /** @internal */
-  _constant(): ASTNode {
+  _constant(): LiteralNode {
     // TODO check that it is a constant
     return { _type: ASTType._Literal, _value: this._consume()._value };
   }
@@ -418,8 +428,8 @@ export class AST {
    * @returns {ASTNode} The array declaration node.
    */
   /** @internal */
-  _arrayDeclaration(): ASTNode {
-    const elements: ASTNode[] = [];
+  _arrayDeclaration(): ArrayNode {
+    const elements: ExpressionNode[] = [];
 
     if (this._peekToken()._text !== "]") {
       do {
@@ -440,8 +450,8 @@ export class AST {
    * @returns {ASTNode} The object node.
    */
   /** @internal */
-  _object(): ASTNode {
-    const properties: ASTNode[] = [];
+  _object(): ObjectNode {
+    const properties: ObjectPropertyNode[] = [];
 
     let property: ObjectPropertyNode;
 

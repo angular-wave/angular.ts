@@ -1825,6 +1825,36 @@ impl HttpCredentials {
     }
 }
 
+/// Cancellation options for one consumer of a shared template download.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct TemplateRequestOptions {
+    #[cfg(target_arch = "wasm32")]
+    signal: Option<wasm_bindgen::JsValue>,
+}
+
+impl TemplateRequestOptions {
+    /// Creates options without consumer cancellation.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Uses a native AbortSignal to cancel only this consumer.
+    #[cfg(target_arch = "wasm32")]
+    pub fn with_signal(mut self, signal: wasm_bindgen::JsValue) -> Self {
+        self.signal = Some(signal);
+        self
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn to_js_value(&self) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+        let options = js_sys::Object::new();
+        if let Some(signal) = &self.signal {
+            js_sys::Reflect::set(&options, &wasm_bindgen::JsValue::from_str("signal"), signal)?;
+        }
+        Ok(options.into())
+    }
+}
+
 /// Rust representation of options accepted by AngularTS `$http` shortcut methods.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct HttpRequestOptions {
@@ -2843,8 +2873,8 @@ mod host {
 mod browser {
     use super::{
         decode_http_response, HttpRequestConfig, HttpRequestOptions, HttpResponse, RestOptions,
-        Service, SseConfig, StateDeclaration, WebSocketConfig, WorkerConfig, WorkerRequestOptions,
-        WorkerStatus,
+        Service, SseConfig, StateDeclaration, TemplateRequestOptions, WebSocketConfig,
+        WorkerConfig, WorkerRequestOptions, WorkerStatus,
     };
     use js_sys::{Array, Function, Promise, Reflect};
     use serde::{de::DeserializeOwned, Serialize};
@@ -3464,6 +3494,13 @@ mod browser {
             &self,
             url: &str,
         ) -> Pin<Box<dyn Future<Output = Result<String, JsValue>> + '_>>;
+
+        /// Fetches a template with consumer-specific cancellation options.
+        fn request_template_with(
+            &self,
+            url: &str,
+            options: &TemplateRequestOptions,
+        ) -> Pin<Box<dyn Future<Output = Result<String, JsValue>> + '_>>;
     }
 
     /// Ergonomic async helpers for injected AngularTS `$http` service values.
@@ -3631,18 +3668,25 @@ mod browser {
             &self,
             url: &str,
         ) -> Pin<Box<dyn Future<Output = Result<String, JsValue>> + '_>> {
+            self.request_template_with(url, &TemplateRequestOptions::new())
+        }
+
+        fn request_template_with(
+            &self,
+            url: &str,
+            options: &TemplateRequestOptions,
+        ) -> Pin<Box<dyn Future<Output = Result<String, JsValue>> + '_>> {
             let service = self.clone();
             let url = url.to_string();
-
+            let options = options.clone();
             Box::pin(async move {
                 let request = service.unchecked_into::<Function>();
                 let value = Reflect::apply(
                     &request,
                     &JsValue::UNDEFINED,
-                    &Array::of1(&JsValue::from_str(&url)),
+                    &Array::of2(&JsValue::from_str(&url), &options.to_js_value()?),
                 )?;
                 let promise = value.dyn_into::<Promise>()?;
-
                 Ok(JsFuture::from(promise)
                     .await?
                     .as_string()
@@ -3654,18 +3698,18 @@ mod browser {
     impl TemplateRequestService {
         /// Fetches a template URL and resolves with template text.
         pub async fn request_template(&self, url: &str) -> Result<String, JsValue> {
-            let request: &Function = self.unchecked_ref();
-            let value = Reflect::apply(
-                request,
-                &JsValue::UNDEFINED,
-                &Array::of1(&JsValue::from_str(url)),
-            )?;
-            let promise = value.dyn_into::<Promise>()?;
+            let service: &JsValue = self.as_ref();
+            service.request_template(url).await
+        }
 
-            Ok(JsFuture::from(promise)
-                .await?
-                .as_string()
-                .unwrap_or_default())
+        /// Fetches a template with consumer-specific cancellation options.
+        pub async fn request_template_with(
+            &self,
+            url: &str,
+            options: &TemplateRequestOptions,
+        ) -> Result<String, JsValue> {
+            let service: &JsValue = self.as_ref();
+            service.request_template_with(url, options).await
         }
     }
 

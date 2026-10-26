@@ -7,6 +7,31 @@ import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 
 class AngularTSSuite extends munit.FunSuite:
+  test("typed model pipelines and template requests preserve native cancellation"):
+    val raw = js.Dynamic.literal(
+      modelValue = 12.0,
+      viewValue = "12",
+      parsers = js.Array[js.Function1[String, js.UndefOr[Double]]](),
+      formatters = js.Array[js.Function1[js.UndefOr[Double], String]](),
+      validators = js.Dictionary.empty[js.Function2[js.UndefOr[Double], js.UndefOr[String], js.Any]],
+      asyncValidators = js.Dictionary.empty[js.Function3[js.UndefOr[Double], js.UndefOr[String], ModelValidationContext, js.Promise[js.Any]]],
+    )
+    val control = raw.asInstanceOf[TypedNgModelController[Double, String]]
+    control.parsers.push((text: String) => text.toDouble)
+    control.formatters.push((value: js.UndefOr[Double]) => value.fold("")(_.toString))
+    control.validators("positive") = (value, _) => value.getOrElse(0.0) > 0
+    assertEquals(control.modelValue.get, 12.0)
+    assertEquals(control.parsers(0)("24").get, 24.0)
+    assertEquals(control.validators("positive")(12.0, "12").asInstanceOf[Boolean], true)
+    val signal = js.Dynamic.literal(aborted = false).asInstanceOf[org.scalajs.dom.AbortSignal]
+    var captured: js.UndefOr[org.scalajs.dom.AbortSignal] = js.undefined
+    val request = ((url: String, options: TemplateRequestOptions) =>
+      captured = options.signal
+      js.Promise.resolve(url)
+    ): js.Function2[String, TemplateRequestOptions, js.Promise[String]]
+    request.asInstanceOf[TemplateRequestService]("/template", TemplateRequestOptions(signal))
+    assertEquals(captured.get, signal)
+
   test("model getters preserve runtime identity and typed token names"):
     final class Cart(var count: Int) extends js.Object
     val global = js.Dynamic.global.selectDynamic("globalThis")

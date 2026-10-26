@@ -1,3 +1,4 @@
+import 'package:web/web.dart' show AbortSignal;
 import 'dart:js_interop';
 
 import 'facade.dart';
@@ -237,6 +238,17 @@ final class TemplateCacheService extends AngularTsJsFacade {
 
   /// Returns cached template values.
   Object? values() => unsafe.callMethod(raw, 'values');
+}
+
+/// Cancellation options for one template consumer.
+final class TemplateRequestOptions implements unsafe.JsConvertible {
+  /// Cancels only this consumer of a shared template download.
+  const TemplateRequestOptions({this.signal});
+
+  /// Native consumer cancellation signal.
+  final AbortSignal? signal;
+  @override
+  JSAny? toJsValue() => unsafe.object({if (signal != null) 'signal': signal});
 }
 
 /// Represents template request service.

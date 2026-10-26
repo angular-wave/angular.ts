@@ -1,6 +1,7 @@
 /// <reference types="jasmine" />
 import { dealoc } from "../../shared/dom.ts";
 import { Angular } from "../../angular.ts";
+import { Rejection, RejectType } from "../transition/reject-factory.ts";
 import { waitUntil } from "../../shared/test-utils.ts";
 import type { StateRuntime } from "../state/state-service.ts";
 
@@ -83,6 +84,61 @@ describe("templateFactory", () => {
 
       expect(fetch).toHaveBeenCalledWith(url, jasmine.any(Object));
       expect(templateData).toBe("Trusted template");
+    });
+  });
+
+  describe("transition template cancellation", () => {
+    it("supersedes a waiting route without aborting another template consumer", async () => {
+      const state = $injector.get("$state");
+      const registry = $injector.get("$stateRegistry");
+      const templateRequest = $injector.get("$templateRequest");
+      registry.register({ name: "slow", templateUrl: "/shared-route.html" });
+      registry.register({ name: "fast", template: "Fast" });
+      const download = Promise.withResolvers<Response>();
+      const fetchSpy = spyOn(window, "fetch").and.returnValue(download.promise);
+      const independent = templateRequest("/shared-route.html");
+      const load = spyOn(templateFactory, "_fromConfig").and.callThrough();
+      const oldRoute = state.go("slow");
+      const rejected = oldRoute.catch((error: Rejection) => error);
+      await waitUntil(() => load.calls.count() > 0);
+      await state.go("fast");
+      const error = await rejected;
+      expect(error.type).toBe(RejectType._SUPERSEDED);
+      expect(
+        (fetchSpy.calls.first().args[1]!.signal as AbortSignal).aborted,
+      ).toBeFalse();
+      download.resolve(new Response("Shared"));
+      await expectAsync(independent).toBeResolvedTo("Shared");
+      expect(state.current.name).toBe("fast");
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("aborts the transport when its only route consumer aborts", async () => {
+      const state = $injector.get("$state");
+      const registry = $injector.get("$stateRegistry");
+      registry.register({
+        name: "abortable",
+        templateUrl: "/abort-route.html",
+      });
+      let signal: AbortSignal | undefined;
+      spyOn(window, "fetch").and.callFake(
+        (_url, config) =>
+          new Promise((_resolve, reject) => {
+            signal = config!.signal as AbortSignal;
+            signal.addEventListener("abort", () => reject(signal!.reason), {
+              once: true,
+            });
+          }),
+      );
+      const route = state.go("abortable");
+      const rejected = route.catch((error: Rejection) => error);
+      await waitUntil(() => signal !== undefined);
+      $scope.pendingTransition = route.transition;
+      $scope.pendingTransition.abort();
+      const error = await rejected;
+      expect(error.type).toBe(RejectType._ABORTED);
+      expect(signal!.aborted).toBeTrue();
+      expect(state.current.name).not.toBe("abortable");
     });
   });
 

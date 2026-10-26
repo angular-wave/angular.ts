@@ -62,3 +62,16 @@ where the token has type `Token[Model[TodoModel]]`. Both lazily initialize and
 return the same reactive instance as dependency injection. Field assignments
 update observing views. Unknown names, ordinary services, and uninitialized or
 destroyed apps throw runtime errors.
+
+## Typed form controls and cancellation
+
+Use `TypedNgModelController[TModel, TView]` for typed values, parsers, formatters,
+and validator dictionaries. The `NgModelController` alias retains the existing
+JavaScript value domains. Async validator callbacks receive a third
+`ModelValidationContext` argument containing the native `AbortSignal` for that
+validation run. A newer run or linked-control destruction aborts obsolete work.
+HTML form authoring stays the same.
+
+The template service accepts either a URL alone or a URL with
+`TemplateRequestOptions(signal)`. Cancelling a consumer leaves a shared download
+available to its other consumers.

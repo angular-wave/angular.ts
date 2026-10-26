@@ -1255,8 +1255,8 @@
                     <div class="tsd-comment tsd-typography">
                       <p>
                         Set the history state object and return
-                        <code>$location</code>. The state object is later passed
-                        to <code>pushState</code> or <code>replaceState</code>.
+                        <code>$location</code>. The state object is cloned by
+                        the browser when the scheduled history update commits.
                         See
                         <a
                           href="https://developer.mozilla.org/en-US/docs/Web/API/History/pushState#state|History.state"
@@ -1264,12 +1264,8 @@
                         >
                       </p>
                       <p>
-                        NOTE: This method is supported only in HTML5 mode and
-                        only in browsers supporting the HTML5 History API (i.e.
-                        methods <code>pushState</code> and
-                        <code>replaceState</code>). If you need to support older
-                        browsers (like IE9 or Android &lt; 4.0), don't use this
-                        method.
+                        Supported only in HTML5 mode. State-only changes are
+                        scheduled just like URL changes.
                       </p>
                     </div>
                     <div class="tsd-parameters">

@@ -3200,10 +3200,10 @@ function createRootScopeService(appContext, exceptionHandler, parse) {
     return rootScope;
 }
 function getNodeName(node) {
-    return node?._name;
+    return node?._type === ASTType._Identifier ? node._name : undefined;
 }
 function getNodePropertyName(node) {
-    const property = node?._property;
+    const property = node?._type === ASTType._MemberExpression ? node._property : undefined;
     return getNodeName(property);
 }
 function resolveNodeWatchKey(node) {
@@ -3256,7 +3256,7 @@ function getDirectMemberWatchPlan(watchFn, node, watchProp, parse) {
         const expressionNode = node;
         const objectNode = expressionNode._object;
         const key = getNodePropertyName(node);
-        const parentKey = objectNode?._type === ASTType._Identifier
+        const parentKey = objectNode._type === ASTType._Identifier
             ? getNodeName(objectNode)
             : undefined;
         if (!expressionNode._computed &&
@@ -3380,9 +3380,6 @@ function collectWatchKeys(node, watchKeys) {
         if (isString(literal._value)) {
             watchKeys.add(literal._value);
         }
-        else if (literal._name) {
-            watchKeys.add(literal._name);
-        }
         return;
     }
     if (node._type === ASTType._MemberExpression) {
@@ -3443,7 +3440,7 @@ function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
     }
     if (node._type === ASTType._CallExpression) {
         const callee = node._callee;
-        if (callee?._type === ASTType._MemberExpression) {
+        if (callee._type === ASTType._MemberExpression) {
             addMemberExpressionDependency(assertInvariantDefined(callee._object), listener, keySet, seenKeys);
         }
         else {
@@ -3479,7 +3476,7 @@ function collectForeignWatchDescriptors(node, listener, keySet, seenKeys) {
 /** @internal Builds reusable registration metadata for a compiled binding. */
 function createScopeWatchPlan(parse, watchProp) {
     const watchFn = parse(watchProp);
-    const expression = watchFn._decoratedNode._body[0]?._expression;
+    const expression = watchFn._decoratedNode._body.at(0)?._expression;
     if (!expression) {
         return undefined;
     }
@@ -3515,7 +3512,7 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
     }
     if (node._type === ASTType._CallExpression) {
         collectExpressionListenerKeys(node._callee, keySet, seenKeys, listener);
-        const callArguments = node._arguments ?? [];
+        const callArguments = node._arguments;
         for (let i = 0, l = callArguments.length; i < l; i++) {
             collectExpressionListenerKeys(callArguments[i], keySet, seenKeys, listener);
         }
@@ -3524,7 +3521,7 @@ function collectExpressionListenerKeys(node, keySet, seenKeys, listener) {
     collectListenerKeys(node, keySet, seenKeys, listener);
 }
 function getFilterInputWatchKeys(expr) {
-    if (!expr._filter) {
+    if (expr._type !== ASTType._CallExpression || !expr._filter) {
         return undefined;
     }
     const toWatch = expr._toWatch;
@@ -5482,7 +5479,7 @@ class Scope {
                 }
                 : undefined;
         }
-        const expr = get._decoratedNode._body[0]?._expression;
+        const expr = get._decoratedNode._body.at(0)?._expression;
         if (!expr) {
             throw new Error("Unable to determine watched expression");
         }
@@ -5699,7 +5696,9 @@ class Scope {
                         const memberExpression = getSimpleMemberExpression(assertInvariantDefined(element)) ??
                             getArrayWatchExpressionElement(watchProp, i);
                         addForeignWatchDescriptor(listener, memberExpression, registerKey);
-                        const parentKey = resolveWatchKey(element._object);
+                        const parentKey = resolveWatchKey(element._type === ASTType._MemberExpression
+                            ? element._object
+                            : undefined);
                         if (parentKey) {
                             pushUniqueListenerKey(keySet, seenKeys, listener, parentKey);
                         }
@@ -5757,11 +5756,8 @@ class Scope {
                 this._bindForeignDependency(listener);
                 break;
             }
-            case ASTType._Program:
-            case ASTType._ExpressionStatement:
             case ASTType._Literal:
             case ASTType._LocalsExpression:
-            case ASTType._Property:
             case ASTType._ThisExpression:
             case ASTType._NGValueParameter:
             case ASTType._UpdateExpression: {
@@ -19142,7 +19138,7 @@ class ASTInterpreter {
                 return ASTInterpreter._value(ast._value, context);
             case ASTType._UnaryExpression: {
                 const unaryRight = this._recurse(assertInvariantDefined(ast._argument));
-                return self[`unary${String(ast._operator)}`](unaryRight, context);
+                return self[`unary${ast._operator}`](unaryRight, context);
             }
             case ASTType._BinaryExpression: {
                 if (!context) {
@@ -19153,7 +19149,7 @@ class ASTInterpreter {
                 }
                 const binaryLeft = this._recurse(assertInvariantDefined(ast._left));
                 const binaryRight = this._recurse(assertInvariantDefined(ast._right));
-                return self[`binary${String(ast._operator)}`](binaryLeft, binaryRight, context);
+                return self[`binary${ast._operator}`](binaryLeft, binaryRight, context);
             }
             case ASTType._LogicalExpression: {
                 if (!context) {
@@ -19164,7 +19160,7 @@ class ASTInterpreter {
                 }
                 const logicalLeft = this._recurse(assertInvariantDefined(ast._left));
                 const logicalRight = this._recurse(assertInvariantDefined(ast._right));
-                return self[`binary${String(ast._operator)}`](logicalLeft, logicalRight, context);
+                return self[`binary${ast._operator}`](logicalLeft, logicalRight, context);
             }
             case ASTType._ConditionalExpression:
                 return ASTInterpreter["ternary?:"](this._recurse(assertInvariantDefined(ast._test)), this._recurse(assertInvariantDefined(ast._alternate)), this._recurse(assertInvariantDefined(ast._consequent)), context);
@@ -19194,11 +19190,12 @@ class ASTInterpreter {
             case ASTType._Property:
                 throw new Error(`Unknown AST type ${String(ast._type)}`);
         }
-        throw new Error(`Unknown AST type ${String(ast._type)}`);
+        const exhaustive = ast;
+        throw new Error(`Unknown AST type ${String(exhaustive._type)}`);
     }
     /** @internal */
     _compileCallExpression(ast, context) {
-        const callArguments = ast._arguments ?? [];
+        const callArguments = ast._arguments;
         const args = [];
         for (let i = 0, l = callArguments.length; i < l; i++) {
             args.push(this._recurse(callArguments[i]));
@@ -19408,7 +19405,7 @@ class ASTInterpreter {
     /** @internal */
     _compileArrayExpression(ast, context) {
         const args = [];
-        const elements = ast._elements ?? [];
+        const elements = ast._elements;
         for (let i = 0, l = elements.length; i < l; i++) {
             args.push(this._recurse(elements[i]));
         }
@@ -19424,7 +19421,7 @@ class ASTInterpreter {
     _compileUpdateExpression(ast, context) {
         const ref = this._recurse(assertInvariantDefined(ast._argument), true, 1);
         const op = ast._operator;
-        const prefix = !!ast._prefix;
+        const prefix = ast._prefix;
         return (scope, locals, assign) => {
             const lhs = getExpressionReference(ref(scope, locals, assign));
             if (isNullOrUndefined(lhs.context)) {
@@ -19929,10 +19926,7 @@ function getNonComputedPath(ast) {
     const memberObject = assertInvariantDefined(member._object);
     const memberProperty = assertInvariantDefined(member._property._name);
     if (memberObject._type === ASTType._Identifier) {
-        return [
-            assertInvariantDefined(memberObject._name),
-            memberProperty,
-        ];
+        return [assertInvariantDefined(memberObject._name), memberProperty];
     }
     const path = [];
     let node = ast;
@@ -20131,7 +20125,6 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     let allConstants;
     let argsToWatch = [];
     let isFilter;
-    const decoratedNode = ast;
     let decoratedLeft;
     let decoratedRight;
     let decoratedTest;
@@ -20140,105 +20133,102 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
     let decoratedObject;
     let decoratedProperty;
     let decoratedKey;
-    const astIsPure = (decoratedNode._isPure = !!isPure(ast, parentIsPure));
+    const astIsPure = (ast._isPure = !!isPure(ast, parentIsPure));
     switch (ast._type) {
         case ASTType._Program: {
             allConstants = true;
-            const body = decoratedNode._body;
+            const body = ast._body;
             for (let i = 0, l = body.length; i < l; i++) {
                 const expr = body[i];
                 const decorated = findConstantAndWatchExpressions(assertInvariantDefined(expr._expression), $filter, astIsPure);
                 allConstants = allConstants && decorated._constant;
             }
-            decoratedNode._constant = allConstants;
-            return decoratedNode;
+            ast._constant = allConstants;
+            return ast;
         }
         case ASTType._Literal:
-            decoratedNode._constant = true;
-            decoratedNode._toWatch = [];
-            return decoratedNode;
+            ast._constant = true;
+            ast._toWatch = [];
+            return ast;
         case ASTType._UnaryExpression: {
-            const decorated = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._argument), $filter, astIsPure);
-            decoratedNode._constant = decorated._constant;
-            decoratedNode._toWatch = decorated._toWatch ?? [];
-            return decoratedNode;
+            const decorated = findConstantAndWatchExpressions(assertInvariantDefined(ast._argument), $filter, astIsPure);
+            ast._constant = decorated._constant;
+            ast._toWatch = decorated._toWatch;
+            return ast;
         }
         case ASTType._BinaryExpression:
-            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._left), $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._right), $filter, astIsPure);
-            decoratedNode._constant =
-                decoratedLeft._constant && decoratedRight._constant;
+            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(ast._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(ast._right), $filter, astIsPure);
+            ast._constant = decoratedLeft._constant && decoratedRight._constant;
             argsToWatch = [];
             appendWatchNodes(argsToWatch, decoratedLeft._toWatch);
             appendWatchNodes(argsToWatch, decoratedRight._toWatch);
-            decoratedNode._toWatch = argsToWatch;
-            return decoratedNode;
+            ast._toWatch = argsToWatch;
+            return ast;
         case ASTType._LogicalExpression:
-            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._left), $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(decoratedNode._right), $filter, astIsPure);
-            decoratedNode._constant =
-                decoratedLeft._constant && decoratedRight._constant;
-            decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
-            return decoratedNode;
+            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(ast._left), $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(ast._right), $filter, astIsPure);
+            ast._constant = decoratedLeft._constant && decoratedRight._constant;
+            ast._toWatch = ast._constant ? [] : [ast];
+            return ast;
         case ASTType._ConditionalExpression:
             decoratedTest = findConstantAndWatchExpressions(assertInvariantDefined(ast._test), $filter, astIsPure);
             decoratedAlternate = findConstantAndWatchExpressions(assertInvariantDefined(ast._alternate), $filter, astIsPure);
             decoratedConsequent = findConstantAndWatchExpressions(assertInvariantDefined(ast._consequent), $filter, astIsPure);
-            decoratedNode._constant =
+            ast._constant =
                 decoratedTest._constant &&
                     decoratedAlternate._constant &&
                     decoratedConsequent._constant;
-            decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
-            return decoratedNode;
+            ast._toWatch = ast._constant ? [] : [ast];
+            return ast;
         case ASTType._Identifier:
-            decoratedNode._constant = false;
-            decoratedNode._toWatch = [ast];
-            return decoratedNode;
+            ast._constant = false;
+            ast._toWatch = [ast];
+            return ast;
         case ASTType._MemberExpression:
             decoratedObject = findConstantAndWatchExpressions(assertInvariantDefined(ast._object), $filter, astIsPure);
             if (ast._computed) {
                 decoratedProperty = findConstantAndWatchExpressions(assertInvariantDefined(ast._property), $filter, astIsPure);
             }
-            decoratedNode._constant =
+            ast._constant =
                 decoratedObject._constant &&
-                    (!decoratedNode._computed || decoratedProperty?._constant);
-            decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
-            return decoratedNode;
+                    (!ast._computed || decoratedProperty?._constant);
+            ast._toWatch = ast._constant ? [] : [ast];
+            return ast;
         case ASTType._CallExpression: {
             isFilter = ast._filter;
             allConstants = isFilter;
             argsToWatch = [];
-            const callArguments = ast._arguments ?? [];
+            const callArguments = ast._arguments;
             for (let i = 0, l = callArguments.length; i < l; i++) {
                 const expr = callArguments[i];
                 const decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
                 allConstants = allConstants && !!decorated._constant;
                 appendWatchNodes(argsToWatch, decorated._toWatch);
             }
-            decoratedNode._constant = allConstants;
-            decoratedNode._toWatch = isFilter ? argsToWatch : [decoratedNode];
-            return decoratedNode;
+            ast._constant = allConstants;
+            ast._toWatch = isFilter ? argsToWatch : [ast];
+            return ast;
         }
         case ASTType._AssignmentExpression:
-            decoratedLeft = findConstantAndWatchExpressions(assertInvariantDefined(ast._left), $filter, astIsPure);
-            decoratedRight = findConstantAndWatchExpressions(assertInvariantDefined(ast._right), $filter, astIsPure);
-            decoratedNode._constant =
-                decoratedLeft._constant && decoratedRight._constant;
-            decoratedNode._toWatch = [decoratedNode];
-            return decoratedNode;
+            decoratedLeft = findConstantAndWatchExpressions(ast._left, $filter, astIsPure);
+            decoratedRight = findConstantAndWatchExpressions(ast._right, $filter, astIsPure);
+            ast._constant = decoratedLeft._constant && decoratedRight._constant;
+            ast._toWatch = [ast];
+            return ast;
         case ASTType._ArrayExpression: {
             allConstants = true;
             argsToWatch = [];
-            const elements = ast._elements ?? [];
+            const elements = ast._elements;
             for (let i = 0, l = elements.length; i < l; i++) {
                 const expr = elements[i];
                 const decorated = findConstantAndWatchExpressions(expr, $filter, astIsPure);
                 allConstants = allConstants && !!decorated._constant;
                 appendWatchNodes(argsToWatch, decorated._toWatch);
             }
-            decoratedNode._constant = allConstants;
-            decoratedNode._toWatch = argsToWatch;
-            return decoratedNode;
+            ast._constant = allConstants;
+            ast._toWatch = argsToWatch;
+            return ast;
         }
         case ASTType._ObjectExpression: {
             allConstants = true;
@@ -20256,31 +20246,32 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
                     appendWatchNodes(argsToWatch, decoratedKey._toWatch);
                 }
             }
-            decoratedNode._constant = allConstants;
-            decoratedNode._toWatch = argsToWatch;
-            return decoratedNode;
+            ast._constant = allConstants;
+            ast._toWatch = argsToWatch;
+            return ast;
         }
         case ASTType._ThisExpression:
-            decoratedNode._constant = false;
-            decoratedNode._toWatch = [];
-            return decoratedNode;
+            ast._constant = false;
+            ast._toWatch = [];
+            return ast;
         case ASTType._LocalsExpression:
-            decoratedNode._constant = false;
-            decoratedNode._toWatch = [];
-            return decoratedNode;
+            ast._constant = false;
+            ast._toWatch = [];
+            return ast;
         case ASTType._UpdateExpression: {
             // side-effectful, not constant
             findConstantAndWatchExpressions(assertInvariantDefined(ast._argument), $filter, false);
-            decoratedNode._constant = false;
-            decoratedNode._toWatch = [decoratedNode]; // treat like assignment: watch the expression
-            return decoratedNode;
+            ast._constant = false;
+            ast._toWatch = [ast]; // treat like assignment: watch the expression
+            return ast;
         }
         case ASTType._ExpressionStatement:
         case ASTType._Property:
         case ASTType._NGValueParameter:
             throw new Error(`Unknown AST node type: ${String(ast._type)}`);
     }
-    throw new Error(`Unknown AST node type: ${String(ast._type)}`);
+    const exhaustive = ast;
+    throw new Error(`Unknown AST node type: ${String(exhaustive)}`);
 }
 /**
  * Converts a single expression AST node into an assignment expression if the expression is assignable.
@@ -20290,9 +20281,7 @@ function findConstantAndWatchExpressions(ast, $filter, parentIsPure) {
  */
 function assignableAST(ast) {
     const stmt = ast._body[0];
-    if (ast._body.length === 1 &&
-        stmt._expression &&
-        isAssignable(stmt._expression)) {
+    if (ast._body.length === 1 && isAssignable(stmt._expression)) {
         return {
             _type: ASTType._AssignmentExpression,
             _left: stmt._expression, // left-hand side is an expression
@@ -20351,9 +20340,7 @@ function isPure(node, parentIsPure) {
             return PURITY_ABSOLUTE;
         // The binary + operator can invoke a stateful toString().
         case ASTType._BinaryExpression:
-            return node._operator !== "+"
-                ? PURITY_ABSOLUTE
-                : false;
+            return node._operator !== "+" ? PURITY_ABSOLUTE : false;
         // Functions / filters probably read state from within objects
         case ASTType._CallExpression:
             return false;
@@ -20894,14 +20881,11 @@ function isLiteral(ast) {
     if (body.length !== 1) {
         return true;
     }
-    switch (body[0]._expression?._type) {
+    switch (body[0]._expression._type) {
         case ASTType._Literal:
         case ASTType._ArrayExpression:
         case ASTType._ObjectExpression:
             return true;
-        case undefined:
-        case ASTType._Program:
-        case ASTType._ExpressionStatement:
         case ASTType._AssignmentExpression:
         case ASTType._ConditionalExpression:
         case ASTType._LogicalExpression:
@@ -20911,7 +20895,6 @@ function isLiteral(ast) {
         case ASTType._MemberExpression:
         case ASTType._Identifier:
         case ASTType._LocalsExpression:
-        case ASTType._Property:
         case ASTType._ThisExpression:
         case ASTType._NGValueParameter:
         case ASTType._UpdateExpression:
@@ -22816,8 +22799,8 @@ class FormController {
     /** @internal */
     _syncNativeViewValue(trigger = "reset") {
         this._controls.forEach((control) => {
-            if (isFunction(control._syncNativeViewValue)) {
-                callFunction(control._syncNativeViewValue, control, trigger);
+            if (typeof control._syncNativeViewValue === "function") {
+                control._syncNativeViewValue(trigger);
             }
         });
     }
@@ -25369,6 +25352,8 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                     }
                 }
                 let changeCounter = 0;
+                let requestController;
+                scope.on("$destroy", () => requestController?.abort());
                 let currentScope;
                 let previousElement;
                 let previousFragment;
@@ -25425,9 +25410,12 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         }
                     };
                     const thisChangeId = ++changeCounter;
+                    requestController?.abort();
+                    requestController = undefined;
                     if (src) {
                         scope.emit("$includeContentRequested", src);
-                        $templateRequest(src)
+                        const controller = (requestController = new AbortController());
+                        $templateRequest(src, { signal: controller.signal })
                             .then((response) => {
                             if (scope._destroyed)
                                 return;
@@ -25462,7 +25450,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             return undefined;
                         })
                             .catch((err) => {
-                            if (scope._destroyed)
+                            if (scope._destroyed || controller.signal.aborted)
                                 return undefined;
                             if (thisChangeId === changeCounter) {
                                 cleanupLastIncludeContent();
@@ -25896,6 +25884,8 @@ function defaults$1(dst, src) {
 }
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
+// Native cancellation handles must stay outside scope proxy storage.
+const validationControllers = new WeakMap();
 const ngModelError = createErrorFactory("ngModel");
 function readModelAttr(element, normalizedName) {
     return element instanceof Element
@@ -26460,8 +26450,12 @@ class NgModelController {
      */
     /** @internal */
     _runValidators(modelValue, viewValue, doneCallback) {
-        this._currentValidationRunId++;
-        const localValidationRunId = this._currentValidationRunId;
+        if (this._destroyed)
+            return;
+        const localValidationRunId = this._cancelValidation();
+        const isCurrent = () => !this._destroyed && localValidationRunId === this._currentValidationRunId;
+        if (!isCurrent())
+            return;
         const processParseErrors = () => {
             const errorKey = this._parserName;
             if (isUndefined(this._parserValid)) {
@@ -26485,6 +26479,8 @@ class NgModelController {
         const processSyncValidators = () => {
             let syncValidatorsValid = true;
             for (const [name, validator] of entries(this.validators)) {
+                if (!isCurrent())
+                    return false;
                 const result = Boolean(validator(modelValue, viewValue));
                 syncValidatorsValid = syncValidatorsValid && result;
                 setValidity(name, result);
@@ -26498,15 +26494,26 @@ class NgModelController {
             return true;
         };
         const processAsyncValidators = () => {
+            if (!isCurrent())
+                return;
+            if (keys(this.asyncValidators).length === 0) {
+                validationDone(true);
+                return;
+            }
             const validatorPromises = [];
             let allValid = true;
+            const controller = new AbortController();
+            validationControllers.set(deProxy(this), controller);
+            const context = { signal: controller.signal };
             entries(this.asyncValidators).forEach(([name, validator]) => {
-                const promise = validator(modelValue, viewValue);
+                if (!isCurrent())
+                    return;
+                const promise = validator(modelValue, viewValue, context);
                 if (!isPromiseLike(promise)) {
                     throw ngModelError("nopromise", "Expected asynchronous validator to return a promise but got '{0}' instead.", promise);
                 }
                 setValidity(name, undefined);
-                validatorPromises.push(promise.then(() => {
+                validatorPromises.push(Promise.resolve(promise).then(() => {
                     setValidity(name, true);
                     return undefined;
                 }, () => {
@@ -26531,7 +26538,7 @@ class NgModelController {
          * Applies a validator result if this is still the active validation run.
          */
         const setValidity = (name, isValid) => {
-            if (localValidationRunId === this._currentValidationRunId) {
+            if (isCurrent()) {
                 this.setValidity(name, isValid);
             }
         };
@@ -26539,7 +26546,8 @@ class NgModelController {
          * Finalizes the current validation run.
          */
         const validationDone = (allValid) => {
-            if (localValidationRunId === this._currentValidationRunId) {
+            if (isCurrent()) {
+                validationControllers.delete(deProxy(this));
                 doneCallback(allValid);
             }
         };
@@ -26553,6 +26561,14 @@ class NgModelController {
             return;
         }
         processAsyncValidators();
+    }
+    /** @internal Invalidates results before notifying abort listeners. */
+    _cancelValidation() {
+        const runId = ++this._currentValidationRunId;
+        const controller = validationControllers.get(deProxy(this));
+        validationControllers.delete(deProxy(this));
+        controller?.abort();
+        return runId;
     }
     /**
      * Commit a pending update to the `modelValue`.
@@ -26631,7 +26647,9 @@ class NgModelController {
                 // if (this.modelValue ?? this.modelValue[isProxySymbol]) {
                 //   delete this.modelValue;
                 // }
-                this.modelValue = allValid ? modelValue : undefined;
+                this.modelValue = allValid
+                    ? modelValue
+                    : undefined;
                 writeToModelIfNeeded();
             }
         });
@@ -27033,6 +27051,7 @@ function ngModelDirective() {
                         }));
                     scope.on("$destroy", () => {
                         modelCtrl._destroyed = true;
+                        modelCtrl._cancelValidation();
                         if (modelCtrl._pendingDebounce) {
                             clearTimeout(modelCtrl._pendingDebounce);
                             modelCtrl._pendingDebounce = undefined;
@@ -33982,12 +34001,13 @@ function getViewTemplate(config, ngView, context) {
         : config._template;
 }
 /** @internal */
-async function loadViewConfig(config) {
+async function loadViewConfig(config, signal) {
     const params = {};
     config._path.forEach((node) => {
         assign(params, node.paramValues);
     });
-    const viewResult = await config._factory._fromConfig(config._viewDecl, params);
+    const viewResult = await config._factory._fromConfig(config._viewDecl, params, signal);
+    signal?.throwIfAborted();
     config._controller = config._viewDecl.controller;
     assign(config, viewResult);
     config._loaded = true;
@@ -36559,12 +36579,14 @@ const TransitionRunner = {
         transition.success = false;
         transition._deferred.reject(rejection);
         transition._error = rejection;
+        transition._cancelTemplateRequests(rejection);
         const hooks = transition._getHooksFor(TransitionHookPhase._ERROR);
         TransitionHook._runAllHooks(hooks);
     },
 };
 
 const REDIRECT_MAX = 20;
+const templateControllers = new WeakMap();
 function createDeferredPromise() {
     let resolve;
     let reject;
@@ -36865,9 +36887,13 @@ class Transition {
     /** @internal */
     async _startTransition() {
         const { _routerState } = this;
+        const previous = _routerState._transition;
         _routerState._lastStartedTransitionId = this.id;
         _routerState._transition = this;
         _routerState._lastStartedTransition = this;
+        if (previous && previous !== this && previous.success === undefined) {
+            previous._cancelTemplateRequests(Rejection.superseded(this));
+        }
         return Promise.resolve();
     }
     /**
@@ -36905,7 +36931,22 @@ class Transition {
         // Do not set flag if the transition is already complete
         if (isUndefined(this.success)) {
             this._aborted = true;
+            this._cancelTemplateRequests(Rejection.aborted());
         }
+    }
+    /** @internal */
+    _getTemplateSignal() {
+        const transition = deProxy(this);
+        let controller = templateControllers.get(transition);
+        if (!controller) {
+            controller = new AbortController();
+            templateControllers.set(transition, controller);
+        }
+        return controller.signal;
+    }
+    /** @internal */
+    _cancelTemplateRequests(reason) {
+        templateControllers.get(deProxy(this))?.abort(reason);
     }
     /**
      * The Transition error reason.
@@ -37752,7 +37793,7 @@ function loadEnteringViews(transition) {
         return undefined;
     const promises = new Array(enteringViews.length);
     enteringViews.forEach((view, i) => {
-        promises[i] = loadViewConfig(view);
+        promises[i] = loadViewConfig(view, transition._getTemplateSignal());
     });
     return Promise.all(promises).then(noop);
 }
@@ -38539,6 +38580,7 @@ class StateRuntime {
     }
     /** @internal */
     _destroyRuntime() {
+        this._routerState._transition?.abort();
         this._prefetchRootDisposer?.();
         this._prefetchRootDisposer = undefined;
         this._prefetches.clear();
@@ -39191,13 +39233,13 @@ class TemplateFactoryService {
      * Resolves a state's view config into either concrete template HTML or a component name.
      */
     /** @internal */
-    async _fromConfig(config, params) {
+    async _fromConfig(config, params, signal) {
         const { template, templateUrl, component } = config;
         if (isDefined(template)) {
             return asTemplate(TemplateFactoryService._fromString(template, params));
         }
         if (isDefined(templateUrl)) {
-            return asTemplate(this._fromUrl(templateUrl, params));
+            return asTemplate(this._fromUrl(templateUrl, params, signal));
         }
         if (isString(component)) {
             return asComponent(component);
@@ -39218,10 +39260,12 @@ class TemplateFactoryService {
      * Fetches a template from a static URL or a URL factory.
      */
     /** @internal */
-    _fromUrl(url, params) {
+    _fromUrl(url, params, signal) {
         const templateUrl = isFunction(url) ? url(params) : url;
         if (isNullOrUndefined(templateUrl))
             return null;
+        if (signal)
+            return this._getTemplateRequest()(templateUrl, { signal });
         let promise = this._templatePromises.get(templateUrl);
         if (!promise) {
             promise = this._getTemplateRequest()(templateUrl).catch((error) => {
@@ -42858,46 +42902,100 @@ function applyTemplateRequestConfig(current, config) {
 /** @internal */
 function createTemplateRequestService($templateCache, $http, httpOptions, resourceUrlPolicy) {
     const pendingRequests = new Map();
-    return (templateUrl) => {
+    return (templateUrl, options) => {
+        const signal = options?.signal;
         try {
             if (!isString(templateUrl))
                 throw new TypeError("Template URL must be a string.");
             templateUrl = resourceUrlPolicy(templateUrl);
             if (!isString(templateUrl))
                 throw new TypeError("$compile.resourceUrlPolicy must return a string.");
+            signal?.throwIfAborted();
         }
         catch (error) {
             return Promise.resolve().then(() => {
                 throw error;
             });
         }
-        const pendingRequest = pendingRequests.get(templateUrl);
-        if (pendingRequest)
-            return pendingRequest;
-        const request = Promise.resolve()
-            .then(async () => {
-            const cachedTemplate = $templateCache.get(templateUrl);
-            if (cachedTemplate !== undefined)
-                return cachedTemplate;
-            let transformResponse = $http.defaults.transformResponse ?? null;
-            if (isArray(transformResponse)) {
-                transformResponse = transformResponse.filter((transform) => transform !== defaultHttpResponseTransform);
-            }
-            else if (transformResponse === defaultHttpResponseTransform) {
-                transformResponse = null;
-            }
-            const config = extend({
-                transformResponse,
-            }, httpOptions);
-            const response = await $http.get(templateUrl, config);
-            $templateCache.set(templateUrl, response.data);
-            return response.data;
-        })
-            .finally(() => {
-            pendingRequests.delete(templateUrl);
+        let pending = pendingRequests.get(templateUrl);
+        if (!pending) {
+            const controller = new AbortController();
+            const transportSignal = httpOptions.signal
+                ? AbortSignal.any([controller.signal, httpOptions.signal])
+                : controller.signal;
+            const entry = {
+                controller,
+                consumers: new Set(),
+                keepAlive: false,
+                finished: false,
+                promise: Promise.resolve()
+                    .then(async () => {
+                    controller.signal.throwIfAborted();
+                    const cachedTemplate = $templateCache.get(templateUrl);
+                    if (cachedTemplate !== undefined)
+                        return cachedTemplate;
+                    let transformResponse = $http.defaults.transformResponse ?? null;
+                    if (isArray(transformResponse)) {
+                        transformResponse = transformResponse.filter((transform) => transform !== defaultHttpResponseTransform);
+                    }
+                    else if (transformResponse === defaultHttpResponseTransform) {
+                        transformResponse = null;
+                    }
+                    const config = extend({
+                        transformResponse,
+                    }, httpOptions, { signal: transportSignal });
+                    const response = await $http.get(templateUrl, config);
+                    transportSignal.throwIfAborted();
+                    $templateCache.set(templateUrl, response.data);
+                    return response.data;
+                })
+                    .finally(() => {
+                    entry.finished = true;
+                    if (pendingRequests.get(templateUrl) === entry)
+                        pendingRequests.delete(templateUrl);
+                }),
+            };
+            pendingRequests.set(templateUrl, entry);
+            pending = entry;
+        }
+        const entry = pending;
+        if (!signal) {
+            entry.keepAlive = true;
+            return entry.promise;
+        }
+        return new Promise((resolve, reject) => {
+            const consumer = {};
+            entry.consumers.add(consumer);
+            const cleanup = () => {
+                signal.removeEventListener("abort", abort);
+                entry.consumers.delete(consumer);
+            };
+            const abort = () => {
+                cleanup();
+                // AbortSignal reasons may be arbitrary values; preserve the native contract.
+                // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+                reject(signal.reason);
+                if (!entry.finished && !entry.keepAlive && entry.consumers.size === 0) {
+                    if (pendingRequests.get(templateUrl) === entry)
+                        pendingRequests.delete(templateUrl);
+                    entry.controller.abort();
+                }
+            };
+            signal.addEventListener("abort", abort, { once: true });
+            void entry.promise
+                .then((template) => {
+                cleanup();
+                resolve(template);
+                return undefined;
+            }, (error) => {
+                cleanup();
+                // HTTP can reject with a response object; keep it intact.
+                // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+                reject(error);
+                return undefined;
+            })
+                .catch(reject);
         });
-        pendingRequests.set(templateUrl, request);
-        return request;
     };
 }
 

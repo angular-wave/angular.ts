@@ -1,6 +1,6 @@
 import type { FilterService } from "../../../filters/filter.ts";
 import type { CompiledExpression } from "../parse.ts";
-import type { BodyNode, ExpressionNode } from "../ast/ast-node.ts";
+import type { BodyNode } from "../ast/ast-node.ts";
 import { AST } from "../ast/ast.ts";
 import { ASTType } from "../ast-type.ts";
 import { ASTInterpreter } from "../interpreter.ts";
@@ -23,7 +23,7 @@ export class Parser {
 
     const fn = this._astCompiler._compile(ast);
 
-    fn._literal = isLiteral(ast as BodyNode);
+    fn._literal = isLiteral(ast);
     fn._constant = !!ast._constant;
 
     return fn;
@@ -37,14 +37,11 @@ function isLiteral(ast: BodyNode): boolean {
     return true;
   }
 
-  switch ((body[0] as ExpressionNode)._expression?._type) {
+  switch (body[0]._expression._type) {
     case ASTType._Literal:
     case ASTType._ArrayExpression:
     case ASTType._ObjectExpression:
       return true;
-    case undefined:
-    case ASTType._Program:
-    case ASTType._ExpressionStatement:
     case ASTType._AssignmentExpression:
     case ASTType._ConditionalExpression:
     case ASTType._LogicalExpression:
@@ -54,7 +51,6 @@ function isLiteral(ast: BodyNode): boolean {
     case ASTType._MemberExpression:
     case ASTType._Identifier:
     case ASTType._LocalsExpression:
-    case ASTType._Property:
     case ASTType._ThisExpression:
     case ASTType._NGValueParameter:
     case ASTType._UpdateExpression:

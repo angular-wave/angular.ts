@@ -347,6 +347,12 @@ part of the Dart public facade.
 | `NativeWindowDisplayFeature` | started |
 | `NativeWindowInsets` | started |
 | `NativeWindowStatus` | started |
+| `ModelValidationContext` | started |
+| `ModelParser` | started |
+| `ModelFormatter` | started |
+| `ModelValidators` | started |
+| `AsyncModelValidators` | started |
+| `TemplateRequestOptions` | started |
 | `NgModelController` | started |
 | `GeolocationValue` | started |
 | `HtmlCanvasConfig` | started |

@@ -58,6 +58,8 @@ import {
 import type { CompiledExpression } from "../../core/parse/parse.ts";
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
+// Native cancellation handles must stay outside scope proxy storage.
+const validationControllers = new WeakMap<object, AbortController>();
 
 export const ngModelError = createErrorFactory("ngModel");
 
@@ -102,19 +104,37 @@ function observeModelAttr(
   return deregister;
 }
 
-export type ModelValidators = Record<
+/** A synchronous validator receives the parsed model and original control value. */
+export type ModelValidators<TModel = unknown, TView = TModel> = Record<
   string,
-  (modelValue: unknown, viewValue: unknown) => unknown
+  (modelValue: TModel | undefined, viewValue: TView | undefined) => unknown
 >;
 
-export type AsyncModelValidators = Record<
+/** Lifetime shared by asynchronous validators in one validation run. */
+export interface ModelValidationContext {
+  /** Aborted when a newer validation run replaces this one or the control is destroyed. */
+  readonly signal: AbortSignal;
+}
+
+/** Rejection marks a validation failure; superseded runs cannot change validity. */
+export type AsyncModelValidators<TModel = unknown, TView = TModel> = Record<
   string,
-  (modelValue: unknown, viewValue: unknown) => Promise<unknown>
+  (
+    modelValue: TModel | undefined,
+    viewValue: TView | undefined,
+    context: ModelValidationContext,
+  ) => PromiseLike<unknown>
 >;
 
-export type ModelParser = (value: unknown) => unknown;
+/** Converts the control value to the model domain; undefined indicates a parse failure. */
+export type ModelParser<TModel = unknown, TView = TModel> = (
+  value: TView,
+) => TModel | undefined;
 
-export type ModelFormatter = (value: unknown) => unknown;
+/** Converts a possibly empty model value to the control's view domain. */
+export type ModelFormatter<TModel = unknown, TView = TModel> = (
+  value: TModel | undefined,
+) => TView;
 
 export type ModelViewChangeListener = () => void;
 
@@ -166,7 +186,7 @@ export interface NgModelOptions {
  * @property name The name attribute of the control.
  */
 
-export class NgModelController {
+export class NgModelController<TModel = unknown, TView = TModel> {
   static $nonscope = true;
   static $inject = [
     _scope,
@@ -182,20 +202,20 @@ export class NgModelController {
   /** @internal */
   _isAnimated: boolean;
 
-  viewValue: unknown;
+  viewValue: TView | undefined;
 
-  modelValue: unknown;
+  modelValue: TModel | undefined;
 
   /** @internal */
-  _rawModelValue: unknown;
+  _rawModelValue: TModel | undefined;
 
-  validators: ModelValidators;
+  validators: ModelValidators<TModel, TView>;
 
-  asyncValidators: AsyncModelValidators;
+  asyncValidators: AsyncModelValidators<TModel, TView>;
 
-  parsers: ((value: unknown) => unknown)[];
+  parsers: ModelParser<TModel, TView>[];
 
-  formatters: ((value: unknown) => unknown)[];
+  formatters: ModelFormatter<TModel, TView>[];
 
   viewChangeListeners: (() => void)[];
 
@@ -307,10 +327,10 @@ export class NgModelController {
   _lastValidityParentVersions: Record<string, number | undefined>;
 
   /** @internal */
-  _lastCommittedViewValue: unknown;
+  _lastCommittedViewValue: TView | undefined;
 
   /** @internal */
-  _pendingViewValue: unknown;
+  _pendingViewValue: TView | undefined;
 
   /** @internal */
   _modelExpression: string;
@@ -327,8 +347,8 @@ export class NgModelController {
     $interpolate: ng.InterpolateService,
   ) {
     this._isAnimated = hasAnimate($element);
-    this.viewValue = Number.NaN;
-    this.modelValue = Number.NaN;
+    this.viewValue = Number.NaN as TView;
+    this.modelValue = Number.NaN as TModel;
     this._rawModelValue = undefined; // stores the parsed modelValue / model set from scope regardless of validity.
     this.validators = {};
     this.asyncValidators = {};
@@ -898,7 +918,7 @@ export class NgModelController {
           // external validators (e.g. calculated on the server),
           // that just call setValidity and need the model value
           // to calculate their validity.
-          this.modelValue = allValid ? modelValue : undefined;
+          this.modelValue = allValid ? (modelValue as TModel) : undefined;
 
           if (this.modelValue !== prevModelValue) {
             this._writeModelToScope();
@@ -913,12 +933,15 @@ export class NgModelController {
    */
   /** @internal */
   _runValidators(
-    modelValue: unknown,
-    viewValue: unknown,
+    modelValue: TModel | undefined,
+    viewValue: TView | undefined,
     doneCallback: (allValid: boolean) => void,
   ) {
-    this._currentValidationRunId++;
-    const localValidationRunId = this._currentValidationRunId;
+    if (this._destroyed) return;
+    const localValidationRunId = this._cancelValidation();
+    const isCurrent = () =>
+      !this._destroyed && localValidationRunId === this._currentValidationRunId;
+    if (!isCurrent()) return;
 
     const processParseErrors = () => {
       const errorKey = this._parserName;
@@ -948,6 +971,7 @@ export class NgModelController {
       let syncValidatorsValid = true;
 
       for (const [name, validator] of entries(this.validators)) {
+        if (!isCurrent()) return false;
         const result = Boolean(validator(modelValue, viewValue));
 
         syncValidatorsValid = syncValidatorsValid && result;
@@ -966,12 +990,21 @@ export class NgModelController {
     };
 
     const processAsyncValidators = () => {
+      if (!isCurrent()) return;
+      if (keys(this.asyncValidators).length === 0) {
+        validationDone(true);
+        return;
+      }
       const validatorPromises: Promise<void>[] = [];
 
       let allValid = true;
+      const controller = new AbortController();
+      validationControllers.set(deProxy(this), controller);
+      const context: ModelValidationContext = { signal: controller.signal };
 
       entries(this.asyncValidators).forEach(([name, validator]) => {
-        const promise = validator(modelValue, viewValue);
+        if (!isCurrent()) return;
+        const promise = validator(modelValue, viewValue, context);
 
         if (!isPromiseLike(promise)) {
           throw ngModelError(
@@ -982,7 +1015,7 @@ export class NgModelController {
         }
         setValidity(name, undefined);
         validatorPromises.push(
-          promise.then(
+          Promise.resolve(promise).then(
             () => {
               setValidity(name, true);
 
@@ -1015,7 +1048,7 @@ export class NgModelController {
      * Applies a validator result if this is still the active validation run.
      */
     const setValidity = (name: string, isValid: boolean | undefined | null) => {
-      if (localValidationRunId === this._currentValidationRunId) {
+      if (isCurrent()) {
         this.setValidity(name, isValid);
       }
     };
@@ -1024,7 +1057,8 @@ export class NgModelController {
      * Finalizes the current validation run.
      */
     const validationDone = (allValid: boolean) => {
-      if (localValidationRunId === this._currentValidationRunId) {
+      if (isCurrent()) {
+        validationControllers.delete(deProxy(this));
         doneCallback(allValid);
       }
     };
@@ -1042,6 +1076,15 @@ export class NgModelController {
       return;
     }
     processAsyncValidators();
+  }
+
+  /** @internal Invalidates results before notifying abort listeners. */
+  _cancelValidation(): number {
+    const runId = ++this._currentValidationRunId;
+    const controller = validationControllers.get(deProxy(this));
+    validationControllers.delete(deProxy(this));
+    controller?.abort();
+    return runId;
   }
 
   /**
@@ -1088,7 +1131,7 @@ export class NgModelController {
 
   /** @internal */
   _parseAndValidate() {
-    let modelValue = this._lastCommittedViewValue;
+    let modelValue: unknown = this._lastCommittedViewValue;
 
     this._parserValid = isUndefined(modelValue) ? undefined : true;
 
@@ -1098,7 +1141,7 @@ export class NgModelController {
 
     if (this._parserValid) {
       for (let i = 0; i < this.parsers.length; i++) {
-        modelValue = this.parsers[i](modelValue);
+        modelValue = this.parsers[i](modelValue as TView);
 
         if (isUndefined(modelValue)) {
           this._parserValid = false;
@@ -1110,13 +1153,13 @@ export class NgModelController {
     if (isNumberNaN(this.modelValue)) {
       // this.modelValue has not been touched yet...
 
-      this.modelValue = this._ngModelGet(this._scope);
+      this.modelValue = this._ngModelGet(this._scope) as TModel | undefined;
     }
     const prevModelValue = this.modelValue;
 
     const allowInvalid = this.options.getOption("allowInvalid");
 
-    this._rawModelValue = modelValue;
+    this._rawModelValue = modelValue as TModel | undefined;
 
     const writeToModelIfNeeded = () => {
       if (this.modelValue != prevModelValue) {
@@ -1127,14 +1170,14 @@ export class NgModelController {
     };
 
     if (allowInvalid) {
-      this.modelValue = modelValue;
+      this.modelValue = modelValue as TModel | undefined;
       writeToModelIfNeeded();
     }
 
     // Pass the _lastCommittedViewValue here, because the cached viewValue might be out of date.
     // This can happen if e.g. setViewValue is called from inside a parser
     this._runValidators(
-      modelValue,
+      modelValue as TModel | undefined,
       this._lastCommittedViewValue,
       (allValid: boolean) => {
         if (!allowInvalid) {
@@ -1145,7 +1188,9 @@ export class NgModelController {
           // if (this.modelValue ?? this.modelValue[isProxySymbol]) {
           //   delete this.modelValue;
           // }
-          this.modelValue = allValid ? modelValue : undefined;
+          this.modelValue = allValid
+            ? (modelValue as TModel | undefined)
+            : undefined;
           writeToModelIfNeeded();
         }
       },
@@ -1212,7 +1257,7 @@ export class NgModelController {
    * @param  value value from the view.
    * @param  [trigger] Event that triggered the update.
    */
-  setViewValue(value: unknown, trigger?: string) {
+  setViewValue(value: TView, trigger?: string) {
     this.viewValue = value;
     this._pendingViewValue = value;
 
@@ -1425,13 +1470,13 @@ export class NgModelController {
 
     let idx = formatters.length;
 
-    let viewValue = this.modelValue;
+    let viewValue: unknown = this.modelValue;
 
     while (idx--) {
-      viewValue = formatters[idx](viewValue);
+      viewValue = formatters[idx](viewValue as TModel | undefined);
     }
 
-    return viewValue;
+    return viewValue as TView | undefined;
   }
 
   /**
@@ -1444,7 +1489,7 @@ export class NgModelController {
       return;
     }
 
-    this.modelValue = this._rawModelValue = modelValue;
+    this.modelValue = this._rawModelValue = modelValue as TModel | undefined;
     this._parserValid = undefined;
     this.processModelValue();
   }
@@ -1505,7 +1550,9 @@ export class NgModelController {
 /**
  * Watches the bound model expression and refreshes the controller when it changes externally.
  */
-function setupModelWatcher(ctrl: NgModelController): () => void {
+function setupModelWatcher<TModel, TView>(
+  ctrl: NgModelController<TModel, TView>,
+): () => void {
   // model -> value
   // Note: we cannot use a normal scope.watch as we want to detect the following:
   // 1. scope value is 'a'
@@ -1613,6 +1660,7 @@ export function ngModelDirective(): ng.Directive {
 
           scope.on("$destroy", () => {
             modelCtrl._destroyed = true;
+            modelCtrl._cancelValidation();
 
             if (modelCtrl._pendingDebounce) {
               clearTimeout(modelCtrl._pendingDebounce);

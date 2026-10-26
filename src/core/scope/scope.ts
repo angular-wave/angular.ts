@@ -20,11 +20,7 @@ import {
   simpleCompare,
 } from "../../shared/utils.ts";
 import { ASTType } from "../parse/ast-type.ts";
-import type {
-  ASTNode,
-  ExpressionNode,
-  LiteralNode,
-} from "../parse/ast/ast-node.ts";
+import type { ASTNode } from "../parse/ast/ast-node.ts";
 import type { CompiledExpression } from "../parse/parse.ts";
 import type {
   InstanceConstructor,
@@ -1167,11 +1163,12 @@ export function createRootScopeService(
 }
 
 function getNodeName(node: ASTNode | undefined): string | undefined {
-  return (node as LiteralNode | undefined)?._name;
+  return node?._type === ASTType._Identifier ? node._name : undefined;
 }
 
 function getNodePropertyName(node: ASTNode | undefined): string | undefined {
-  const property = (node as ExpressionNode | undefined)?._property;
+  const property =
+    node?._type === ASTType._MemberExpression ? node._property : undefined;
 
   return getNodeName(property);
 }
@@ -1221,7 +1218,7 @@ function getSimpleMemberExpression(node: ASTNode): string | undefined {
 
   const propertyName = getNodePropertyName(node);
 
-  if (!propertyName || (node as ExpressionNode)._computed) {
+  if (!propertyName || node._computed) {
     return undefined;
   }
 
@@ -1252,11 +1249,11 @@ function getDirectMemberWatchPlan(
   let plan: DirectMemberWatchPlan | false = false;
 
   if (node._type === ASTType._MemberExpression) {
-    const expressionNode = node as ExpressionNode;
+    const expressionNode = node;
     const objectNode = expressionNode._object;
     const key = getNodePropertyName(node);
     const parentKey =
-      objectNode?._type === ASTType._Identifier
+      objectNode._type === ASTType._Identifier
         ? getNodeName(objectNode)
         : undefined;
 
@@ -1432,19 +1429,17 @@ function collectWatchKeys(
   }
 
   if (node._type === ASTType._Literal) {
-    const literal = node as LiteralNode;
+    const literal = node;
 
     if (isString(literal._value)) {
       watchKeys.add(literal._value);
-    } else if (literal._name) {
-      watchKeys.add(literal._name);
     }
 
     return;
   }
 
   if (node._type === ASTType._MemberExpression) {
-    const member = node as ExpressionNode;
+    const member = node;
 
     const propertyKey = getNodePropertyName(member);
 
@@ -1512,7 +1507,7 @@ function addMemberExpressionDependency(
 
   addForeignWatchDescriptor(listener, memberExpression, key);
 
-  const parentKey = resolveWatchKey((node as ExpressionNode)._object);
+  const parentKey = resolveWatchKey(node._object);
 
   if (parentKey) {
     pushUniqueListenerKey(keySet, seenKeys, listener, parentKey);
@@ -1528,13 +1523,13 @@ function collectForeignWatchDescriptors(
   if (node._type === ASTType._MemberExpression) {
     addMemberExpressionDependency(node, listener, keySet, seenKeys);
     collectForeignWatchDescriptors(
-      assertInvariantDefined((node as ExpressionNode)._object),
+      assertInvariantDefined(node._object),
       listener,
       keySet,
       seenKeys,
     );
     collectForeignWatchDescriptors(
-      assertInvariantDefined((node as ExpressionNode)._property),
+      assertInvariantDefined(node._property),
       listener,
       keySet,
       seenKeys,
@@ -1546,9 +1541,9 @@ function collectForeignWatchDescriptors(
   if (node._type === ASTType._CallExpression) {
     const callee = node._callee;
 
-    if (callee?._type === ASTType._MemberExpression) {
+    if (callee._type === ASTType._MemberExpression) {
       addMemberExpressionDependency(
-        assertInvariantDefined((callee as ExpressionNode)._object),
+        assertInvariantDefined(callee._object),
         listener,
         keySet,
         seenKeys,
@@ -1635,7 +1630,7 @@ export function createScopeWatchPlan(
   watchProp: string,
 ): ScopeWatchPlan | undefined {
   const watchFn = parse(watchProp);
-  const expression = watchFn._decoratedNode._body[0]?._expression;
+  const expression = watchFn._decoratedNode._body.at(0)?._expression;
 
   if (!expression) {
     return undefined;
@@ -1687,7 +1682,7 @@ function collectExpressionListenerKeys(
   if (node._type === ASTType._CallExpression) {
     collectExpressionListenerKeys(node._callee, keySet, seenKeys, listener);
 
-    const callArguments = node._arguments ?? [];
+    const callArguments = node._arguments;
 
     for (let i = 0, l = callArguments.length; i < l; i++) {
       collectExpressionListenerKeys(
@@ -1707,7 +1702,7 @@ function collectExpressionListenerKeys(
 function getFilterInputWatchKeys(
   expr: ASTNode,
 ): (string | undefined)[] | undefined {
-  if (!(expr as ExpressionNode)._filter) {
+  if (expr._type !== ASTType._CallExpression || !expr._filter) {
     return undefined;
   }
 
@@ -4721,7 +4716,7 @@ export class Scope {
         : undefined;
     }
 
-    const expr = get._decoratedNode._body[0]?._expression;
+    const expr = get._decoratedNode._body.at(0)?._expression;
 
     if (!expr) {
       throw new Error("Unable to determine watched expression");
@@ -4939,7 +4934,7 @@ export class Scope {
 
       // 9
       case ASTType._MemberExpression: {
-        if ((expr as ExpressionNode)._computed) {
+        if (expr._computed) {
           collectExpressionListenerKeys(expr, keySet, seenKeys, listener);
           collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);
           if (keySet.length === 0) {
@@ -5005,7 +5000,9 @@ export class Scope {
             addForeignWatchDescriptor(listener, memberExpression, registerKey);
 
             const parentKey = resolveWatchKey(
-              (element as ExpressionNode)._object,
+              element._type === ASTType._MemberExpression
+                ? element._object
+                : undefined,
             );
 
             if (parentKey) {
@@ -5084,11 +5081,8 @@ export class Scope {
         this._bindForeignDependency(listener);
         break;
       }
-      case ASTType._Program:
-      case ASTType._ExpressionStatement:
       case ASTType._Literal:
       case ASTType._LocalsExpression:
-      case ASTType._Property:
       case ASTType._ThisExpression:
       case ASTType._NGValueParameter:
       case ASTType._UpdateExpression: {

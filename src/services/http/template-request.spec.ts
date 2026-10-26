@@ -37,6 +37,139 @@ describe("$templateRequest", () => {
     $http = injector.get("$http");
   });
 
+  describe("consumer cancellation", () => {
+    let cache, http, responses, request;
+    beforeEach(() => {
+      cache = new Map();
+      responses = [];
+      http = {
+        defaults: {},
+        get: jasmine.createSpy("get").and.callFake(() => {
+          const response = Promise.withResolvers();
+          responses.push(response);
+          return response.promise;
+        }),
+      };
+      request = createTemplateRequestService(cache, http, {}, (url) => url);
+    });
+
+    it("cancels one waiter while another receives the shared download", async () => {
+      const first = new AbortController(),
+        second = new AbortController();
+      const a = request("/shared", { signal: first.signal });
+      const b = request("/shared", { signal: second.signal });
+      await Promise.resolve();
+      const transport = http.get.calls.first().args[1].signal;
+      first.abort("replaced");
+      await expectAsync(a).toBeRejectedWith("replaced");
+      expect(transport.aborted).toBeFalse();
+      responses[0].resolve({ data: "shared" });
+      await expectAsync(b).toBeResolvedTo("shared");
+      expect(http.get).toHaveBeenCalledTimes(1);
+      second.abort();
+      expect(transport.aborted).toBeFalse();
+    });
+
+    it("aborts an abandoned download and preserves a newer request for the same URL", async () => {
+      const controller = new AbortController();
+      const obsolete = request("/retry", { signal: controller.signal });
+      await Promise.resolve();
+      const transport = http.get.calls.first().args[1].signal;
+      controller.abort();
+      await expectAsync(obsolete).toBeRejectedWith(controller.signal.reason);
+      expect(transport.aborted).toBeTrue();
+      const current = request("/retry");
+      await Promise.resolve();
+      // An uncooperative transport must neither cache stale content nor delete the new entry.
+      responses[0].resolve({ data: "stale" });
+      await wait();
+      expect(cache.has("/retry")).toBeFalse();
+      expect(request("/retry")).toBe(current);
+      responses[1].resolve({ data: "fresh" });
+      await expectAsync(current).toBeResolvedTo("fresh");
+      expect(cache.get("/retry")).toBe("fresh");
+    });
+
+    it("keeps an unsignalled consumer alive when its signalled peer cancels", async () => {
+      const controller = new AbortController();
+      const a = request("/persistent", { signal: controller.signal });
+      const b = request("/persistent");
+      await Promise.resolve();
+      controller.abort();
+      await expectAsync(a).toBeRejected();
+      expect(http.get.calls.first().args[1].signal.aborted).toBeFalse();
+      responses[0].resolve({ data: "persistent" });
+      await expectAsync(b).toBeResolvedTo("persistent");
+    });
+
+    it("does not start work for pre-aborted consumers or immediately abandoned requests", async () => {
+      const controller = new AbortController();
+      controller.abort("cancelled");
+      await expectAsync(
+        request("/pre", { signal: controller.signal }),
+      ).toBeRejectedWith("cancelled");
+      const immediate = new AbortController();
+      const pending = request("/immediate", { signal: immediate.signal });
+      immediate.abort();
+      await expectAsync(pending).toBeRejected();
+      await wait();
+      expect(http.get).not.toHaveBeenCalled();
+    });
+
+    it("preserves configured cancellation and rejects failed downloads for every waiter", async () => {
+      const global = new AbortController(),
+        consumer = new AbortController();
+      request = createTemplateRequestService(
+        cache,
+        http,
+        { signal: global.signal },
+        (url) => url,
+      );
+      const a = request("/failure", { signal: consumer.signal });
+      const b = request("/failure", { signal: new AbortController().signal });
+      await Promise.resolve();
+      const transport = http.get.calls.first().args[1].signal;
+      global.abort("global cancellation");
+      expect(transport.aborted).toBeTrue();
+      responses[0].reject("failure");
+      await expectAsync(a).toBeRejectedWith("failure");
+      await expectAsync(b).toBeRejectedWith("failure");
+    });
+
+    it("keeps cached templates available after configured HTTP cancellation", async () => {
+      const global = new AbortController();
+      global.abort();
+      request = createTemplateRequestService(
+        cache,
+        http,
+        { signal: global.signal },
+        (url) => url,
+      );
+      cache.set("/cached-global", "cached");
+      await expectAsync(request("/cached-global")).toBeResolvedTo("cached");
+      expect(http.get).not.toHaveBeenCalled();
+      const consumer = new AbortController();
+      consumer.abort("consumer cancelled");
+      await expectAsync(
+        request("/cached-global", { signal: consumer.signal }),
+      ).toBeRejectedWith("consumer cancelled");
+    });
+
+    it("serves cached templates to a signalled consumer and removes its abort listener", async () => {
+      const controller = new AbortController();
+      const remove = spyOn(
+        controller.signal,
+        "removeEventListener",
+      ).and.callThrough();
+      cache.set("/cached", "cached");
+      await expectAsync(
+        request("/cached", { signal: controller.signal }),
+      ).toBeResolvedTo("cached");
+      expect(http.get).not.toHaveBeenCalled();
+      expect(remove).toHaveBeenCalledWith("abort", jasmine.any(Function));
+    });
+  });
+
   it("keeps default options when configuration has no HTTP options", () => {
     const options = createTemplateRequestHttpOptions();
 
@@ -108,6 +241,7 @@ describe("$templateRequest", () => {
 
     expect(http.get).toHaveBeenCalledOnceWith("/template.html", {
       transformResponse: null,
+      signal: jasmine.any(AbortSignal),
     });
     expect(cache.get("/template.html")).toBe("template");
   });
@@ -124,6 +258,7 @@ describe("$templateRequest", () => {
 
     expect(http.get).toHaveBeenCalledOnceWith("/plain-template.html", {
       transformResponse: null,
+      signal: jasmine.any(AbortSignal),
     });
   });
 
@@ -186,6 +321,7 @@ describe("$templateRequest", () => {
         await Promise.resolve();
         expect($http.get).toHaveBeenCalledOnceWith("/public/test.html", {
           transformResponse: [],
+          signal: jasmine.any(AbortSignal),
           headers: { Accept: "text/html" },
         });
         await wait();
@@ -221,6 +357,7 @@ describe("$templateRequest", () => {
           "/public/test.html",
           {
             transformResponse: [someTransform],
+            signal: jasmine.any(AbortSignal),
             headers: { Accept: "moo" },
           },
         );
@@ -258,6 +395,7 @@ describe("$templateRequest", () => {
           "/public/test.html",
           {
             cache,
+            signal: jasmine.any(AbortSignal),
             transformResponse: [],
             headers: { Accept: "text/html" },
           },

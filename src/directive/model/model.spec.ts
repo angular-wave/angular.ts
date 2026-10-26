@@ -76,6 +76,110 @@ describe("ngModel", () => {
     dealoc(element);
   });
 
+  describe("async validation cancellation", () => {
+    it("aborts obsolete validators and ignores their late failures", async () => {
+      const runs = [];
+      ctrl.asyncValidators.remote = (model, view, { signal }) => {
+        const deferred = Promise.withResolvers();
+        runs.push({ signal, deferred });
+        return deferred.promise;
+      };
+      const done = jasmine.createSpy("done");
+      ctrl._runValidators("old", "old", done);
+      ctrl._runValidators("new", "new", done);
+      expect(runs[0].signal.aborted).toBeTrue();
+      expect(runs[1].signal.aborted).toBeFalse();
+      runs[0].deferred.reject("obsolete");
+      runs[1].deferred.resolve();
+      await wait();
+      expect(ctrl.error.remote).toBeUndefined();
+      expect(ctrl.pending).toBeUndefined();
+      expect(done).toHaveBeenCalledOnceWith(true);
+    });
+
+    it("preserves validation started synchronously by an abort listener", async () => {
+      const runs = [];
+      const done = jasmine.createSpy("done");
+      ctrl.asyncValidators.remote = (model, view, { signal }) => {
+        const deferred = Promise.withResolvers();
+        runs.push({ model, deferred, signal });
+        if (model === "first")
+          signal.addEventListener("abort", () =>
+            ctrl._runValidators("reentrant", "reentrant", done),
+          );
+        return deferred.promise;
+      };
+      ctrl._runValidators("first", "first", done);
+      ctrl._runValidators("superseded", "superseded", done);
+      expect(runs.map((run) => run.model)).toEqual(["first", "reentrant"]);
+      expect(runs[1].signal.aborted).toBeFalse();
+      runs[0].deferred.resolve();
+      runs[1].deferred.resolve();
+      await wait();
+      expect(done).toHaveBeenCalledOnceWith(true);
+    });
+
+    it("stops invoking obsolete sync and async validators after reentrant validation", async () => {
+      const done = jasmine.createSpy("done");
+      const syncLast = jasmine.createSpy("syncLast").and.returnValue(true);
+      ctrl.validators.first = (model) => {
+        if (model === "outer-sync")
+          ctrl._runValidators("inner-sync", "inner-sync", done);
+        return true;
+      };
+      ctrl.validators.last = syncLast;
+      ctrl._runValidators("outer-sync", "outer-sync", done);
+      expect(syncLast).toHaveBeenCalledTimes(1);
+      expect(done).toHaveBeenCalledOnceWith(true);
+      done.calls.reset();
+      ctrl.validators = {};
+      const runs = [];
+      const asyncLast = jasmine.createSpy("asyncLast").and.resolveTo();
+      ctrl.asyncValidators.first = (model, view, { signal }) => {
+        runs.push(signal);
+        if (model === "outer-async")
+          ctrl._runValidators("inner-async", "inner-async", done);
+        return Promise.resolve();
+      };
+      ctrl.asyncValidators.last = asyncLast;
+      ctrl._runValidators("outer-async", "outer-async", done);
+      await wait();
+      expect(runs[0].aborted).toBeTrue();
+      expect(runs[1].aborted).toBeFalse();
+      expect(asyncLast).toHaveBeenCalledTimes(1);
+      expect(done).toHaveBeenCalledOnceWith(true);
+    });
+
+    it("does not start stale async work after the last sync validator reenters", () => {
+      const done = jasmine.createSpy("done");
+      ctrl.validators.last = (model) => {
+        if (model === "outer") ctrl._runValidators("inner", "inner", done);
+        return true;
+      };
+      ctrl._runValidators("outer", "outer", done);
+      expect(done).toHaveBeenCalledOnceWith(true);
+    });
+
+    it("cancels pending validation when a linked control is destroyed", async () => {
+      const input = $compile('<input ng-model="name">')(scope);
+      const control = getController(input, "ngModel");
+      let signal;
+      control.asyncValidators.remote = (model, view, context) => {
+        signal = context.signal;
+        return new Promise(() => {});
+      };
+      control.setViewValue("pending");
+      expect(signal.aborted).toBeFalse();
+      scope.destroy();
+      expect(control._destroyed).toBeTrue();
+      expect(signal.aborted).toBeTrue();
+      expect(errors).toEqual([]);
+      const done = jasmine.createSpy("done");
+      control._runValidators("ignored", "ignored", done);
+      expect(done).not.toHaveBeenCalled();
+    });
+  });
+
   it("should add initial control state classes during compile", () => {
     const directive = ngModelDirective();
 

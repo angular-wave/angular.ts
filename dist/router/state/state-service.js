@@ -75,6 +75,7 @@ class StateRuntime {
     }
     /** @internal */
     _destroyRuntime() {
+        this._routerState._transition?.abort();
         this._prefetchRootDisposer?.();
         this._prefetchRootDisposer = undefined;
         this._prefetches.clear();

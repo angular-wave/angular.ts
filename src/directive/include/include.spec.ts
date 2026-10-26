@@ -49,6 +49,41 @@ describe("ngInclude", () => {
       dealoc(element);
     });
 
+    it("cancels obsolete and destroyed includes without reporting expected aborts", async () => {
+      const root = document.createElement("div");
+      const localAngular = new Angular();
+      const requests = [];
+      const errors = [];
+      localAngular
+        .createModule("cancelIncludes", [])
+        .value(
+          "$templateRequest",
+          (url, { signal }) =>
+            new Promise((resolve, reject) => {
+              requests.push({ url, signal, resolve });
+              signal.addEventListener("abort", () => reject(signal.reason), {
+                once: true,
+              });
+            }),
+        )
+        .value("$exceptionHandler", (error) => errors.push(error));
+      const localInjector = localAngular.bootstrap(root, ["cancelIncludes"]);
+      const localScope = localInjector.get("$rootScope");
+      localInjector.get("$compile")('<div ng-include="url"></div>')(localScope);
+      localScope.url = "first";
+      await wait();
+      localScope.url = "second";
+      await wait();
+      expect(requests[0].signal.aborted).toBeTrue();
+      expect(requests.at(-1).url).toBe("second");
+      expect(requests.at(-1).signal.aborted).toBeFalse();
+      localScope.destroy();
+      await wait();
+      expect(requests.at(-1).signal.aborted).toBeTrue();
+      expect(errors).toEqual([]);
+      localAngular._composition.destroy();
+    });
+
     it("should trust and use literal urls", async () => {
       const element = createElementFromHTML(
         "<div><div ng-include=\"'/public/test.html'\"></div></div>",
@@ -146,6 +181,7 @@ describe("ngInclude", () => {
         };
         const scope = {
           _destroyed: false,
+          on: jasmine.createSpy("on"),
           emit: jasmine.createSpy("emit"),
           new: () => childScope,
           watch(_expression, listener) {

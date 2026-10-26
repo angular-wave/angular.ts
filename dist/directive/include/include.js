@@ -44,6 +44,8 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                     }
                 }
                 let changeCounter = 0;
+                let requestController;
+                scope.on("$destroy", () => requestController?.abort());
                 let currentScope;
                 let previousElement;
                 let previousFragment;
@@ -100,9 +102,12 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                         }
                     };
                     const thisChangeId = ++changeCounter;
+                    requestController?.abort();
+                    requestController = undefined;
                     if (src) {
                         scope.emit("$includeContentRequested", src);
-                        $templateRequest(src)
+                        const controller = (requestController = new AbortController());
+                        $templateRequest(src, { signal: controller.signal })
                             .then((response) => {
                             if (scope._destroyed)
                                 return;
@@ -137,7 +142,7 @@ function ngIncludeDirective($templateRequest, $anchorScroll, $injector, $excepti
                             return undefined;
                         })
                             .catch((err) => {
-                            if (scope._destroyed)
+                            if (scope._destroyed || controller.signal.aborted)
                                 return undefined;
                             if (thisChangeId === changeCounter) {
                                 cleanupLastIncludeContent();

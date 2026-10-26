@@ -53,7 +53,13 @@ type WorkflowWorkerMessage =
   WorkflowWorkerRequest | WorkflowWorkerResponse[js.Any] | WorkflowWorkerSnapshotMessage
 type Validator = js.Function1[js.Any, Boolean]
 type ModelValidator = js.Function2[js.Any, js.Any, js.Any]
-type AsyncModelValidator = js.Function2[js.Any, js.Any, js.Promise[js.Any]]
+type AsyncModelValidator = js.Function3[js.Any, js.Any, ModelValidationContext, js.Promise[js.Any]]
+type ModelValidators[TModel, TView] = js.Dictionary[js.Function2[js.UndefOr[TModel], js.UndefOr[TView], js.Any]]
+type AsyncModelValidators[TModel, TView] = js.Dictionary[js.Function3[js.UndefOr[TModel], js.UndefOr[TView], ModelValidationContext, js.Promise[js.Any]]]
+
+@js.native
+trait ModelValidationContext extends js.Object:
+  val signal: dom.AbortSignal = js.native
 type ModelParser = js.Function1[js.Any, js.Any]
 type ModelFormatter = js.Function1[js.Any, js.Any]
 type ModelViewChangeListener = js.Function0[Unit]
@@ -967,13 +973,13 @@ final case class ErrorFormattingConfig(
     )
 
 @js.native
-trait NgModelController extends js.Object:
-  var viewValue: js.Any = js.native
-  var modelValue: js.Any = js.native
-  val validators: js.Dictionary[ModelValidator] = js.native
-  val asyncValidators: js.Dictionary[AsyncModelValidator] = js.native
-  val parsers: js.Array[ModelParser] = js.native
-  val formatters: js.Array[ModelFormatter] = js.native
+trait TypedNgModelController[TModel, TView] extends js.Object:
+  var viewValue: js.UndefOr[TView] = js.native
+  var modelValue: js.UndefOr[TModel] = js.native
+  val validators: ModelValidators[TModel, TView] = js.native
+  val asyncValidators: AsyncModelValidators[TModel, TView] = js.native
+  val parsers: js.Array[js.Function1[TView, js.UndefOr[TModel]]] = js.native
+  val formatters: js.Array[js.Function1[js.UndefOr[TModel], TView]] = js.native
   val viewChangeListeners: js.Array[ModelViewChangeListener] = js.native
   val untouched: Boolean = js.native
   val touched: Boolean = js.native
@@ -1003,10 +1009,12 @@ trait NgModelController extends js.Object:
   def rollbackViewValue(): Unit = js.native
   def validate(): Unit = js.native
   def commitViewValue(): Unit = js.native
-  def setViewValue(value: js.Any): Unit = js.native
-  def setViewValue(value: js.Any, trigger: String): Unit = js.native
+  def setViewValue(value: TView): Unit = js.native
+  def setViewValue(value: TView, trigger: String): Unit = js.native
   def overrideModelOptions(options: js.Object): Unit = js.native
   def processModelValue(): Unit = js.native
+
+type NgModelController = TypedNgModelController[js.Any, js.Any]
 
 @js.native
 trait PolicyContext extends js.Object:
@@ -3134,7 +3142,18 @@ trait AnchorScrollService extends js.Object:
   def apply(hashOrElement: String | Double | dom.HTMLElement): Unit = js.native
 
 type TemplateCacheService = js.Map[String, String]
-type TemplateRequestService = js.Function1[String, js.Promise[String]]
+@js.native
+trait TemplateRequestOptions extends js.Object:
+  var signal: js.UndefOr[dom.AbortSignal] = js.native
+
+object TemplateRequestOptions:
+  def apply(signal: dom.AbortSignal): TemplateRequestOptions =
+    JsObjectBuilder("signal" -> signal).asInstanceOf[TemplateRequestOptions]
+
+@js.native
+trait TemplateRequestService extends js.Function:
+  def apply(url: String): js.Promise[String] = js.native
+  def apply(url: String, options: TemplateRequestOptions): js.Promise[String] = js.native
 
 enum HttpMethod(val value: String):
   case Get extends HttpMethod("GET")

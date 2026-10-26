@@ -144,3 +144,17 @@ the raw JavaScript proxy by name for direct interop. Lookups lazily initialize
 the registered model and share its instance with dependency injection. Writes
 through the proxy update observing views. Unknown names, ordinary services, and
 uninitialized or destroyed apps throw runtime errors.
+
+## Typed form controls and cancellation
+
+`NgModelController<TModel, TView>` exposes typed model and view values. Use
+`addParser`, `addFormatter`, `setValidator`, and `setAsyncValidator` to register
+callbacks with those domains. `addParser` converts a null result into a native
+`undefined` parse failure. Async callbacks receive a `ModelValidationContext`
+whose native `AbortSignal` can be passed to HTTP requests. A newer validation run
+or destruction of the linked control aborts that signal. Existing raw pipeline
+and validator accessors remain available, and HTML binding syntax is unchanged.
+
+Pass `TemplateRequestOptions(signal: signal)` as the template service's optional
+second argument to cancel one consumer without aborting other consumers of the
+shared template download.

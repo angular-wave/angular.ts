@@ -7,6 +7,8 @@ import { nullFormCtrl, cachedToggleClass, PENDING_CLASS } from '../form/form.js'
 import { defaultModelOptions } from '../model-options/model-options.js';
 
 const VALIDITY_PARENT_VERSION_MULTIPLIER = 33;
+// Native cancellation handles must stay outside scope proxy storage.
+const validationControllers = new WeakMap();
 const ngModelError = createErrorFactory("ngModel");
 function readModelAttr(element, normalizedName) {
     return element instanceof Element
@@ -571,8 +573,12 @@ class NgModelController {
      */
     /** @internal */
     _runValidators(modelValue, viewValue, doneCallback) {
-        this._currentValidationRunId++;
-        const localValidationRunId = this._currentValidationRunId;
+        if (this._destroyed)
+            return;
+        const localValidationRunId = this._cancelValidation();
+        const isCurrent = () => !this._destroyed && localValidationRunId === this._currentValidationRunId;
+        if (!isCurrent())
+            return;
         const processParseErrors = () => {
             const errorKey = this._parserName;
             if (isUndefined(this._parserValid)) {
@@ -596,6 +602,8 @@ class NgModelController {
         const processSyncValidators = () => {
             let syncValidatorsValid = true;
             for (const [name, validator] of entries(this.validators)) {
+                if (!isCurrent())
+                    return false;
                 const result = Boolean(validator(modelValue, viewValue));
                 syncValidatorsValid = syncValidatorsValid && result;
                 setValidity(name, result);
@@ -609,15 +617,26 @@ class NgModelController {
             return true;
         };
         const processAsyncValidators = () => {
+            if (!isCurrent())
+                return;
+            if (keys(this.asyncValidators).length === 0) {
+                validationDone(true);
+                return;
+            }
             const validatorPromises = [];
             let allValid = true;
+            const controller = new AbortController();
+            validationControllers.set(deProxy(this), controller);
+            const context = { signal: controller.signal };
             entries(this.asyncValidators).forEach(([name, validator]) => {
-                const promise = validator(modelValue, viewValue);
+                if (!isCurrent())
+                    return;
+                const promise = validator(modelValue, viewValue, context);
                 if (!isPromiseLike(promise)) {
                     throw ngModelError("nopromise", "Expected asynchronous validator to return a promise but got '{0}' instead.", promise);
                 }
                 setValidity(name, undefined);
-                validatorPromises.push(promise.then(() => {
+                validatorPromises.push(Promise.resolve(promise).then(() => {
                     setValidity(name, true);
                     return undefined;
                 }, () => {
@@ -642,7 +661,7 @@ class NgModelController {
          * Applies a validator result if this is still the active validation run.
          */
         const setValidity = (name, isValid) => {
-            if (localValidationRunId === this._currentValidationRunId) {
+            if (isCurrent()) {
                 this.setValidity(name, isValid);
             }
         };
@@ -650,7 +669,8 @@ class NgModelController {
          * Finalizes the current validation run.
          */
         const validationDone = (allValid) => {
-            if (localValidationRunId === this._currentValidationRunId) {
+            if (isCurrent()) {
+                validationControllers.delete(deProxy(this));
                 doneCallback(allValid);
             }
         };
@@ -664,6 +684,14 @@ class NgModelController {
             return;
         }
         processAsyncValidators();
+    }
+    /** @internal Invalidates results before notifying abort listeners. */
+    _cancelValidation() {
+        const runId = ++this._currentValidationRunId;
+        const controller = validationControllers.get(deProxy(this));
+        validationControllers.delete(deProxy(this));
+        controller?.abort();
+        return runId;
     }
     /**
      * Commit a pending update to the `modelValue`.
@@ -742,7 +770,9 @@ class NgModelController {
                 // if (this.modelValue ?? this.modelValue[isProxySymbol]) {
                 //   delete this.modelValue;
                 // }
-                this.modelValue = allValid ? modelValue : undefined;
+                this.modelValue = allValid
+                    ? modelValue
+                    : undefined;
                 writeToModelIfNeeded();
             }
         });
@@ -1144,6 +1174,7 @@ function ngModelDirective() {
                         }));
                     scope.on("$destroy", () => {
                         modelCtrl._destroyed = true;
+                        modelCtrl._cancelValidation();
                         if (modelCtrl._pendingDebounce) {
                             clearTimeout(modelCtrl._pendingDebounce);
                             modelCtrl._pendingDebounce = undefined;

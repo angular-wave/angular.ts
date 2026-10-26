@@ -12,7 +12,16 @@ import { ASTType } from "./ast-type.ts";
 import type {
   ASTNode,
   BodyNode,
+  ExpressionStatementNode,
   ExpressionNode,
+  ArrayNode,
+  AssignmentNode,
+  AssignableNode,
+  CallNode,
+  MemberNode,
+  UpdateNode,
+  IdentifierNode,
+  BinaryNode,
   LiteralNode,
   ObjectNode,
   ObjectPropertyNode,
@@ -138,12 +147,12 @@ export class ASTInterpreter {
    * @returns {CompiledExpression}
    */
   /** @internal */
-  _compile(ast: ASTNode): CompiledExpression {
+  _compile(ast: BodyNode): CompiledExpression {
     const decoratedNode = findConstantAndWatchExpressions(ast, this._$filter);
 
-    const { _body: body } = decoratedNode as BodyNode;
+    const { _body: body } = decoratedNode;
 
-    const assignable = assignableAST(decoratedNode as BodyNode);
+    const assignable = assignableAST(decoratedNode);
 
     let assign: CompiledExpressionFunction | undefined;
 
@@ -174,9 +183,7 @@ export class ASTInterpreter {
       const expression = body[i];
 
       expressions.push(
-        this._recurse(
-          assertInvariantDefined((expression as ExpressionNode)._expression),
-        ),
+        this._recurse(assertInvariantDefined(expression._expression)),
       );
     }
 
@@ -207,7 +214,7 @@ export class ASTInterpreter {
       fn._inputs = inputs;
     }
 
-    fn._decoratedNode = decoratedNode as BodyNode;
+    fn._decoratedNode = decoratedNode;
 
     return fn;
   }
@@ -238,13 +245,11 @@ export class ASTInterpreter {
 
     switch (ast._type) {
       case ASTType._Literal:
-        return ASTInterpreter._value((ast as LiteralNode)._value, context);
+        return ASTInterpreter._value(ast._value, context);
       case ASTType._UnaryExpression: {
-        const unaryRight = this._recurse(
-          assertInvariantDefined((ast as ExpressionNode)._argument),
-        );
+        const unaryRight = this._recurse(assertInvariantDefined(ast._argument));
 
-        return self[`unary${String(ast._operator)}`](unaryRight, context);
+        return self[`unary${ast._operator}`](unaryRight, context);
       }
       case ASTType._BinaryExpression: {
         if (!context) {
@@ -255,18 +260,10 @@ export class ASTInterpreter {
           }
         }
 
-        const binaryLeft = this._recurse(
-          assertInvariantDefined((ast as ExpressionNode)._left),
-        );
-        const binaryRight = this._recurse(
-          assertInvariantDefined((ast as ExpressionNode)._right),
-        );
+        const binaryLeft = this._recurse(assertInvariantDefined(ast._left));
+        const binaryRight = this._recurse(assertInvariantDefined(ast._right));
 
-        return self[`binary${String(ast._operator)}`](
-          binaryLeft,
-          binaryRight,
-          context,
-        );
+        return self[`binary${ast._operator}`](binaryLeft, binaryRight, context);
       }
       case ASTType._LogicalExpression: {
         if (!context) {
@@ -277,14 +274,10 @@ export class ASTInterpreter {
           }
         }
 
-        const logicalLeft = this._recurse(
-          assertInvariantDefined((ast as ExpressionNode)._left),
-        );
-        const logicalRight = this._recurse(
-          assertInvariantDefined((ast as ExpressionNode)._right),
-        );
+        const logicalLeft = this._recurse(assertInvariantDefined(ast._left));
+        const logicalRight = this._recurse(assertInvariantDefined(ast._right));
 
-        return self[`binary${String(ast._operator)}`](
+        return self[`binary${ast._operator}`](
           logicalLeft,
           logicalRight,
           context,
@@ -292,38 +285,27 @@ export class ASTInterpreter {
       }
       case ASTType._ConditionalExpression:
         return ASTInterpreter["ternary?:"](
-          this._recurse(assertInvariantDefined((ast as ExpressionNode)._test)),
-          this._recurse(
-            assertInvariantDefined((ast as ExpressionNode)._alternate),
-          ),
-          this._recurse(
-            assertInvariantDefined((ast as ExpressionNode)._consequent),
-          ),
+          this._recurse(assertInvariantDefined(ast._test)),
+          this._recurse(assertInvariantDefined(ast._alternate)),
+          this._recurse(assertInvariantDefined(ast._consequent)),
           context,
         );
       case ASTType._Identifier:
         return ASTInterpreter._identifier(
-          assertInvariantDefined((ast as LiteralNode)._name),
+          assertInvariantDefined(ast._name),
           context,
           create,
         );
       case ASTType._MemberExpression:
-        return this._compileMemberExpression(
-          ast as ExpressionNode,
-          context,
-          create,
-        );
+        return this._compileMemberExpression(ast, context, create);
       case ASTType._CallExpression:
-        return this._compileCallExpression(ast as ExpressionNode, context);
+        return this._compileCallExpression(ast, context);
       case ASTType._AssignmentExpression:
-        return this._compileAssignmentExpression(
-          ast as ExpressionNode,
-          context,
-        );
+        return this._compileAssignmentExpression(ast, context);
       case ASTType._ArrayExpression:
-        return this._compileArrayExpression(ast as ExpressionNode, context);
+        return this._compileArrayExpression(ast, context);
       case ASTType._ObjectExpression:
-        return this._compileObjectExpression(ast as ObjectNode, context);
+        return this._compileObjectExpression(ast, context);
       case ASTType._ThisExpression:
         return (scope) => (context ? { value: scope } : getProxyTarget(scope));
       case ASTType._LocalsExpression:
@@ -333,7 +315,7 @@ export class ASTInterpreter {
           context ? { value: assign } : assign;
 
       case ASTType._UpdateExpression: {
-        return this._compileUpdateExpression(ast as ExpressionNode, context);
+        return this._compileUpdateExpression(ast, context);
       }
       case ASTType._Program:
       case ASTType._ExpressionStatement:
@@ -341,15 +323,18 @@ export class ASTInterpreter {
         throw new Error(`Unknown AST type ${String(ast._type)}`);
     }
 
-    throw new Error(`Unknown AST type ${String(ast._type)}`);
+    const exhaustive: never = ast;
+    throw new Error(
+      `Unknown AST type ${String((exhaustive as ASTNode)._type)}`,
+    );
   }
 
   /** @internal */
   _compileCallExpression(
-    ast: ExpressionNode,
+    ast: CallNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
-    const callArguments = ast._arguments ?? [];
+    const callArguments = ast._arguments;
 
     const args: CompiledExpressionFunction[] = [];
 
@@ -367,7 +352,7 @@ export class ASTInterpreter {
 
     if (!context && args.length === 2 && callee._type === ASTType._Identifier) {
       return ASTInterpreter._compileIdentifierTwoArgCall(
-        assertInvariantDefined((callee as LiteralNode)._name),
+        assertInvariantDefined(callee._name),
         callArguments,
         args,
       );
@@ -608,13 +593,13 @@ export class ASTInterpreter {
 
   /** @internal */
   _compileFilterCall(
-    ast: ExpressionNode,
+    ast: CallNode,
     callArguments: ASTNode[],
     args: CompiledExpressionFunction[],
     context?: LinkContext,
   ): CompiledExpressionFunction {
     const filter = this._$filter(
-      assertInvariantDefined((ast._callee as LiteralNode)._name),
+      assertInvariantDefined((ast._callee as IdentifierNode)._name),
     );
 
     if (args.length === 1) {
@@ -714,7 +699,7 @@ export class ASTInterpreter {
 
   /** @internal */
   _compileMemberExpression(
-    ast: ExpressionNode,
+    ast: MemberNode,
     context?: LinkContext,
     create?: CreateFlag,
   ): CompiledExpressionFunction {
@@ -735,7 +720,7 @@ export class ASTInterpreter {
 
     return ASTInterpreter._nonComputedMember(
       left,
-      assertInvariantDefined((ast._property as LiteralNode)._name),
+      assertInvariantDefined((ast._property as IdentifierNode)._name),
       context,
       create,
     );
@@ -743,7 +728,7 @@ export class ASTInterpreter {
 
   /** @internal */
   _compileAssignmentExpression(
-    ast: ExpressionNode,
+    ast: AssignmentNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
     const left = this._recurse(assertInvariantDefined(ast._left), true, 1);
@@ -773,12 +758,12 @@ export class ASTInterpreter {
 
   /** @internal */
   _compileArrayExpression(
-    ast: ExpressionNode,
+    ast: ArrayNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
     const args: CompiledExpressionFunction[] = [];
 
-    const elements = ast._elements ?? [];
+    const elements = ast._elements;
 
     for (let i = 0, l = elements.length; i < l; i++) {
       args.push(this._recurse(elements[i]));
@@ -797,14 +782,14 @@ export class ASTInterpreter {
 
   /** @internal */
   _compileUpdateExpression(
-    ast: ExpressionNode,
+    ast: UpdateNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
     const ref = this._recurse(assertInvariantDefined(ast._argument), true, 1);
 
     const op = ast._operator as "++" | "--";
 
-    const prefix = !!ast._prefix;
+    const prefix = ast._prefix;
 
     return (scope, locals, assign) => {
       const lhs = getExpressionReference(ref(scope, locals, assign));
@@ -838,7 +823,7 @@ export class ASTInterpreter {
     ast: ObjectNode,
     context?: LinkContext,
   ): CompiledExpressionFunction {
-    const properties = ast._properties as ObjectPropertyNode[];
+    const properties = ast._properties;
 
     if (!context && properties.length === 1 && !properties[0]._computed) {
       return this._compileSinglePropertyObject(properties[0]);
@@ -1536,26 +1521,23 @@ export class ASTInterpreter {
 
 function getNonComputedPath(ast: ASTNode): string[] | undefined {
   if (ast._type === ASTType._Identifier) {
-    return [assertInvariantDefined((ast as LiteralNode)._name)];
+    return [assertInvariantDefined(ast._name)];
   }
 
   if (ast._type !== ASTType._MemberExpression || ast._computed) {
     return undefined;
   }
 
-  const member = ast as ExpressionNode;
+  const member = ast;
 
   const memberObject = assertInvariantDefined(member._object);
 
   const memberProperty = assertInvariantDefined(
-    (member._property as LiteralNode)._name,
+    (member._property as IdentifierNode)._name,
   );
 
   if (memberObject._type === ASTType._Identifier) {
-    return [
-      assertInvariantDefined((memberObject as LiteralNode)._name),
-      memberProperty,
-    ];
+    return [assertInvariantDefined(memberObject._name), memberProperty];
   }
 
   const path: string[] = [];
@@ -1563,19 +1545,15 @@ function getNonComputedPath(ast: ASTNode): string[] | undefined {
   let node: ASTNode | undefined = ast;
 
   while (node._type === ASTType._MemberExpression && !node._computed) {
-    path.push(
-      assertInvariantDefined(
-        ((node as ExpressionNode)._property as LiteralNode)._name,
-      ),
-    );
-    node = assertInvariantDefined((node as ExpressionNode)._object);
+    path.push(assertInvariantDefined((node._property as IdentifierNode)._name));
+    node = assertInvariantDefined(node._object);
   }
 
   if (node._type !== ASTType._Identifier) {
     return undefined;
   }
 
-  path.push(assertInvariantDefined((node as LiteralNode)._name));
+  path.push(assertInvariantDefined(node._name));
 
   path.reverse();
 
@@ -1584,7 +1562,7 @@ function getNonComputedPath(ast: ASTNode): string[] | undefined {
 
 function getObjectPropertyKey(property: ObjectPropertyNode): string {
   return property._key._type === ASTType._Identifier
-    ? assertInvariantDefined((property._key as LiteralNode)._name)
+    ? assertInvariantDefined(property._key._name)
     : String((property._key as LiteralNode)._value);
 }
 
@@ -1763,24 +1741,22 @@ function createPathGetter(path: string[]): CompiledExpressionFunction {
   };
 }
 
-function getPathBinary(ast: ASTNode): CompiledExpressionFunction | undefined {
+function getPathBinary(
+  ast: BinaryNode,
+): CompiledExpressionFunction | undefined {
   const operator = ast._operator;
 
   if (operator !== "===" && operator !== "!==") {
     return undefined;
   }
 
-  const leftPath = getNonComputedPath(
-    assertInvariantDefined((ast as ExpressionNode)._left),
-  );
+  const leftPath = getNonComputedPath(assertInvariantDefined(ast._left));
 
   if (!leftPath) {
     return undefined;
   }
 
-  const rightPath = getNonComputedPath(
-    assertInvariantDefined((ast as ExpressionNode)._right),
-  );
+  const rightPath = getNonComputedPath(assertInvariantDefined(ast._right));
 
   if (!rightPath) {
     return undefined;
@@ -1795,24 +1771,22 @@ function getPathBinary(ast: ASTNode): CompiledExpressionFunction | undefined {
     : (scope, locals) => left(scope, locals) !== right(scope, locals);
 }
 
-function getPathLogical(ast: ASTNode): CompiledExpressionFunction | undefined {
+function getPathLogical(
+  ast: BinaryNode,
+): CompiledExpressionFunction | undefined {
   const operator = ast._operator;
 
   if (operator !== "&&" && operator !== "||" && operator !== "??") {
     return undefined;
   }
 
-  const leftPath = getNonComputedPath(
-    assertInvariantDefined((ast as ExpressionNode)._left),
-  );
+  const leftPath = getNonComputedPath(assertInvariantDefined(ast._left));
 
   if (!leftPath) {
     return undefined;
   }
 
-  const rightPath = getNonComputedPath(
-    assertInvariantDefined((ast as ExpressionNode)._right),
-  );
+  const rightPath = getNonComputedPath(assertInvariantDefined(ast._right));
 
   if (!rightPath) {
     return undefined;
@@ -1857,18 +1831,16 @@ function getPathLogical(ast: ASTNode): CompiledExpressionFunction | undefined {
  * @returns {ASTNode} The same node, now decorated
  * @throws {Error} If the AST type is unknown
  */
-function findConstantAndWatchExpressions(
-  ast: ASTNode,
+function findConstantAndWatchExpressions<T extends ASTNode>(
+  ast: T,
   $filter: ng.FilterService,
   parentIsPure?: boolean | 1 | 2,
-): WatchNode {
+): T {
   let allConstants: boolean | undefined;
 
   let argsToWatch: ASTNode[] = [];
 
   let isFilter: boolean | undefined;
-
-  const decoratedNode = ast as WatchNode;
 
   let decoratedLeft: WatchNode;
 
@@ -1886,133 +1858,131 @@ function findConstantAndWatchExpressions(
 
   let decoratedKey: WatchNode;
 
-  const astIsPure = (decoratedNode._isPure = !!isPure(ast, parentIsPure));
+  const astIsPure = (ast._isPure = !!isPure(ast, parentIsPure));
 
   switch (ast._type) {
     case ASTType._Program: {
       allConstants = true;
-      const body = (decoratedNode as BodyNode)._body;
+      const body = ast._body;
 
       for (let i = 0, l = body.length; i < l; i++) {
         const expr = body[i];
 
         const decorated = findConstantAndWatchExpressions(
-          assertInvariantDefined((expr as ExpressionNode)._expression),
+          assertInvariantDefined(expr._expression),
           $filter,
           astIsPure,
         );
 
         allConstants = allConstants && decorated._constant;
       }
-      decoratedNode._constant = allConstants;
+      ast._constant = allConstants;
 
-      return decoratedNode;
+      return ast;
     }
     case ASTType._Literal:
-      decoratedNode._constant = true;
-      decoratedNode._toWatch = [];
+      ast._constant = true;
+      ast._toWatch = [];
 
-      return decoratedNode;
+      return ast;
     case ASTType._UnaryExpression: {
       const decorated = findConstantAndWatchExpressions(
-        assertInvariantDefined((decoratedNode as ExpressionNode)._argument),
+        assertInvariantDefined(ast._argument),
         $filter,
         astIsPure,
       );
 
-      decoratedNode._constant = decorated._constant;
-      decoratedNode._toWatch = decorated._toWatch ?? [];
+      ast._constant = decorated._constant;
+      ast._toWatch = decorated._toWatch;
 
-      return decoratedNode;
+      return ast;
     }
     case ASTType._BinaryExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        assertInvariantDefined(decoratedNode._left),
+        assertInvariantDefined(ast._left),
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        assertInvariantDefined((decoratedNode as ExpressionNode)._right),
+        assertInvariantDefined(ast._right),
         $filter,
         astIsPure,
       );
-      decoratedNode._constant =
-        decoratedLeft._constant && decoratedRight._constant;
+      ast._constant = decoratedLeft._constant && decoratedRight._constant;
       argsToWatch = [];
       appendWatchNodes(argsToWatch, decoratedLeft._toWatch);
       appendWatchNodes(argsToWatch, decoratedRight._toWatch);
-      decoratedNode._toWatch = argsToWatch;
+      ast._toWatch = argsToWatch;
 
-      return decoratedNode;
+      return ast;
     case ASTType._LogicalExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        assertInvariantDefined(decoratedNode._left),
+        assertInvariantDefined(ast._left),
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        assertInvariantDefined((decoratedNode as ExpressionNode)._right),
+        assertInvariantDefined(ast._right),
         $filter,
         astIsPure,
       );
-      decoratedNode._constant =
-        decoratedLeft._constant && decoratedRight._constant;
-      decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
+      ast._constant = decoratedLeft._constant && decoratedRight._constant;
+      ast._toWatch = ast._constant ? [] : [ast];
 
-      return decoratedNode;
+      return ast;
     case ASTType._ConditionalExpression:
       decoratedTest = findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._test),
+        assertInvariantDefined(ast._test),
         $filter,
         astIsPure,
       );
       decoratedAlternate = findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._alternate),
+        assertInvariantDefined(ast._alternate),
         $filter,
         astIsPure,
       );
       decoratedConsequent = findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._consequent),
+        assertInvariantDefined(ast._consequent),
         $filter,
         astIsPure,
       );
-      decoratedNode._constant =
+      ast._constant =
         decoratedTest._constant &&
         decoratedAlternate._constant &&
         decoratedConsequent._constant;
-      decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
+      ast._toWatch = ast._constant ? [] : [ast];
 
-      return decoratedNode;
+      return ast;
     case ASTType._Identifier:
-      decoratedNode._constant = false;
-      decoratedNode._toWatch = [ast];
+      ast._constant = false;
+      ast._toWatch = [ast];
 
-      return decoratedNode;
+      return ast;
     case ASTType._MemberExpression:
       decoratedObject = findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._object),
+        assertInvariantDefined(ast._object),
         $filter,
         astIsPure,
       );
 
-      if ((ast as ExpressionNode)._computed) {
+      if (ast._computed) {
         decoratedProperty = findConstantAndWatchExpressions(
-          assertInvariantDefined((ast as ExpressionNode)._property),
+          assertInvariantDefined(ast._property),
           $filter,
           astIsPure,
         );
       }
-      decoratedNode._constant =
+      ast._constant =
         decoratedObject._constant &&
-        (!decoratedNode._computed || decoratedProperty?._constant);
-      decoratedNode._toWatch = decoratedNode._constant ? [] : [ast];
+        (!ast._computed || decoratedProperty?._constant);
+      ast._toWatch = ast._constant ? [] : [ast];
 
-      return decoratedNode;
+      return ast;
     case ASTType._CallExpression: {
-      isFilter = (ast as ExpressionNode)._filter;
+      isFilter = ast._filter;
       allConstants = isFilter;
       argsToWatch = [];
-      const callArguments = (ast as ExpressionNode)._arguments ?? [];
+      const callArguments = ast._arguments;
 
       for (let i = 0, l = callArguments.length; i < l; i++) {
         const expr = callArguments[i];
@@ -2026,31 +1996,30 @@ function findConstantAndWatchExpressions(
         allConstants = allConstants && !!decorated._constant;
         appendWatchNodes(argsToWatch, decorated._toWatch);
       }
-      decoratedNode._constant = allConstants;
-      decoratedNode._toWatch = isFilter ? argsToWatch : [decoratedNode];
+      ast._constant = allConstants;
+      ast._toWatch = isFilter ? argsToWatch : [ast];
 
-      return decoratedNode;
+      return ast;
     }
     case ASTType._AssignmentExpression:
       decoratedLeft = findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._left),
+        ast._left,
         $filter,
         astIsPure,
       );
       decoratedRight = findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._right),
+        ast._right,
         $filter,
         astIsPure,
       );
-      decoratedNode._constant =
-        decoratedLeft._constant && decoratedRight._constant;
-      decoratedNode._toWatch = [decoratedNode];
+      ast._constant = decoratedLeft._constant && decoratedRight._constant;
+      ast._toWatch = [ast];
 
-      return decoratedNode;
+      return ast;
     case ASTType._ArrayExpression: {
       allConstants = true;
       argsToWatch = [];
-      const elements = (ast as ExpressionNode)._elements ?? [];
+      const elements = ast._elements;
 
       for (let i = 0, l = elements.length; i < l; i++) {
         const expr = elements[i];
@@ -2064,18 +2033,18 @@ function findConstantAndWatchExpressions(
         allConstants = allConstants && !!decorated._constant;
         appendWatchNodes(argsToWatch, decorated._toWatch);
       }
-      decoratedNode._constant = allConstants;
-      decoratedNode._toWatch = argsToWatch;
+      ast._constant = allConstants;
+      ast._toWatch = argsToWatch;
 
-      return decoratedNode;
+      return ast;
     }
     case ASTType._ObjectExpression: {
       allConstants = true;
       argsToWatch = [];
-      const properties = (ast as ObjectNode)._properties;
+      const properties = ast._properties;
 
       for (let i = 0, l = properties.length; i < l; i++) {
-        const property = properties[i] as ObjectPropertyNode;
+        const property = properties[i];
 
         const decorated = findConstantAndWatchExpressions(
           property._value,
@@ -2097,33 +2066,33 @@ function findConstantAndWatchExpressions(
           appendWatchNodes(argsToWatch, decoratedKey._toWatch);
         }
       }
-      decoratedNode._constant = allConstants;
-      decoratedNode._toWatch = argsToWatch;
+      ast._constant = allConstants;
+      ast._toWatch = argsToWatch;
 
-      return decoratedNode;
+      return ast;
     }
     case ASTType._ThisExpression:
-      decoratedNode._constant = false;
-      decoratedNode._toWatch = [];
+      ast._constant = false;
+      ast._toWatch = [];
 
-      return decoratedNode;
+      return ast;
     case ASTType._LocalsExpression:
-      decoratedNode._constant = false;
-      decoratedNode._toWatch = [];
+      ast._constant = false;
+      ast._toWatch = [];
 
-      return decoratedNode;
+      return ast;
     case ASTType._UpdateExpression: {
       // side-effectful, not constant
       findConstantAndWatchExpressions(
-        assertInvariantDefined((ast as ExpressionNode)._argument),
+        assertInvariantDefined(ast._argument),
         $filter,
         false, // force impurity downwards
       );
 
-      decoratedNode._constant = false;
-      decoratedNode._toWatch = [decoratedNode]; // treat like assignment: watch the expression
+      ast._constant = false;
+      ast._toWatch = [ast]; // treat like assignment: watch the expression
 
-      return decoratedNode;
+      return ast;
     }
     case ASTType._ExpressionStatement:
     case ASTType._Property:
@@ -2131,7 +2100,8 @@ function findConstantAndWatchExpressions(
       throw new Error(`Unknown AST node type: ${String(ast._type)}`);
   }
 
-  throw new Error(`Unknown AST node type: ${String(ast._type)}`);
+  const exhaustive: never = ast;
+  throw new Error(`Unknown AST node type: ${String(exhaustive)}`);
 }
 
 /**
@@ -2141,13 +2111,9 @@ function findConstantAndWatchExpressions(
  * @returns {ExpressionNode | undefined}
  */
 function assignableAST(ast: BodyNode): ExpressionNode | undefined {
-  const stmt = ast._body[0] as ExpressionNode;
+  const stmt = ast._body[0];
 
-  if (
-    ast._body.length === 1 &&
-    stmt._expression &&
-    isAssignable(stmt._expression)
-  ) {
+  if (ast._body.length === 1 && isAssignable(stmt._expression)) {
     return {
       _type: ASTType._AssignmentExpression,
       _left: stmt._expression, // left-hand side is an expression
@@ -2188,9 +2154,9 @@ function plusFn(left: unknown, right: unknown): unknown {
  * @param {ASTNode[]} body
  * @returns {any}
  */
-function getInputs(body: ASTNode[]): ASTNode[] | undefined {
+function getInputs(body: ExpressionStatementNode[]): ASTNode[] | undefined {
   if (body.length !== 1) return undefined;
-  const lastExpression = (body[0] as ExpressionNode)._expression;
+  const lastExpression = body[0]._expression;
 
   const candidate = (lastExpression as WatchNode)._toWatch ?? [];
 
@@ -2212,7 +2178,7 @@ function isPure(
   switch (node._type) {
     // Computed members might invoke a stateful toString()
     case ASTType._MemberExpression:
-      if ((node as ExpressionNode)._computed) {
+      if (node._computed) {
         return false;
       }
       break;
@@ -2223,9 +2189,7 @@ function isPure(
 
     // The binary + operator can invoke a stateful toString().
     case ASTType._BinaryExpression:
-      return (node as ExpressionNode)._operator !== "+"
-        ? PURITY_ABSOLUTE
-        : false;
+      return node._operator !== "+" ? PURITY_ABSOLUTE : false;
 
     // Functions / filters probably read state from within objects
     case ASTType._CallExpression:
@@ -2267,7 +2231,7 @@ function getStringValue(name: unknown): string {
  * @param {ASTNode} ast
  * @returns {boolean}
  */
-export function isAssignable(ast: ASTNode): boolean {
+export function isAssignable(ast: ASTNode): ast is AssignableNode {
   return (
     ast._type === ASTType._Identifier || ast._type === ASTType._MemberExpression
   );

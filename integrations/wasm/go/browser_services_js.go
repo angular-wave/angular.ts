@@ -66,7 +66,13 @@ func (s PubSubService) Count(topic string) int { return s.value.Call("getCount",
 func (s PubSubService) Reset()                 { s.value.Call("reset") }
 func (s PubSubService) Dispose()               { s.value.Call("dispose") }
 
-func (s TemplateRequestService) Request(url string) js.Value { return s.value.Invoke(url) }
+// Request fetches a template, optionally cancelling only this consumer.
+func (s TemplateRequestService) Request(url string, options ...TemplateRequestOptions) js.Value {
+	if len(options) == 0 {
+		return s.value.Invoke(url)
+	}
+	return s.value.Invoke(url, map[string]any{"signal": options[0].Signal})
+}
 
 func (s TemplateCacheService) Get(url string) string {
 	value := s.value.Call("get", url)

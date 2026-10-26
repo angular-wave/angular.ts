@@ -1019,6 +1019,14 @@ const generatedTypes = new Map(
   }),
 );
 const standaloneCallbacks = new Map();
+// These callable aliases may be erased entirely by the Closure-to-Java generator.
+for (const name of ["ModelParser", "ModelFormatter", "TemplateRequestService"]) {
+  const alias = aliasesByName.get(name);
+  const signature = checker.getTypeAtLocation(alias.name).getCallSignatures()[0];
+  generatedTypes.set(name, alias.typeParameters?.length ?? 0);
+  standaloneCallbacks.set(name, standaloneCallbackDefinition(checker, name, signature, generatedTypes, alias));
+}
+
 let refinedProperties = 0;
 
 for (const alias of aliases) {
@@ -1081,6 +1089,23 @@ for (const alias of aliases) {
     methodRefined,
   );
 
+  if (["ModelValidators", "AsyncModelValidators"].includes(alias.name.text)) {
+    const indexType = checker.getTypeAtLocation(alias.name).getStringIndexType();
+    const callbackSignature = indexType.getCallSignatures()[0];
+    const callback = nestedCallbackDefinition(checker, "Validator", callbackSignature, generatedTypes, alias);
+    const valueType = "Validator<TModel,TView>";
+    refined = refined.replace(/(public interface [^{]+\{)/, `$1\n${callback}
+@jsinterop.annotations.JsOverlay
+ default void set(String name, ${valueType} validator) {
+   jsinterop.base.Js.<jsinterop.base.JsPropertyMap<${valueType}>>uncheckedCast(this).set(name, validator);
+ }
+@jsinterop.annotations.JsOverlay
+ default ${valueType} get(String name) {
+   return jsinterop.base.Js.<jsinterop.base.JsPropertyMap<${valueType}>>uncheckedCast(this).get(name);
+ }
+`);
+  }
+
   // Keep native property names in @JsProperty while exposing ordinary Java accessors.
   if (alias.name.text !== "InjectionTokenMap") {
     refined = refined.replace(
@@ -1108,7 +1133,14 @@ for (const alias of aliases) {
 }
 
 for (const [name, source] of standaloneCallbacks) {
-  writeFileSync(resolve(generatedPackageDir, `${name}.java`), source);
+  const output = name === "TemplateRequestService"
+    ? source.replace(/}\n$/, `@jsinterop.annotations.JsOverlay
+ default elemental2.promise.Promise<String> onInvoke(String templateUrl) {
+   return onInvoke(templateUrl, null);
+ }
+}\n`)
+    : source;
+  writeFileSync(resolve(generatedPackageDir, `${name}.java`), output);
 }
 
 console.log(

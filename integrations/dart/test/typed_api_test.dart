@@ -82,6 +82,65 @@ void main() {
     }
   });
 
+  test('typed form adapters forward values, pipelines, and cancellation',
+      () async {
+    final validators = JSObject(), asyncValidators = JSObject();
+    final parsers = <JSAny?>[].toJS, formatters = <JSAny?>[].toJS;
+    String? staged;
+    final raw = JSObject()
+      ..setProperty('modelValue'.toJS, 12.toJS)
+      ..setProperty('viewValue'.toJS, '12'.toJS)
+      ..setProperty('validators'.toJS, validators)
+      ..setProperty('asyncValidators'.toJS, asyncValidators)
+      ..setProperty('parsers'.toJS, parsers)
+      ..setProperty('formatters'.toJS, formatters)
+      ..setProperty(
+          'setViewValue'.toJS,
+          ((JSString value) {
+            staged = value.toDart;
+          }).toJS);
+    final control = ng.NgModelController<num, String>(raw);
+    expect(control.modelValue, 12);
+    expect(control.viewValue, '12');
+    control.setViewValue('24');
+    expect(staged, '24');
+    control.addParser(num.tryParse);
+    control.addFormatter((value) => value?.toString() ?? '');
+    expect(
+        (parsers[0] as JSFunction)
+            .callAsFunction(null, 'invalid'.toJS)
+            .isUndefined,
+        isTrue);
+    expect((parsers[0] as JSFunction).callAsFunction(null, '24'.toJS).dartify(),
+        24);
+    expect(
+        (formatters[0] as JSFunction).callAsFunction(null, 24.toJS).dartify(),
+        '24');
+    control.setValidator(
+        'positive', (model, view) => (model ?? 0) > 0 && view != '');
+    expect(
+        validators
+            .callMethod<JSBoolean>('positive'.toJS, 12.toJS, '12'.toJS)
+            .toDart,
+        isTrue);
+    final cancellation = AbortController();
+    control.setAsyncValidator('remote', (model, view, context) async {
+      expect(model, 12);
+      expect(view, '12');
+      expect(context.signal, same(cancellation.signal));
+      return null;
+    });
+    final context = JSObject()..setProperty('signal'.toJS, cancellation.signal);
+    await asyncValidators
+        .callMethod<JSPromise<JSAny?>>(
+            'remote'.toJS, 12.toJS, '12'.toJS, context)
+        .toDart;
+    final options = ng.TemplateRequestOptions(signal: cancellation.signal)
+        .toJsValue() as JSObject;
+    expect(
+        options.getProperty<JSAny>('signal'.toJS), same(cancellation.signal));
+  });
+
   test('HTTP options preserve native signals and Fetch credential modes', () {
     final controller = AbortController();
     for (final mode in ng.HttpCredentials.values) {

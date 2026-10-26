@@ -3234,9 +3234,10 @@ ng.InjectionTokenMap.prototype.$templateCache;
 /**
  * Public InjectionTokenMap.$templateRequest member exposed by the AngularTS namespace contract.
  * @param {string} templateUrl Value supplied for the templateUrl parameter.
+ * @param {(!ng.TemplateRequestOptions|undefined)} options Value supplied for the options parameter.
  * @return {!Promise<string>}
  */
-ng.InjectionTokenMap.prototype.$templateRequest = function(templateUrl) {};
+ng.InjectionTokenMap.prototype.$templateRequest = function(templateUrl, options) {};
 
 /**
  * Public InjectionTokenMap.$transitions member exposed by the AngularTS namespace contract.
@@ -4401,10 +4402,22 @@ ng.SwapMode;
 ng.TemplateCacheService;
 
 /**
- * Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged.
- * @typedef {function(string): !Promise<string>}
+ * Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one download. A consumer signal cancels only its own wait; the download is aborted after every consumer has cancelled. Calls without a signal keep the download alive. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged.
+ * @typedef {function(string, (!ng.TemplateRequestOptions|undefined)): !Promise<string>}
  */
 ng.TemplateRequestService;
+
+/**
+ * Options for one template consumer.
+ * @record
+ */
+ng.TemplateRequestOptions = function() {};
+
+/**
+ * Cancels this consumer without cancelling other consumers of the same URL.
+ * @type {(!AbortSignal|undefined)}
+ */
+ng.TemplateRequestOptions.prototype.signal;
 
 /**
  * This interface specifies the api for registering Transition Hooks. Both the [[TransitionService]] and also the [[Transition]] object itself implement this interface. Note: the Transition object only allows hooks to be registered before the Transition is started.
@@ -5731,43 +5744,44 @@ ng.WorkflowSupervisorSnapshot.prototype.updatedAt;
 
 /**
  * Public AngularTS NgModelController contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TModel, TView
  * @record
  */
 ng.NgModelController = function() {};
 
 /**
  * Public NgModelController.viewValue member exposed by the AngularTS namespace contract.
- * @type {?}
+ * @type {(TView|undefined)}
  */
 ng.NgModelController.prototype.viewValue;
 
 /**
  * Public NgModelController.modelValue member exposed by the AngularTS namespace contract.
- * @type {?}
+ * @type {(TModel|undefined)}
  */
 ng.NgModelController.prototype.modelValue;
 
 /**
  * Public NgModelController.validators member exposed by the AngularTS namespace contract.
- * @type {!Object<string, function(?, ?): ?>}
+ * @type {!Object<string, function((TModel|undefined), (TView|undefined)): ?>}
  */
 ng.NgModelController.prototype.validators;
 
 /**
  * Public NgModelController.asyncValidators member exposed by the AngularTS namespace contract.
- * @type {!Object<string, function(?, ?): !Promise<?>>}
+ * @type {!Object<string, function((TModel|undefined), (TView|undefined), !ng.ModelValidationContext): !Object>}
  */
 ng.NgModelController.prototype.asyncValidators;
 
 /**
  * Public NgModelController.parsers member exposed by the AngularTS namespace contract.
- * @type {!Array<function(?): ?>}
+ * @type {!Array<function(TView): (TModel|undefined)>}
  */
 ng.NgModelController.prototype.parsers;
 
 /**
  * Public NgModelController.formatters member exposed by the AngularTS namespace contract.
- * @type {!Array<function(?): ?>}
+ * @type {!Array<function((TModel|undefined)): TView>}
  */
 ng.NgModelController.prototype.formatters;
 
@@ -5928,7 +5942,7 @@ ng.NgModelController.prototype.commitViewValue = function() {};
 
 /**
  * Update the view value. This method should be called when a control wants to change the view value; typically, this is done from within a DOM event handler. For example, the `input` directive calls it when the value of the input changes and `select` calls it when an option is selected. When `setViewValue` is called, the new `value` will be staged for committing through the `parsers` and `validators` pipelines. If there are no special `ngModelOptions` settings specified then the staged value is sent directly for processing through the `parsers` pipeline. After this, the `validators` and `asyncValidators` are called and the value is applied to `modelValue`. Finally, the value is set to the **expression** specified in the `ng-model` attribute and all the registered change listeners, in the `viewChangeListeners` list are called. In case the `ngModelOptions` directive is used with `updateOn` and the `default` trigger is not listed, all those actions will remain pending until one of the `updateOn` events is triggered on the DOM element. All these actions will be debounced if the `ngModelOptions` directive is used with a custom debounce for this particular event. The model commit and its reactive notifications run when an `updateOn` event fires, or after the configured debounce timer expires. Standard native inputs pass through browser-native values, such as strings from text-like controls, booleans from checkboxes, and `FileList | null` from file inputs. However, custom controls might also pass objects to this method. In this case, we should make a copy of the object before passing it to `setViewValue`. This is because `ngModel` does not perform a deep watch of objects, it only looks for a change of identity. If you only change the property of the object then ngModel will not realize that the object has changed and will not invoke the `parsers` and `validators` pipelines. For this reason, you should not change properties of the copy once it has been passed to `setViewValue`. Otherwise you may cause the model value on the scope to change incorrectly. <div class="alert alert-info"> In any case, the value passed to the method should always reflect the current value of the control. For example, if you are calling `setViewValue` for an input element, you should pass the input DOM value. Otherwise, the control and the scope model become out of sync. It's also important to note that `setViewValue` does not call `render` or change the control's DOM value in any way. If we want to change the control's DOM value programmatically, we should update the `ngModel` scope expression. Its new value will be picked up by the model controller, which will run it through the `formatters`, `render` it to update the DOM, and finally call `validate` on it. </div>
- * @param {?} value value from the view.
+ * @param {TView} value value from the view.
  * @param {(string|undefined)} trigger Event that triggered the update.
  * @return {void}
  */
@@ -5946,6 +5960,44 @@ ng.NgModelController.prototype.overrideModelOptions = function(options) {};
  * @return {void}
  */
 ng.NgModelController.prototype.processModelValue = function() {};
+
+/**
+ * Lifetime shared by asynchronous validators in one validation run.
+ * @record
+ */
+ng.ModelValidationContext = function() {};
+
+/**
+ * Aborted when a newer validation run replaces this one or the control is destroyed.
+ * @type {!AbortSignal}
+ */
+ng.ModelValidationContext.prototype.signal;
+
+/**
+ * Public AngularTS ModelParser contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(?): ?}
+ */
+ng.ModelParser;
+
+/**
+ * Public AngularTS ModelFormatter contract exposed through the global ng namespace for Closure-annotated applications.
+ * @typedef {function(?): ?}
+ */
+ng.ModelFormatter;
+
+/**
+ * Public AngularTS ModelValidators contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TModel, TView
+ * @record
+ */
+ng.ModelValidators = function() {};
+
+/**
+ * Public AngularTS AsyncModelValidators contract exposed through the global ng namespace for Closure-annotated applications.
+ * @template TModel, TView
+ * @record
+ */
+ng.AsyncModelValidators = function() {};
 
 /**
  * Plain, serializable location data written by the `geolocation` directive.

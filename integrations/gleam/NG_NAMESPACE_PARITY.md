@@ -346,6 +346,12 @@ part of the Gleam public facade.
 | `NativeWindowDisplayFeature` | started |
 | `NativeWindowInsets` | started |
 | `NativeWindowStatus` | started |
+| `ModelValidationContext` | inventory |
+| `ModelParser` | inventory |
+| `ModelFormatter` | inventory |
+| `ModelValidators` | inventory |
+| `AsyncModelValidators` | inventory |
+| `TemplateRequestOptions` | inventory |
 | `NgModelController` | inventory |
 | `HtmlCanvasConfig` | inventory |
 | `HtmlCanvasRuntimeSupport` | inventory |

@@ -26,6 +26,7 @@
     "js/ng.AppComponentOptions"
     "js/ng.AriaConfig"
     "js/ng.AriaService"
+    "js/ng.AsyncModelValidators"
     "js/ng.BindingContext"
     "js/ng.BindingPolicyConfig"
     "js/ng.CachedRestBackendOptions"
@@ -106,10 +107,14 @@
     "js/ng.MachineSnapshot"
     "js/ng.Model"
     "js/ng.ModelChange"
+    "js/ng.ModelFormatter"
+    "js/ng.ModelParser"
     "js/ng.ModelRestoreOptions"
     "js/ng.ModelSyncFailureMode"
     "js/ng.ModelSyncOptions"
     "js/ng.ModelSyncTarget"
+    "js/ng.ModelValidationContext"
+    "js/ng.ModelValidators"
     "js/ng.NativeBiometricStatus"
     "js/ng.NativeBridgeAdapter"
     "js/ng.NativeCallMessage"
@@ -249,6 +254,7 @@
     "js/ng.StreamService"
     "js/ng.SwapMode"
     "js/ng.TemplateCacheService"
+    "js/ng.TemplateRequestOptions"
     "js/ng.TemplateRequestService"
     "js/ng.TranscludeFn"
     "js/ng.Transition"
@@ -334,6 +340,7 @@
      "js/ng.AppComponentOptions" "Public AngularTS AppComponentOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaConfig" "Public AngularTS AriaConfig contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.AriaService" "Public AngularTS AriaService contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.AsyncModelValidators" "Public AngularTS AsyncModelValidators contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.BindingContext" "The destination-specific policy required by a DOM binding."
      "js/ng.BindingPolicyConfig" "Policy callbacks accepted by `$compile` configuration."
      "js/ng.CachedRestBackendOptions" "Configuration for {@link CachedRestBackend}."
@@ -414,10 +421,14 @@
      "js/ng.MachineSnapshot" "Public AngularTS MachineSnapshot contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.Model" "Public AngularTS Model contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelChange" "Public AngularTS ModelChange contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ModelFormatter" "Public AngularTS ModelFormatter contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ModelParser" "Public AngularTS ModelParser contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelRestoreOptions" "Public AngularTS ModelRestoreOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelSyncFailureMode" "Public AngularTS ModelSyncFailureMode contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelSyncOptions" "Public AngularTS ModelSyncOptions contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.ModelSyncTarget" "Public AngularTS ModelSyncTarget contract exposed through the global ng namespace for Closure-annotated applications."
+     "js/ng.ModelValidationContext" "Lifetime shared by asynchronous validators in one validation run."
+     "js/ng.ModelValidators" "Public AngularTS ModelValidators contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.NativeBiometricStatus" "Availability and enrollment state for native biometric authentication."
      "js/ng.NativeBridgeAdapter" "Host object exposed by Android, iOS, or a test adapter."
      "js/ng.NativeCallMessage" "Public AngularTS NativeCallMessage contract exposed through the global ng namespace for Closure-annotated applications."
@@ -557,7 +568,8 @@
      "js/ng.StreamService" "Public AngularTS StreamService contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.SwapMode" "Public AngularTS SwapMode contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TemplateCacheService" "Public contract implemented by the `$templateCache` injectable."
-     "js/ng.TemplateRequestService" "Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one promise. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged."
+     "js/ng.TemplateRequestOptions" "Options for one template consumer."
+     "js/ng.TemplateRequestService" "Returns cached template text or downloads it through `$http` and stores it in `$templateCache`. Concurrent requests for the same URL share one download. A consumer signal cancels only its own wait; the download is aborted after every consumer has cancelled. Calls without a signal keep the download alive. `$compile.resourceUrlPolicy` validates or rewrites the URL before lookup. HTTP failures reject; an empty successful response is returned unchanged."
      "js/ng.TranscludeFn" "A function passed to directive link functions for transcluded content. It behaves like a linking function, with the `scope` argument automatically created as a new child of the transcluded parent scope. The function returns the DOM content to be injected (transcluded) into the directive."
      "js/ng.Transition" "Public AngularTS Transition contract exposed through the global ng namespace for Closure-annotated applications."
      "js/ng.TransitionRouteContract" "Public AngularTS TransitionRouteContract contract exposed through the global ng namespace for Closure-annotated applications."
@@ -1078,6 +1090,7 @@
     "model-root"
     "model-scope-name"
     "model-sync-options-failure"
+    "model-validation-context-signal"
     "native-biometric-status-available"
     "native-biometric-status-enrolled"
     "native-biometric-status-permission"
@@ -1426,6 +1439,7 @@
     "state-policy-declaration-transition"
     "state-service-current"
     "state-service-params"
+    "template-request-options-signal"
     "transition-id"
     "transition-promise"
     "transition-success"
@@ -1870,9 +1884,9 @@
   (.$sse target url config))
 
 (defn injection-token-map-template-request
-  "Public InjectionTokenMap.$templateRequest member exposed by the AngularTS namespace contract.\n\nParams:\n- templateUrl: {string} Value supplied for the templateUrl parameter.\n\nReturns: {!Promise<string>}"
-  ^js/Promise [^js/ng.InjectionTokenMap target ^string templateUrl]
-  (.$templateRequest target templateUrl))
+  "Public InjectionTokenMap.$templateRequest member exposed by the AngularTS namespace contract.\n\nParams:\n- templateUrl: {string} Value supplied for the templateUrl parameter.\n- options: {(!ng.TemplateRequestOptions|undefined)} Value supplied for the options parameter.\n\nReturns: {!Promise<string>}"
+  ^js/Promise [^js/ng.InjectionTokenMap target ^string templateUrl ^js/ng.TemplateRequestOptions options]
+  (.$templateRequest target templateUrl options))
 
 (defn injection-token-map-web-transport
   "Public InjectionTokenMap.$webTransport member exposed by the AngularTS namespace contract.\n\nParams:\n- url: {string} Value supplied for the url parameter.\n- config: {(!ng.WebTransportConfig|undefined)} Value supplied for the config parameter.\n\nReturns: {!ng.WebTransportConnection}"
@@ -3904,6 +3918,11 @@
   ^string [^js/ng.ModelSyncOptions target]
   (.-failure target))
 
+(defn model-validation-context-signal
+  "Aborted when a newer validation run replaces this one or the control is destroyed.\n\nType: {!AbortSignal}"
+  ^js/AbortSignal [^js/ng.ModelValidationContext target]
+  (.-signal target))
+
 (defn native-biometric-status-available
   "Public NativeBiometricStatus.available member exposed by the AngularTS namespace contract.\n\nType: {boolean}"
   ^boolean [^js/ng.NativeBiometricStatus target]
@@ -4935,7 +4954,7 @@
   (.-widthClass target))
 
 (defn ng-model-controller-async-validators
-  "Public NgModelController.asyncValidators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): !Promise<?>>}"
+  "Public NgModelController.asyncValidators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function((TModel|undefined), (TView|undefined), !ng.ModelValidationContext): !Object>}"
   ^js/Object [^js/ng.NgModelController target]
   (.-asyncValidators target))
 
@@ -4950,7 +4969,7 @@
   (.-error target))
 
 (defn ng-model-controller-formatters
-  "Public NgModelController.formatters member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(?): ?>}"
+  "Public NgModelController.formatters member exposed by the AngularTS namespace contract.\n\nType: {!Array<function((TModel|undefined)): TView>}"
   ^js/Array [^js/ng.NgModelController target]
   (.-formatters target))
 
@@ -4965,7 +4984,7 @@
   (.-options target))
 
 (defn ng-model-controller-parsers
-  "Public NgModelController.parsers member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(?): ?>}"
+  "Public NgModelController.parsers member exposed by the AngularTS namespace contract.\n\nType: {!Array<function(TView): (TModel|undefined)>}"
   ^js/Array [^js/ng.NgModelController target]
   (.-parsers target))
 
@@ -5000,7 +5019,7 @@
   (.-validationMessage target))
 
 (defn ng-model-controller-validators
-  "Public NgModelController.validators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function(?, ?): ?>}"
+  "Public NgModelController.validators member exposed by the AngularTS namespace contract.\n\nType: {!Object<string, function((TModel|undefined), (TView|undefined)): ?>}"
   ^js/Object [^js/ng.NgModelController target]
   (.-validators target))
 
@@ -5643,6 +5662,11 @@
   "The latest successful state parameters.\n\nType: {!Object<string, ?>}"
   ^js/Object [^js/ng.StateService target]
   (.-params target))
+
+(defn template-request-options-signal
+  "Cancels this consumer without cancelling other consumers of the same URL.\n\nType: {(!AbortSignal|undefined)}"
+  ^js/AbortSignal [^js/ng.TemplateRequestOptions target]
+  (.-signal target))
 
 (defn transition-id
   "Public Transition.id member exposed by the AngularTS namespace contract.\n\nType: {number}"

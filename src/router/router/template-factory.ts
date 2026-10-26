@@ -88,6 +88,7 @@ export class TemplateFactoryService {
   async _fromConfig(
     config: ViewDeclarationCommon,
     params: RawParams,
+    signal?: AbortSignal,
   ): TemplateResult {
     const { template, templateUrl, component } = config;
 
@@ -96,7 +97,7 @@ export class TemplateFactoryService {
     }
 
     if (isDefined(templateUrl)) {
-      return asTemplate(this._fromUrl(templateUrl, params));
+      return asTemplate(this._fromUrl(templateUrl, params, signal));
     }
 
     if (isString(component)) {
@@ -130,10 +131,13 @@ export class TemplateFactoryService {
   _fromUrl(
     url: string | TemplateUrlFactory,
     params: RawParams,
+    signal?: AbortSignal,
   ): Promise<string> | null {
     const templateUrl = isFunction(url) ? url(params) : url;
 
     if (isNullOrUndefined(templateUrl)) return null;
+
+    if (signal) return this._getTemplateRequest()(templateUrl, { signal });
 
     let promise = this._templatePromises.get(templateUrl);
 
