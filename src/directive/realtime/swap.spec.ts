@@ -1,5 +1,9 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { AnimationHandle } from "../../animations/animate.ts";
+import type { SwapMode } from "./protocol.ts";
+import { defined, elementNode } from "../../shared/test-fixtures.spec.ts";
+import type { CompiledFragmentRecord } from "../../core/compile/incremental-fragment.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { getCompiledFragmentRecord } from "../../core/compile/incremental-fragment.ts";
@@ -9,61 +13,80 @@ describe("createRealtimeSwapHandler", () => {
   let app: HTMLElement;
   let $compile: ng.CompileService;
   let $rootScope: ng.Scope;
-  let warnSpy: jasmine.Spy;
+  let warnSpy: jasmine.Spy<ng.LogService["warn"]>;
+  let $log: ng.LogService;
+  let $animate: ng.AnimateService;
+  let angular: Angular;
+
+  function animateFixture(overrides: Partial<ng.AnimateService>) {
+    return Object.assign($animate, overrides);
+  }
 
   beforeEach(() => {
-    app = document.getElementById("app") as HTMLElement;
+    app = defined(document.getElementById("app"));
     dealoc(app);
     app.innerHTML = '<section id="target">old</section><div id="host"></div>';
 
-    const angular = new Angular();
+    angular = new Angular();
 
     angular.bootstrap(app, []).invoke([
       "$compile",
       "$rootScope",
       "$log",
-      (_$compile_, _$rootScope_, _$log_) => {
+      "$animate",
+      (
+        _$compile_: ng.CompileService,
+        _$rootScope_: ng.Scope,
+        _$log_: ng.LogService,
+        _$animate_: ng.AnimateService,
+      ) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
+        $log = _$log_;
+        $animate = _$animate_;
         warnSpy = spyOn(_$log_, "warn");
       },
     ]);
   });
 
   afterEach(() => {
-    delete (document as any).startViewTransition;
     dealoc(app);
+    angular._composition.destroy();
   });
 
   it("reads data-target from the directive host element", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
 
     host.setAttribute("data-target", "#target");
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
     });
 
     expect(swap("<span>new</span>", "innerHTML")).toBeTrue();
-    expect(document.getElementById("target")!.innerHTML).toBe(
+    expect(defined(document.getElementById("target")).innerHTML).toBe(
       "<span>new</span>",
     );
   });
 
   it("does not treat the native target attribute as a swap selector", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
 
     host.setAttribute("target", "#target");
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -71,22 +94,32 @@ describe("createRealtimeSwapHandler", () => {
 
     expect(swap("<span>new</span>", "innerHTML")).toBeTrue();
     expect(host.innerHTML).toBe("<span>new</span>");
-    expect(document.getElementById("target")!.textContent).toBe("old");
+    expect(defined(document.getElementById("target")).textContent).toBe("old");
   });
 
   it("reads data-view-transition from the directive host element", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const startViewTransition = jasmine
       .createSpy("startViewTransition")
-      .and.callFake((callback: () => void) => callback());
+      .and.callFake((callback: () => void) => {
+        callback();
+        return nativeTransition();
+      });
 
-    (document as any).startViewTransition = startViewTransition;
+    spyOn(document, "startViewTransition").and.callFake((update) => {
+      startViewTransition(() => {
+        transitionUpdate(update)?.();
+      });
+      return nativeTransition();
+    });
     host.setAttribute("data-view-transition", "");
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -98,12 +131,14 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("disposes replaced innerHTML fragments before installing the next fragment", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const scope = $rootScope.new();
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope,
       element: host,
       logPrefix: "test",
@@ -111,14 +146,14 @@ describe("createRealtimeSwapHandler", () => {
 
     expect(swap('<span id="first">first</span>', "innerHTML")).toBeTrue();
 
-    const first = host.querySelector("#first") as Element;
+    const first = defined(host.querySelector("#first"));
     const firstRecord = getCompiledFragmentRecord(first);
 
     expect(firstRecord).toBeDefined();
 
     expect(swap('<span id="second">second</span>', "innerHTML")).toBeTrue();
 
-    const second = host.querySelector("#second") as Element;
+    const second = defined(host.querySelector("#second"));
     const secondRecord = getCompiledFragmentRecord(second);
 
     expect(firstRecord?.disposed).toBeTrue();
@@ -129,12 +164,14 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("disposes appended stream fragments when the directive scope is destroyed", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const scope = $rootScope.new();
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope,
       element: host,
       logPrefix: "test",
@@ -143,8 +180,8 @@ describe("createRealtimeSwapHandler", () => {
     expect(swap('<span id="chunk-a">A</span>', "beforeend")).toBeTrue();
     expect(swap('<span id="chunk-b">B</span>', "beforeend")).toBeTrue();
 
-    const first = host.querySelector("#chunk-a") as Element;
-    const second = host.querySelector("#chunk-b") as Element;
+    const first = defined(host.querySelector("#chunk-a"));
+    const second = defined(host.querySelector("#chunk-b"));
     const firstRecord = getCompiledFragmentRecord(first);
     const secondRecord = getCompiledFragmentRecord(second);
 
@@ -160,18 +197,20 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("disposes a compiled target fragment when deleting the target", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const target = $compile('<span id="compiled-target">old</span>')(
-      $rootScope,
-    ) as Element;
+    const host = defined(document.getElementById("host"));
+    const target = elementNode(
+      $compile('<span id="compiled-target">old</span>')($rootScope),
+    );
     const targetRecord = getCompiledFragmentRecord(target);
 
     app.appendChild(target);
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -186,11 +225,13 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("disposes compiled children when replacing with text content", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -200,7 +241,7 @@ describe("createRealtimeSwapHandler", () => {
       swap('<span id="compiled-child">old</span>', "innerHTML"),
     ).toBeTrue();
 
-    const child = host.querySelector("#compiled-child") as Element;
+    const child = defined(host.querySelector("#compiled-child"));
     const childRecord = getCompiledFragmentRecord(child);
 
     expect(childRecord).toBeDefined();
@@ -210,23 +251,25 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("falls back to plain replacement for mixed compiled fragments", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const compileMixed = () => () => {
       const fragment = document.createDocumentFragment();
 
       fragment.appendChild(
-        $compile('<span id="mixed-a">A</span>')($rootScope) as Node,
+        elementNode($compile('<span id="mixed-a">A</span>')($rootScope)),
       );
       fragment.appendChild(
-        $compile('<span id="mixed-b">B</span>')($rootScope) as Node,
+        elementNode($compile('<span id="mixed-b">B</span>')($rootScope)),
       );
 
       return fragment;
     };
     const swap = createRealtimeSwapHandler({
-      $compile: compileMixed as any,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $compile: Object.assign(compileMixed, $compile),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -239,7 +282,7 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("falls back to plain replacement when incoming nodes are untracked", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const compilePlain = () => () => {
       const span = document.createElement("span");
 
@@ -249,39 +292,46 @@ describe("createRealtimeSwapHandler", () => {
       return span;
     };
     const swap = createRealtimeSwapHandler({
-      $compile: compilePlain as any,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $compile: Object.assign(compilePlain, $compile),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
     });
 
     expect(swap("<ignored></ignored>", "innerHTML")).toBeTrue();
-    expect(getCompiledFragmentRecord(host.querySelector("#plain-node"))).toBe(
-      undefined,
-    );
+    expect(
+      getCompiledFragmentRecord(defined(host.querySelector("#plain-node"))),
+    ).toBe(undefined);
     expect(host.textContent).toBe("plain");
   });
 
   it("disposes compiled payloads when their target is missing", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     let compiledNode: Element | undefined;
-    let compiledRecord;
-    const compile = (html: string) => {
-      const link = $compile(html);
+    let compiledRecord: CompiledFragmentRecord | undefined;
+    const compile: ng.CompileService = Object.assign(
+      (html: Parameters<ng.CompileService>[0]) => {
+        const link = $compile(html);
 
-      return (scope: ng.Scope) => {
-        compiledNode = link(scope) as Element;
-        compiledRecord = getCompiledFragmentRecord(compiledNode);
+        return (scope: ng.Scope) => {
+          compiledNode = elementNode(link(scope));
+          compiledRecord = getCompiledFragmentRecord(compiledNode);
 
-        return compiledNode;
-      };
-    };
+          return compiledNode;
+        };
+      },
+      $compile,
+    );
     const swap = createRealtimeSwapHandler({
-      $compile: compile as ng.CompileService,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $compile: Object.assign(compile, $compile),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -295,32 +345,35 @@ describe("createRealtimeSwapHandler", () => {
 
     expect(compiledNode).toBeDefined();
     expect(compiledRecord?.disposed).toBeTrue();
-    expect(getCompiledFragmentRecord(compiledNode!)).toBeUndefined();
+    expect(getCompiledFragmentRecord(defined(compiledNode))).toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();
   });
 
   it("does not commit an animated replacement after scope destruction", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const target = document.getElementById("target") as HTMLElement;
+    const host = defined(document.getElementById("host"));
+    const target = defined(document.getElementById("target"));
     const scope = $rootScope.new();
     let finishLeave: ((completed: boolean) => void) | undefined;
-    const leaveHandle = {
-      cancel: jasmine.createSpy("cancel"),
-      done(callback: (completed: boolean) => void) {
-        finishLeave = callback;
-      },
-    };
-    const animate = {
-      enter: jasmine.createSpy("enter"),
-      leave: jasmine.createSpy("leave").and.returnValue(leaveHandle),
-    };
+    const leaveHandle = new AnimationHandle(new Promise<void>(() => {}));
+    spyOn(leaveHandle, "cancel").and.callThrough();
+    spyOn(leaveHandle, "done").and.callFake((callback) => {
+      finishLeave = callback;
+    });
+    const animate = animateFixture({
+      enter: jasmine
+        .createSpy<ng.AnimateService["enter"]>("enter")
+        .and.returnValue(immediateAnimation(true)),
+      leave: jasmine
+        .createSpy<ng.AnimateService["leave"]>("leave")
+        .and.returnValue(leaveHandle),
+    });
 
     host.setAttribute("data-animate", "true");
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: () => animate as any,
+      $log,
+      getAnimate: () => animate,
       scope,
       element: host,
       logPrefix: "test",
@@ -343,19 +396,22 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("does not commit a deferred view transition after scope destruction", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const scope = $rootScope.new();
-    let commit: (() => void) | undefined;
+    let commit: (() => void | Promise<void>) | undefined;
 
     host.setAttribute("data-view-transition", "true");
-    (document as any).startViewTransition = (callback: () => void) => {
-      commit = callback;
-    };
+    spyOn(document, "startViewTransition").and.callFake((update) => {
+      commit = transitionUpdate(update);
+      return nativeTransition();
+    });
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope,
       element: host,
       logPrefix: "test",
@@ -371,12 +427,18 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("rejects parent-relative swaps for detached targets", () => {
-    for (const mode of ["outerHTML", "beforebegin", "afterend"]) {
+    for (const mode of [
+      "outerHTML",
+      "beforebegin",
+      "afterend",
+    ] satisfies SwapMode[]) {
       const host = document.createElement("div");
       const swap = createRealtimeSwapHandler({
         $compile,
-        $log: { warn: warnSpy } as any,
-        getAnimate: jasmine.createSpy("getAnimate"),
+        $log,
+        getAnimate: jasmine
+          .createSpy<() => ng.AnimateService>("getAnimate")
+          .and.throwError("Unexpected animation request"),
         scope: $rootScope,
         element: host,
         logPrefix: "test",
@@ -387,12 +449,14 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("supports every non-animated positional swap mode", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const target = document.getElementById("target") as HTMLElement;
+    const host = defined(document.getElementById("host"));
+    const target = defined(document.getElementById("target"));
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: jasmine.createSpy("getAnimate"),
+      $log,
+      getAnimate: jasmine
+        .createSpy<() => ng.AnimateService>("getAnimate")
+        .and.throwError("Unexpected animation request"),
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -427,17 +491,19 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("delegates element insertion for positional swaps to animation", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const animate = {
-      enter: jasmine.createSpy("enter"),
-    };
+    const host = defined(document.getElementById("host"));
+    const animate = animateFixture({
+      enter: jasmine
+        .createSpy<ng.AnimateService["enter"]>("enter")
+        .and.returnValue(immediateAnimation(true)),
+    });
 
     host.setAttribute("data-animate", "true");
 
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: () => animate as any,
+      $log,
+      getAnimate: () => animate,
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -455,15 +521,17 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("inserts text nodes during animated outerHTML replacement", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const target = document.getElementById("target") as HTMLElement;
-    const animate = {
-      leave: (element) => {
+    const host = defined(document.getElementById("host"));
+    const target = defined(document.getElementById("target"));
+    const animate = animateFixture({
+      leave: (element: Element) => {
         element.remove();
         return immediateAnimation(true);
       },
-      enter: jasmine.createSpy("enter"),
-    };
+      enter: jasmine
+        .createSpy<ng.AnimateService["enter"]>("enter")
+        .and.returnValue(immediateAnimation(true)),
+    });
     const compile = () => () => {
       const fragment = document.createDocumentFragment();
       fragment.append("text", document.createElement("strong"));
@@ -472,9 +540,9 @@ describe("createRealtimeSwapHandler", () => {
 
     host.setAttribute("data-animate", "true");
     const swap = createRealtimeSwapHandler({
-      $compile: compile as any,
-      $log: { warn: warnSpy } as any,
-      getAnimate: () => animate as any,
+      $compile: Object.assign(compile, $compile),
+      $log,
+      getAnimate: () => animate,
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -489,19 +557,19 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("handles cancelled and completed animated text swaps", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const target = document.getElementById("target") as HTMLElement;
+    const host = defined(document.getElementById("host"));
+    const target = defined(document.getElementById("target"));
     const completions = [false, true];
-    const animate = {
-      leave: () => immediateAnimation(completions.shift()),
+    const animate = animateFixture({
+      leave: () => immediateAnimation(defined(completions.shift())),
       enter: () => immediateAnimation(true),
-    };
+    });
 
     host.setAttribute("data-animate", "true");
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: () => animate as any,
+      $log,
+      getAnimate: () => animate,
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -518,20 +586,20 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("contains cancelled animated innerHTML replacements", () => {
-    const host = document.getElementById("host") as HTMLElement;
-    const animate = {
-      enter(element, parent) {
-        parent.appendChild(element);
+    const host = defined(document.getElementById("host"));
+    const animate = animateFixture({
+      enter(element: Element, parent: ParentNode | null) {
+        defined(parent).appendChild(element);
         return immediateAnimation(true);
       },
       leave: () => immediateAnimation(false),
-    };
+    });
 
     host.setAttribute("data-animate", "true");
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: () => animate as any,
+      $log,
+      getAnimate: () => animate,
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -543,19 +611,19 @@ describe("createRealtimeSwapHandler", () => {
   });
 
   it("contains cancelled and completed animated deletes", () => {
-    const host = document.getElementById("host") as HTMLElement;
+    const host = defined(document.getElementById("host"));
     const completions = [false, true];
-    const animate = {
+    const animate = animateFixture({
       leave: jasmine
         .createSpy("leave")
-        .and.callFake(() => immediateAnimation(completions.shift())),
-    };
+        .and.callFake(() => immediateAnimation(defined(completions.shift()))),
+    });
 
     host.setAttribute("data-animate", "true");
     const swap = createRealtimeSwapHandler({
       $compile,
-      $log: { warn: warnSpy } as any,
-      getAnimate: () => animate as any,
+      $log,
+      getAnimate: () => animate,
       scope: $rootScope,
       element: host,
       logPrefix: "test",
@@ -567,11 +635,23 @@ describe("createRealtimeSwapHandler", () => {
   });
 });
 
-function immediateAnimation(completed) {
+function immediateAnimation(completed: boolean): ng.AnimationHandle {
+  const handle = new AnimationHandle(undefined);
+  handle.complete(completed);
+  return handle;
+}
+
+function nativeTransition(): ViewTransition {
   return {
-    cancel: jasmine.createSpy("cancel"),
-    done(callback) {
-      callback(completed);
-    },
+    ready: Promise.resolve(),
+    finished: Promise.resolve(),
+    updateCallbackDone: Promise.resolve(),
+    types: new Set(),
+    skipTransition() {},
   };
+}
+function transitionUpdate(
+  update: Parameters<Document["startViewTransition"]>[0],
+) {
+  return (typeof update === "function" ? update : update?.update) ?? undefined;
 }

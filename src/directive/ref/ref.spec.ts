@@ -1,5 +1,10 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import {
+  callable,
+  defined,
+  instance,
+} from "../../shared/test-fixtures.spec.ts";
+
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { createElementFromHTML } from "../../shared/dom.ts";
@@ -7,44 +12,44 @@ import { ngRefDirective } from "./ref.ts";
 
 describe("ngRef", () => {
   describe("on a component", () => {
-    let myComponentController;
+    let myComponentController: object | undefined;
 
-    let attributeDirectiveController;
+    let attributeDirectiveController: object | undefined;
 
-    let elementDirectiveController;
+    let elementDirectiveController: object | undefined;
 
-    let $rootScope;
+    let $rootScope: FixtureScope;
 
-    let $compile;
+    let $compile: ng.CompileService;
 
-    let injector;
+    let injector: ng.InjectorService;
 
     beforeEach(() => {
       window.angular = new Angular();
       const myModule = window.angular
         .createModule("myModule", ["ng"])
         .decorator("$exceptionHandler", function () {
-          return (exception, cause) => {
-            throw new Error(exception.message);
+          return (exception: unknown, cause: unknown) => {
+            throw new Error(instance(exception, Error).message);
           };
         });
       myModule
         .component("myComponent", {
           template: "foo",
-          controller() {
+          controller: function (this: object): undefined {
             myComponentController = this;
           },
         })
         .directive("attributeDirective", () => ({
           restrict: "A",
-          controller() {
+          controller: function (this: object): undefined {
             attributeDirectiveController = this;
           },
         }))
         .directive("elementDirective", () => ({
           restrict: "E",
           template: "my text",
-          controller() {
+          controller: function (this: object): undefined {
             elementDirectiveController = this;
           },
         }));
@@ -64,9 +69,12 @@ describe("ngRef", () => {
 
         const scope = $rootScope.new();
 
-        const link = directive.compile(element);
+        callable(directive, "compile");
+        const link = defined(directive.compile)(element);
 
-        link(scope, element);
+        if (typeof link !== "function")
+          throw new TypeError("Expected link function");
+        link(scope, element, () => undefined);
 
         expect(scope.elementRef).toBe(element);
 
@@ -146,7 +154,7 @@ describe("ngRef", () => {
         $rootScope,
       );
 
-      expect($rootScope.obj.myComponent).toBe(myComponentController);
+      expect(defined($rootScope.obj).myComponent).toBe(myComponentController);
     });
 
     it("should bind the DOM element if there is no component", () => {
@@ -155,7 +163,7 @@ describe("ngRef", () => {
       );
 
       expect($rootScope.mySpan).toBe(element);
-      expect($rootScope.mySpan.textContent).toBe("my text");
+      expect(instance($rootScope.mySpan, Element).textContent).toBe("my text");
     });
 
     it("should nullify plain element refs when the owner scope is destroyed", () => {
@@ -163,7 +171,7 @@ describe("ngRef", () => {
 
       $compile('<span ng-ref="mySpan">my text</span>')(scope);
 
-      expect(scope.mySpan.textContent).toBe("my text");
+      expect(instance(scope.mySpan, Element).textContent).toBe("my text");
 
       scope.destroy();
 
@@ -189,7 +197,7 @@ describe("ngRef", () => {
         )($rootScope);
 
         expect($rootScope.myEl).toBe(element);
-        expect($rootScope.myEl.textContent).toBe("foo");
+        expect(instance($rootScope.myEl, Element).textContent).toBe("foo");
       });
 
       it("should support normalized data-ng-ref-read aliases", () => {
@@ -198,7 +206,7 @@ describe("ngRef", () => {
         )($rootScope);
 
         expect($rootScope.myEl).toBe(element);
-        expect($rootScope.myEl.textContent).toBe("foo");
+        expect(instance($rootScope.myEl, Element).textContent).toBe("foo");
       });
 
       it('should bind the element instead of an element directive controller if ngRefRead="$element" is set', () => {
@@ -208,7 +216,7 @@ describe("ngRef", () => {
 
         expect(elementDirectiveController).toBeDefined();
         expect($rootScope.myEl).toBe(element);
-        expect($rootScope.myEl.textContent).toBe("my text");
+        expect(instance($rootScope.myEl, Element).textContent).toBe("my text");
       });
 
       it("should bind a named attribute directive controller", () => {
@@ -248,3 +256,11 @@ describe("ngRef", () => {
     });
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  $ctrl?: string;
+  obj?: { myComponent?: object };
+  missingControllerRef?: string;
+}

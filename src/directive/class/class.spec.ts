@@ -1,33 +1,35 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode } from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 import { arrayDifference, split, toClassString } from "./class.ts";
 
 describe("ngClass", () => {
-  let element;
+  let element: HTMLElement;
 
-  let $compile;
+  let $compile: ng.CompileService;
 
-  let $rootScope;
+  let $rootScope: FixtureScope;
 
-  let injector;
+  let injector: ng.InjectorService;
 
   beforeEach(() => {
-    dealoc(document.getElementById("app"));
+    dealoc(defined(document.getElementById("app")));
     window.angular = new Angular();
     window.angular.createModule("test", []);
-    injector = window.angular.bootstrap(document.getElementById("app"), [
-      "test",
-    ]);
+    injector = window.angular.bootstrap(
+      defined(document.getElementById("app")),
+      ["test"],
+    );
     $compile = injector.get("$compile");
     $rootScope = injector.get("$rootScope");
   });
 
   it("should add new and remove old classes dynamically", async () => {
-    element = $compile('<div class="existing" ng-class="dynClass"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="existing" ng-class="dynClass"></div>')($rootScope),
     );
     $rootScope.dynClass = "A";
     await wait();
@@ -48,8 +50,10 @@ describe("ngClass", () => {
   });
 
   it("should support normalized data-ng-class aliases", async () => {
-    element = $compile('<div class="existing" data-ng-class="dynClass"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="existing" data-ng-class="dynClass"></div>')(
+        $rootScope,
+      ),
     );
     $rootScope.dynClass = "A";
     await wait();
@@ -66,28 +70,30 @@ describe("ngClass", () => {
       }
     }
 
-    element = $compile(
-      '<section><button type="button" ng-click="$ctrl.activate()">Activate</button>' +
-        '<span ng-class="$ctrl.classes"></span></section>',
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        '<section><button type="button" ng-click="$ctrl.activate()">Activate</button>' +
+          '<span ng-class="$ctrl.classes"></span></section>',
+      )($rootScope),
+    );
     $rootScope.$ctrl = new TestController();
 
     await wait();
     const span = element.querySelector("span");
 
-    expect(span.classList.contains("before")).toBe(true);
-    expect(span.classList.contains("after")).toBe(false);
+    expect(defined(span).classList.contains("before")).toBe(true);
+    expect(defined(span).classList.contains("after")).toBe(false);
 
-    element.querySelector("button").click();
+    defined(element.querySelector("button")).click();
     await wait();
 
-    expect(span.classList.contains("before")).toBe(false);
-    expect(span.classList.contains("after")).toBe(true);
+    expect(defined(span).classList.contains("before")).toBe(false);
+    expect(defined(span).classList.contains("after")).toBe(true);
   });
 
   it("should add new and remove old classes with same names as Object.prototype properties dynamically", async () => {
-    element = $compile('<div class="existing" ng-class="dynClass"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="existing" ng-class="dynClass"></div>')($rootScope),
     );
     $rootScope.dynClass = {
       watch: true,
@@ -116,9 +122,11 @@ describe("ngClass", () => {
   });
 
   it("should support adding multiple classes via an array", async () => {
-    element = $compile(
-      "<div class=\"existing\" ng-class=\"['A', 'B']\"></div>",
-    )($rootScope);
+    element = htmlNode(
+      $compile("<div class=\"existing\" ng-class=\"['A', 'B']\"></div>")(
+        $rootScope,
+      ),
+    );
     await wait();
     expect(element.classList.contains("existing")).toBeTruthy();
     expect(element.classList.contains("A")).toBeTruthy();
@@ -129,11 +137,13 @@ describe("ngClass", () => {
     "should support adding multiple classes conditionally via a map of class names to boolean " +
       "expressions",
     async () => {
-      element = $compile(
-        '<div class="existing" ' +
-          'ng-class="{A: conditionA, B: conditionB, AnotB: conditionA&&!conditionB}">' +
-          "</div>",
-      )($rootScope);
+      element = htmlNode(
+        $compile(
+          '<div class="existing" ' +
+            'ng-class="{A: conditionA, B: conditionB, AnotB: conditionA&&!conditionB}">' +
+            "</div>",
+        )($rootScope),
+      );
       $rootScope.conditionA = true;
       $rootScope.conditionB = false;
       await wait();
@@ -151,15 +161,17 @@ describe("ngClass", () => {
   );
 
   it("should not break when passed non-string/array/object, truthy values", async () => {
-    element = $compile('<div ng-class="42"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="42"></div>')($rootScope));
     await wait();
     expect(element.classList.contains("42")).toBeTruthy();
   });
 
   it("should support adding multiple classes via an array mixed with conditionally via a map", async () => {
-    element = $compile(
-      "<div class=\"existing\" ng-class=\"['A', {'B': condition}]\"></div>",
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        "<div class=\"existing\" ng-class=\"['A', {'B': condition}]\"></div>",
+      )($rootScope),
+    );
     await wait();
     expect(element.classList.contains("existing")).toBeTruthy();
     expect(element.classList.contains("A")).toBeTruthy();
@@ -170,7 +182,7 @@ describe("ngClass", () => {
   });
 
   it("should remove classes when the referenced object is the same but its property is changed", async () => {
-    element = $compile('<div ng-class="classes"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="classes"></div>')($rootScope));
     $rootScope.classes = { A: true, B: true };
     await wait();
     expect(element.classList.contains("A")).toBeTruthy();
@@ -182,29 +194,33 @@ describe("ngClass", () => {
   });
 
   it("should rebind object-literal dependencies when a repeated item is replaced", async () => {
-    element = $compile(
-      '<div><article ng-repeat="todo in tasks" data-index="id" ' +
-        'ng-class="{active: todo.done}">{{ todo.done }}</article></div>',
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        '<div><article ng-repeat="todo in tasks" data-index="id" ' +
+          'ng-class="{active: todo.done}">{{ todo.done }}</article></div>',
+      )($rootScope),
+    );
     $rootScope.tasks = [{ id: 1, done: false }];
 
     await wait();
 
     const row = element.querySelector("article");
 
-    expect(row.textContent.trim()).toBe("false");
+    expect(defined(row).textContent.trim()).toBe("false");
     expect(row).not.toHaveClass("active");
 
     $rootScope.tasks = [{ id: 1, done: true }];
     await wait();
 
     expect(element.querySelector("article")).toBe(row);
-    expect(row.textContent.trim()).toBe("true");
+    expect(defined(row).textContent.trim()).toBe("true");
     expect(row).toHaveClass("active");
   });
 
   it("should support precomputed view-model class maps", async () => {
-    element = $compile('<button ng-class="tile.classes"></button>')($rootScope);
+    element = htmlNode(
+      $compile('<button ng-class="tile.classes"></button>')($rootScope),
+    );
 
     $rootScope.tile = {
       classes: {
@@ -249,8 +265,8 @@ describe("ngClass", () => {
   });
 
   it("should support adding multiple classes via a space delimited string", async () => {
-    element = $compile('<div class="existing" ng-class="\'A B\'"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="existing" ng-class="\'A B\'"></div>')($rootScope),
     );
     await wait();
     expect(element.classList.contains("existing")).toBeTruthy();
@@ -259,9 +275,11 @@ describe("ngClass", () => {
   });
 
   it("should support adding multiple classes via a space delimited string inside an array", async () => {
-    element = $compile(
-      "<div class=\"existing\" ng-class=\"['A B', 'C']\"></div>",
-    )($rootScope);
+    element = htmlNode(
+      $compile("<div class=\"existing\" ng-class=\"['A B', 'C']\"></div>")(
+        $rootScope,
+      ),
+    );
     await wait();
     expect(element.classList.contains("existing")).toBeTruthy();
     expect(element.classList.contains("A")).toBeTruthy();
@@ -270,8 +288,8 @@ describe("ngClass", () => {
   });
 
   it("should preserve class added post compilation with pre-existing classes", async () => {
-    element = $compile('<div class="existing" ng-class="dynClass"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="existing" ng-class="dynClass"></div>')($rootScope),
     );
     $rootScope.dynClass = "A";
     await wait();
@@ -287,7 +305,7 @@ describe("ngClass", () => {
   });
 
   it('should preserve class added post compilation without pre-existing classes"', async () => {
-    element = $compile('<div ng-class="dynClass"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="dynClass"></div>')($rootScope));
     $rootScope.dynClass = "A";
     await wait();
     expect(element.classList.contains("A")).toBe(true);
@@ -301,9 +319,11 @@ describe("ngClass", () => {
   });
 
   it('should preserve other classes with similar name"', async () => {
-    element = $compile(
-      '<div class="ng-panel ng-selected" ng-class="dynCls"></div>',
-    )($rootScope);
+    element = htmlNode(
+      $compile('<div class="ng-panel ng-selected" ng-class="dynCls"></div>')(
+        $rootScope,
+      ),
+    );
     $rootScope.dynCls = "panel";
     await wait();
     expect(element.className).toBe("ng-panel ng-selected panel");
@@ -313,8 +333,8 @@ describe("ngClass", () => {
   });
 
   it("should not add duplicate classes", async () => {
-    element = $compile('<div class="panel bar" ng-class="dynCls"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="panel bar" ng-class="dynCls"></div>')($rootScope),
     );
     $rootScope.dynCls = "panel";
     await wait();
@@ -322,8 +342,8 @@ describe("ngClass", () => {
   });
 
   it("should remove classes even if it was specified via class attribute", async () => {
-    element = $compile('<div class="panel bar" ng-class="dynCls"></div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div class="panel bar" ng-class="dynCls"></div>')($rootScope),
     );
     $rootScope.dynCls = "panel";
     await wait();
@@ -333,7 +353,7 @@ describe("ngClass", () => {
   });
 
   it("should remove classes even if they were added by another code", async () => {
-    element = $compile('<div ng-class="dynCls"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="dynCls"></div>')($rootScope));
     await wait();
     $rootScope.dynCls = "foo";
     await wait();
@@ -345,7 +365,7 @@ describe("ngClass", () => {
   });
 
   it("should not touch classes when ng-class resolves to the same string", async () => {
-    element = $compile('<div ng-class="dynCls"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="dynCls"></div>')($rootScope));
     $rootScope.dynCls = "foo";
     await wait();
 
@@ -362,16 +382,18 @@ describe("ngClass", () => {
   });
 
   it("should convert undefined and null values to an empty string", async () => {
-    element = $compile('<div ng-class="dynCls"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="dynCls"></div>')($rootScope));
     await wait();
     $rootScope.dynCls = [undefined, null];
     expect(element.className).toBe("");
   });
 
   it("should allow ngClass with overlapping classes", async () => {
-    element = $compile(
-      "<div ng-class=\"{'same yes': test, 'same no': !test}\"></div>",
-    )($rootScope);
+    element = htmlNode(
+      $compile("<div ng-class=\"{'same yes': test, 'same no': !test}\"></div>")(
+        $rootScope,
+      ),
+    );
     await wait();
     expect(element).toHaveClass("same");
     expect(element).not.toHaveClass("yes");
@@ -386,12 +408,14 @@ describe("ngClass", () => {
   });
 
   it("should apply ngClass with interpolated class attributes", async () => {
-    element = $compile(
-      "<div>" +
-        '<div class="one {{two}} three" ng-class="{five: five}"></div>' +
-        '<div class="one {{two}} three {{four}}" ng-class="{five: five}"></div>' +
-        "</div>",
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        "<div>" +
+          '<div class="one {{two}} three" ng-class="{five: five}"></div>' +
+          '<div class="one {{two}} three {{four}}" ng-class="{five: five}"></div>' +
+          "</div>",
+      )($rootScope),
+    );
     await wait();
     const e1 = element.children[0];
 
@@ -417,13 +441,15 @@ describe("ngClass", () => {
     $rootScope.watch("anything", () => {
       $rootScope.foo = false;
     });
-    element = $compile('<div ng-class="{foo:foo}"></div>')($rootScope);
+    element = htmlNode(
+      $compile('<div ng-class="{foo:foo}"></div>')($rootScope),
+    );
     await wait();
     expect(element.classList.contains("foo")).toBe(false);
   });
 
   it("should support mixed array/object variable with a mutating object", async () => {
-    element = $compile('<div ng-class="classVar"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="classVar"></div>')($rootScope));
 
     $rootScope.classVar = [{ orange: true }];
     await wait();
@@ -436,7 +462,9 @@ describe("ngClass", () => {
 
   // // https://github.com/angular/angular.js/issues/15905
   it("should support a mixed literal-array/object variable", async () => {
-    element = $compile('<div ng-class="[classVar]"></div>')($rootScope);
+    element = htmlNode(
+      $compile('<div ng-class="[classVar]"></div>')($rootScope),
+    );
 
     $rootScope.classVar = { orange: true };
     await wait();
@@ -449,7 +477,7 @@ describe("ngClass", () => {
 
   it("should track changes of mutating object inside an array", async () => {
     $rootScope.classVar = [{ orange: true }];
-    element = $compile('<div ng-class="classVar"></div>')($rootScope);
+    element = htmlNode($compile('<div ng-class="classVar"></div>')($rootScope));
     await wait();
     expect(element).toHaveClass("orange");
     $rootScope.classVar.pop();
@@ -459,21 +487,24 @@ describe("ngClass", () => {
 
   // https://github.com/angular/angular.js/issues/15960#issuecomment-299109412
   it("should always reevaluate filters with non-primitive inputs within literals", async () => {
-    dealoc(document.getElementById("app"));
+    dealoc(defined(document.getElementById("app")));
     window.angular = new Angular();
     window.angular
       .createModule("test", [])
       .filter("foo", () => (value) => value.a || value.b);
-    injector = window.angular.bootstrap(document.getElementById("app"), [
-      "test",
-    ]);
+    injector = window.angular.bootstrap(
+      defined(document.getElementById("app")),
+      ["test"],
+    );
 
     injector.invoke([
       "$rootScope",
       "$compile",
-      async ($rootScope, $compile) => {
+      async ($rootScope: FixtureScope, $compile: ng.CompileService) => {
         $rootScope.testObj = {};
-        element = $compile('<div ng-class="{x: (testObj | foo)}">')($rootScope);
+        element = htmlNode(
+          $compile('<div ng-class="{x: (testObj | foo)}">')($rootScope),
+        );
 
         expect(element).not.toHaveClass("x");
 
@@ -485,25 +516,24 @@ describe("ngClass", () => {
   });
 
   describe("large objects", () => {
-    let getProp;
-
-    let veryLargeObj;
+    let veryLargeObj: {};
 
     beforeEach(() => {
-      getProp = jasmine.createSpy("getProp");
       veryLargeObj = {};
     });
 
     it("should be copied when using an expression", async () => {
-      element = $compile('<div ng-class="fooClass"></div>')($rootScope);
+      element = htmlNode(
+        $compile('<div ng-class="fooClass"></div>')($rootScope),
+      );
       $rootScope.fooClass = { foo: veryLargeObj };
       await wait();
       expect(element).toHaveClass("foo");
     });
 
     it("should be copied when using a literal", async () => {
-      element = $compile('<div ng-class="{foo: veryLargeObj}"></div>')(
-        $rootScope,
+      element = htmlNode(
+        $compile('<div ng-class="{foo: veryLargeObj}"></div>')($rootScope),
       );
       $rootScope.veryLargeObj = veryLargeObj;
       await wait();
@@ -511,8 +541,8 @@ describe("ngClass", () => {
     });
 
     it("should be copied when inside an array", async () => {
-      element = $compile('<div ng-class="[{foo: veryLargeObj}]"></div>')(
-        $rootScope,
+      element = htmlNode(
+        $compile('<div ng-class="[{foo: veryLargeObj}]"></div>')($rootScope),
       );
       $rootScope.veryLargeObj = veryLargeObj;
       await wait();
@@ -604,7 +634,9 @@ describe("split", () => {
   });
 
   it("returns [] for null/undefined", () => {
+    // @ts-expect-error Deliberately test a null value at the runtime boundary.
     expect(split(null)).toEqual([]);
+    // @ts-expect-error Deliberately test an undefined value at the runtime boundary.
     expect(split(undefined)).toEqual([]);
   });
 
@@ -691,3 +723,33 @@ describe("toClassString", () => {
     }
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  dynClass?:
+    | string
+    | { watch?: boolean; hasOwnProperty?: boolean; isPrototypeOf?: boolean };
+  conditionA?: boolean;
+  conditionB?: boolean;
+  condition?: boolean;
+  classes?: { A?: boolean; B?: boolean };
+  tasks?: { id?: number; done?: boolean }[];
+  tile?: {
+    classes?: {
+      placed?: boolean;
+      hit?: boolean;
+      miss?: boolean;
+      sunk?: boolean;
+    };
+  };
+  dynCls?: string | (undefined | null)[];
+  test?: boolean;
+  two?: string;
+  five?: boolean;
+  foo?: boolean;
+  classVar?: { orange?: boolean } | { orange?: boolean }[];
+  testObj?: { a?: boolean };
+  fooClass?: { foo?: {} };
+  veryLargeObj?: {};
+}

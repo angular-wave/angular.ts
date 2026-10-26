@@ -1,0 +1,372 @@
+{
+  "src/angular-runtime.spec.ts": {
+    "doubleAssertion": 2,
+    "neverAssertion": 1
+  },
+  "src/angular.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/binding.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/app-context/app-context-service-reactivity.spec.ts": {
+    "doubleAssertion": 1
+  },
+  "src/core/app-context/app-context.spec.ts": {
+    "doubleAssertion": 7,
+    "neverAssertion": 34
+  },
+  "src/core/compile/binding-policy.spec.ts": {
+    "doubleAssertion": 2,
+    "nonNullAssertion": 6
+  },
+  "src/core/compile/compile.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 23,
+    "neverAssertion": 1
+  },
+  "src/core/compile/html-policy.spec.ts": {
+    "doubleAssertion": 5
+  },
+  "src/core/compile/incremental-fragment.spec.ts": {
+    "doubleAssertion": 2,
+    "neverAssertion": 2,
+    "nonNullAssertion": 4
+  },
+  "src/core/compile/programmatic-view-api.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/compile/programmatic-view.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/composition/runtime-composition.spec.ts": {
+    "doubleAssertion": 4
+  },
+  "src/core/controller/controller.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/di/injector.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 6
+  },
+  "src/core/di/ng-module/model-runtime-concepts.test.ts": {
+    "doubleAssertion": 2
+  },
+  "src/core/di/ng-module/ng-module.spec.ts": {
+    "@ts-nocheck": 1,
+    "neverAssertion": 1,
+    "explicitAny": 6
+  },
+  "src/core/interpolate/interpolate.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/parse/parse.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/prop.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/render/after-render.spec.ts": {
+    "explicitAny": 4,
+    "nonNullAssertion": 3
+  },
+  "src/core/sanitize/sanitize-uri.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/core/scope/scope.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 1
+  },
+  "src/directive/attrs/attrs.spec.ts": {
+    "explicitAny": 6
+  },
+  "src/directive/attrs/boolean.spec.ts": {
+    "explicitAny": 6
+  },
+  "src/directive/attrs/element-style.spec.ts": {
+    "explicitAny": 5
+  },
+  "src/directive/bind/bind-html.spec.ts": {
+    "explicitAny": 4
+  },
+  "src/directive/canvas/canvas.spec.ts": {
+    "nonNullAssertion": 3,
+    "doubleAssertion": 3
+  },
+  "src/directive/canvas/canvas.test.ts": {
+    "nonNullAssertion": 2
+  },
+  "src/directive/channel/channel.spec.ts": {
+    "explicitAny": 4,
+    "nonNullAssertion": 1
+  },
+  "src/directive/cloak/cloak.spec.ts": {
+    "explicitAny": 4,
+    "nonNullAssertion": 1
+  },
+  "src/directive/el/el.spec.ts": {
+    "explicitAny": 7
+  },
+  "src/directive/events/click.spec.ts": {
+    "explicitAny": 3
+  },
+  "src/directive/events/event.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 1
+  },
+  "src/directive/form/form.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/http/delete.spec.ts": {
+    "explicitAny": 5
+  },
+  "src/directive/http/get.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/http/post.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/http/put.spec.ts": {
+    "explicitAny": 5
+  },
+  "src/directive/if/if.spec.ts": {
+    "@ts-nocheck": 1,
+    "nonNullAssertion": 1,
+    "doubleAssertion": 4
+  },
+  "src/directive/include/include.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/init/init.spec.ts": {
+    "explicitAny": 10,
+    "nonNullAssertion": 4
+  },
+  "src/directive/inject/inject.spec.ts": {
+    "explicitAny": 10
+  },
+  "src/directive/listener/listener.spec.ts": {
+    "explicitAny": 5
+  },
+  "src/directive/model-options/model-options.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/model/model.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/native/native.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/non-bindable/non-bindable.spec.ts": {
+    "explicitAny": 3
+  },
+  "src/directive/observe/observe.spec.ts": {
+    "explicitAny": 10,
+    "nonNullAssertion": 1
+  },
+  "src/directive/on/on.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/options/options.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/pointer-capture/pointer-capture.spec.ts": {
+    "neverAssertion": 2
+  },
+  "src/directive/repeat/repeat.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 5
+  },
+  "src/directive/scope/scope.spec.ts": {
+    "explicitAny": 4,
+    "nonNullAssertion": 1
+  },
+  "src/directive/script/script.spec.ts": {
+    "explicitAny": 11,
+    "nonNullAssertion": 4
+  },
+  "src/directive/select/select.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/setter/setter.spec.ts": {
+    "explicitAny": 8,
+    "nonNullAssertion": 1
+  },
+  "src/directive/validators/validators.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/directive/viewport/viewport.spec.ts": {
+    "explicitAny": 5,
+    "doubleAssertion": 2
+  },
+  "src/directive/worker/worker.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/docs-examples/cookbook-patterns.test.ts": {
+    "nonNullAssertion": 2
+  },
+  "src/docs-examples/optimized-runtime-cookbook.test.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/docs-examples/realtime-cookbook.test.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/filters/collections.spec.ts": {
+    "explicitAny": 4
+  },
+  "src/filters/filter.spec.ts": {
+    "explicitAny": 25
+  },
+  "src/filters/limit-to.spec.ts": {
+    "explicitAny": 6
+  },
+  "src/filters/order-by.spec.ts": {
+    "explicitAny": 19
+  },
+  "src/ng.spec.ts": {
+    "doubleAssertion": 2
+  },
+  "src/router/composition/router-runtime.spec.ts": {
+    "neverAssertion": 6,
+    "doubleAssertion": 3
+  },
+  "src/router/directives/state-directives.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/router/directives/view-directive.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/router/params/param-type.spec.ts": {
+    "explicitAny": 1
+  },
+  "src/router/router/template-factory.spec.ts": {
+    "explicitAny": 14,
+    "nonNullAssertion": 6,
+    "doubleAssertion": 1
+  },
+  "src/router/routing-policy-example.test.ts": {
+    "explicitAny": 4
+  },
+  "src/router/services.spec.ts": {
+    "explicitAny": 10,
+    "nonNullAssertion": 3
+  },
+  "src/router/state/state-builder.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/router/state/state.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/router/transition/security-policy.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 25
+  },
+  "src/router/transition/transition-hook.spec.ts": {
+    "@ts-nocheck": 1,
+    "nonNullAssertion": 2,
+    "explicitAny": 14
+  },
+  "src/router/url/url.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/router/view/view.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/runtime/custom-ng.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/runtime/storage.spec.ts": {
+    "doubleAssertion": 1
+  },
+  "src/services/anchor-scroll/anchor-scroll.test.ts": {
+    "nonNullAssertion": 3,
+    "explicitAny": 1
+  },
+  "src/services/event-bus/event-bus.spec.ts": {
+    "@ts-nocheck": 1,
+    "neverAssertion": 1
+  },
+  "src/services/exception/exception.spec.ts": {
+    "neverAssertion": 1
+  },
+  "src/services/html-canvas/html-canvas.spec.ts": {
+    "doubleAssertion": 15
+  },
+  "src/services/http/http.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/location/location.spec.ts": {
+    "@ts-nocheck": 1,
+    "doubleAssertion": 1
+  },
+  "src/services/log/log.spec.ts": {
+    "doubleAssertion": 14
+  },
+  "src/services/machine/machine-types.spec.ts": {
+    "nonNullAssertion": 2
+  },
+  "src/services/machine/machine.spec.ts": {
+    "@ts-nocheck": 1,
+    "doubleAssertion": 2,
+    "neverAssertion": 1
+  },
+  "src/services/rest/rest.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/rest/rest.test.ts": {
+    "explicitAny": 1
+  },
+  "src/services/service-worker/service-worker.spec.ts": {
+    "doubleAssertion": 44,
+    "nonNullAssertion": 7
+  },
+  "src/services/service-worker/service-worker.test.ts": {
+    "doubleAssertion": 6
+  },
+  "src/services/sse/sse.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/storage/storage.spec.ts": {
+    "explicitAny": 6
+  },
+  "src/services/template-cache/template-cache.spec.ts": {
+    "explicitAny": 17
+  },
+  "src/services/wasm/wasm-types.spec.ts": {
+    "doubleAssertion": 3
+  },
+  "src/services/wasm/wasm.spec.ts": {
+    "@ts-nocheck": 1,
+    "explicitAny": 24
+  },
+  "src/services/web-component/web-component.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/web-component/web-component.test.ts": {
+    "nonNullAssertion": 7,
+    "explicitAny": 7
+  },
+  "src/services/websocket/websocket.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/webtransport/webtransport.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/worker/worker.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/services/workflow/workflow.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/shared/dom.spec.ts": {
+    "doubleAssertion": 5
+  },
+  "src/shared/strings.spec.ts": {
+    "doubleAssertion": 3
+  },
+  "src/shared/utils.spec.ts": {
+    "@ts-nocheck": 1
+  },
+  "src/shared/validate.spec.ts": {
+    "explicitAny": 4
+  }
+}

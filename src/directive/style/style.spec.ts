@@ -1,16 +1,17 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode } from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { createElementFromHTML, dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("ng-style", () => {
-  let $scope;
+  let $scope: FixtureScope;
 
-  let $compile;
+  let $compile: ng.CompileService;
 
-  let element;
+  let element: HTMLElement;
 
   beforeEach(() => {
     window.angular = new Angular();
@@ -18,7 +19,7 @@ describe("ng-style", () => {
     createInjector(["myModule"]).invoke([
       "$rootScope",
       "$compile",
-      ($rootScope, _$compile_) => {
+      ($rootScope: FixtureScope, _$compile_: ng.CompileService) => {
         $scope = $rootScope.new();
         $compile = _$compile_;
       },
@@ -30,27 +31,31 @@ describe("ng-style", () => {
   });
 
   it("should set", async () => {
-    element = $compile("<div ng-style=\"{height: '40px'}\"></div>")($scope);
+    element = htmlNode(
+      $compile("<div ng-style=\"{height: '40px'}\"></div>")($scope),
+    );
     await wait();
     expect(element.style.height).toEqual("40px");
   });
 
   it("should support normalized data-ng-style aliases", async () => {
-    element = $compile("<div data-ng-style=\"{height: '40px'}\"></div>")(
-      $scope,
+    element = htmlNode(
+      $compile("<div data-ng-style=\"{height: '40px'}\"></div>")($scope),
     );
     await wait();
     expect(element.style.height).toEqual("40px");
   });
 
   it("should silently ignore undefined style", async () => {
-    element = $compile('<div ng-style="myStyle"></div>')($scope);
+    element = htmlNode($compile('<div ng-style="myStyle"></div>')($scope));
     await wait();
     expect(element.classList.contains("ng-exception")).toBeFalsy();
   });
 
   it("should not deep watch objects", async () => {
-    element = $compile('<div ng-style="{height: heightObj}"></div>')($scope);
+    element = htmlNode(
+      $compile('<div ng-style="{height: heightObj}"></div>')($scope),
+    );
     expect(parseInt(element.style.height + 0, 10)).toEqual(0); // height could be '' or '0px'
     $scope.heightObj = {
       toString() {
@@ -61,12 +66,14 @@ describe("ng-style", () => {
     expect(element.style.height).toBe("40px");
 
     element.style.height = "10px";
-    $scope.heightObj.otherProp = 123;
+    defined($scope.heightObj).otherProp = 123;
     expect(element.style.height).toBe("10px");
   });
 
   it("should support binding for object literals", async () => {
-    element = $compile('<div ng-style="{height: heightStr}"></div>')($scope);
+    element = htmlNode(
+      $compile('<div ng-style="{height: heightStr}"></div>')($scope),
+    );
     expect(parseInt(element.style.height + 0, 10)).toEqual(0); // height could be '' or '0px'
     $scope.heightStr = "40px";
     await wait();
@@ -78,24 +85,26 @@ describe("ng-style", () => {
   });
 
   describe("preserving styles set before and after compilation", () => {
-    let scope;
+    let scope: FixtureScope;
 
-    let preCompStyle;
+    let preCompStyle: "width";
 
-    let preCompVal;
+    let preCompVal: "300px";
 
-    let postCompStyle;
+    let postCompStyle: "height";
 
-    let postCompVal;
+    let postCompVal: "100px";
 
-    let element;
+    let element: HTMLElement;
 
     beforeEach(async () => {
       preCompStyle = "width";
       preCompVal = "300px";
       postCompStyle = "height";
       postCompVal = "100px";
-      element = createElementFromHTML('<div ng-style="styleObj"></div>');
+      element = htmlNode(
+        createElementFromHTML('<div ng-style="styleObj"></div>'),
+      );
       element.style[preCompStyle] = preCompVal;
       element.style.setProperty("background", "red");
       document.body.append(element);
@@ -115,19 +124,19 @@ describe("ng-style", () => {
       element.style.margin = "44px";
       await wait();
       expect(element.style[preCompStyle]).toBe(preCompVal);
-      expect(element.style["margin-top"]).toBe("44px");
+      expect(element.style.marginTop).toBe("44px");
       expect(element.style[postCompStyle]).toBe(postCompVal);
     });
 
     it("should not mess up stuff after a queued update with no model changes", async () => {
-      element.style["padding-top"] = "33px";
+      element.style.paddingTop = "33px";
       await wait();
       await wait();
 
       expect(element.style[preCompStyle]).toBe(preCompVal);
-      expect(element.style["margin-top"]).toBe("44px");
+      expect(element.style.marginTop).toBe("44px");
       expect(element.style[postCompStyle]).toBe(postCompVal);
-      expect(element.style["padding-top"]).toBe("33px");
+      expect(element.style.paddingTop).toBe("33px");
     });
 
     it("should not mess up stuff after non-colliding model changes", async () => {
@@ -136,8 +145,8 @@ describe("ng-style", () => {
       await wait();
 
       expect(element.style[preCompStyle]).toBe(preCompVal);
-      expect(element.style["margin-top"]).not.toBe("44px");
-      expect(element.style["padding-top"]).toBe("99px");
+      expect(element.style.marginTop).not.toBe("44px");
+      expect(element.style.paddingTop).toBe("99px");
       expect(element.style[postCompStyle]).toBe(postCompVal);
     });
 
@@ -200,3 +209,16 @@ describe("ng-style", () => {
     });
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  heightObj?: { toString(): string; otherProp?: number };
+  heightStr?: string;
+  styleObj?: null | {
+    "margin-top"?: string;
+    "padding-top"?: string;
+    height?: string | undefined | boolean | number;
+    width?: string | null | boolean | number;
+  };
+}

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { createScope } from "../../core/scope/scope.ts";
 import { createCanvasWorkAdapter } from "./retained-scheduler.ts";

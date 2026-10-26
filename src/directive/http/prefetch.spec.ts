@@ -1,14 +1,14 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined } from "../../shared/test-fixtures.spec.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { browserTrigger, waitUntil } from "../../shared/test-utils.ts";
 
 describe("ng-get prefetch pattern", () => {
-  let $compile, $rootScope, el;
+  let $compile: ng.CompileService, $rootScope: ng.Scope, el: HTMLElement;
 
   beforeEach(() => {
-    el = document.getElementById("app");
+    el = defined(document.getElementById("app"));
     dealoc(el);
     el.innerHTML = "";
 
@@ -17,7 +17,7 @@ describe("ng-get prefetch pattern", () => {
     angular.bootstrap(el, ["default"]).invoke([
       "$compile",
       "$rootScope",
-      (_$compile_, _$rootScope_) => {
+      (_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },
@@ -27,7 +27,8 @@ describe("ng-get prefetch pattern", () => {
   afterEach(() => dealoc(el));
 
   function renderPreview() {
-    const scope = $rootScope.new();
+    const preview: { preview?: { name: string } } = {};
+    const scope = Object.assign($rootScope.new(), preview);
     el.innerHTML = `
       <div ng-get="/mock/jsonobject" data-trigger="mouseenter"
            on-success="preview = $res">
@@ -45,11 +46,11 @@ describe("ng-get prefetch pattern", () => {
     const scope = renderPreview();
     const host = el.querySelector("div");
 
-    browserTrigger(host, "mouseenter");
+    browserTrigger(defined(host), "mouseenter");
     await waitUntil(() => scope.preview?.name === "Bob");
     expect(el.querySelector("section")).toBeNull();
 
-    browserTrigger(el.querySelector("button"), "click");
+    browserTrigger(defined(el.querySelector("button")), "click");
     await waitUntil(() => el.querySelector("section")?.textContent === "Bob");
     expect(el.textContent).not.toContain("Loading");
   });
@@ -57,7 +58,7 @@ describe("ng-get prefetch pattern", () => {
   it("loads on click when pointer prefetch did not run", async () => {
     const scope = renderPreview();
 
-    browserTrigger(el.querySelector("button"), "click");
+    browserTrigger(defined(el.querySelector("button")), "click");
     await waitUntil(() => scope.preview?.name === "Bob");
     await waitUntil(() => el.querySelector("section")?.textContent === "Bob");
 

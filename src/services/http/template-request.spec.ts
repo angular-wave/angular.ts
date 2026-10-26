@@ -1,5 +1,7 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import type { HttpCacheConfig } from "./http.ts";
+import { defined, instance } from "../../shared/test-fixtures.spec.ts";
+
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
 import { wait } from "../../shared/test-utils.ts";
@@ -11,13 +13,13 @@ import {
 } from "../template-request/template-request.ts";
 
 describe("$templateRequest", () => {
-  let module,
-    $rootScope,
-    $templateRequest,
-    $templateCache,
-    $http,
-    angular,
-    errors;
+  let module: ng.NgModule,
+    $rootScope: ng.Scope,
+    $templateRequest: ng.TemplateRequestService,
+    $templateCache: ng.TemplateCacheService,
+    $http: ng.HttpService,
+    angular: Angular,
+    errors: unknown[];
 
   beforeEach(() => {
     errors = [];
@@ -25,8 +27,8 @@ describe("$templateRequest", () => {
     module = angular
       .createModule("test", ["ng"])
       .decorator("$exceptionHandler", () => {
-        return (exception, cause) => {
-          errors.push(exception.message);
+        return (exception: unknown, cause: unknown) => {
+          errors.push(instance(exception, Error).message);
         };
       });
     const injector = createInjector(["test"]);
@@ -37,19 +39,29 @@ describe("$templateRequest", () => {
     $http = injector.get("$http");
   });
 
+  function httpFixture(overrides: {
+    defaults: ng.HttpService["defaults"];
+    get: jasmine.Spy<ng.HttpService["get"]>;
+  }) {
+    return Object.assign($http, overrides);
+  }
+
   describe("consumer cancellation", () => {
-    let cache, http, responses, request;
+    let cache: Map<string, string>,
+      http: ReturnType<typeof httpFixture>,
+      responses: PromiseWithResolvers<ng.HttpResponse<string>>[],
+      request: ng.TemplateRequestService;
     beforeEach(() => {
-      cache = new Map();
-      responses = [];
-      http = {
+      cache = new Map<string, string>();
+      responses = Array.from({ length: 2 }, () =>
+        Promise.withResolvers<ng.HttpResponse<string>>(),
+      );
+      http = httpFixture({
         defaults: {},
-        get: jasmine.createSpy("get").and.callFake(() => {
-          const response = Promise.withResolvers();
-          responses.push(response);
-          return response.promise;
-        }),
-      };
+        get: jasmine
+          .createSpy<ng.HttpService["get"]>("get")
+          .and.returnValues(...responses.map((response) => response.promise)),
+      });
       request = createTemplateRequestService(cache, http, {}, (url) => url);
     });
 
@@ -59,11 +71,11 @@ describe("$templateRequest", () => {
       const a = request("/shared", { signal: first.signal });
       const b = request("/shared", { signal: second.signal });
       await Promise.resolve();
-      const transport = http.get.calls.first().args[1].signal;
+      const transport = defined(defined(http.get.calls.first().args[1]).signal);
       first.abort("replaced");
       await expectAsync(a).toBeRejectedWith("replaced");
       expect(transport.aborted).toBeFalse();
-      responses[0].resolve({ data: "shared" });
+      responses[0].resolve(httpResponse("shared"));
       await expectAsync(b).toBeResolvedTo("shared");
       expect(http.get).toHaveBeenCalledTimes(1);
       second.abort();
@@ -74,18 +86,18 @@ describe("$templateRequest", () => {
       const controller = new AbortController();
       const obsolete = request("/retry", { signal: controller.signal });
       await Promise.resolve();
-      const transport = http.get.calls.first().args[1].signal;
+      const transport = defined(defined(http.get.calls.first().args[1]).signal);
       controller.abort();
       await expectAsync(obsolete).toBeRejectedWith(controller.signal.reason);
       expect(transport.aborted).toBeTrue();
       const current = request("/retry");
       await Promise.resolve();
       // An uncooperative transport must neither cache stale content nor delete the new entry.
-      responses[0].resolve({ data: "stale" });
+      responses[0].resolve(httpResponse("stale"));
       await wait();
       expect(cache.has("/retry")).toBeFalse();
       expect(request("/retry")).toBe(current);
-      responses[1].resolve({ data: "fresh" });
+      responses[1].resolve(httpResponse("fresh"));
       await expectAsync(current).toBeResolvedTo("fresh");
       expect(cache.get("/retry")).toBe("fresh");
     });
@@ -97,8 +109,10 @@ describe("$templateRequest", () => {
       await Promise.resolve();
       controller.abort();
       await expectAsync(a).toBeRejected();
-      expect(http.get.calls.first().args[1].signal.aborted).toBeFalse();
-      responses[0].resolve({ data: "persistent" });
+      expect(
+        defined(defined(http.get.calls.first().args[1]).signal).aborted,
+      ).toBeFalse();
+      responses[0].resolve(httpResponse("persistent"));
       await expectAsync(b).toBeResolvedTo("persistent");
     });
 
@@ -128,7 +142,7 @@ describe("$templateRequest", () => {
       const a = request("/failure", { signal: consumer.signal });
       const b = request("/failure", { signal: new AbortController().signal });
       await Promise.resolve();
-      const transport = http.get.calls.first().args[1].signal;
+      const transport = defined(defined(http.get.calls.first().args[1]).signal);
       global.abort("global cancellation");
       expect(transport.aborted).toBeTrue();
       responses[0].reject("failure");
@@ -180,16 +194,20 @@ describe("$templateRequest", () => {
     const cache = new Map([
       ["https://blocked.example/template.html", "cached"],
     ]);
-    const response = Promise.withResolvers();
-    const http = {
+    const response = Promise.withResolvers<ng.HttpResponse<string>>();
+    const http = httpFixture({
       defaults: {},
-      get: jasmine.createSpy("get").and.returnValue(response.promise),
-    };
-    let allow = false;
-    const policy = jasmine.createSpy("resourcePolicy").and.callFake((url) => {
-      if (!allow) throw new Error("resource denied");
-      return url;
+      get: jasmine
+        .createSpy<ng.HttpService["get"]>("get")
+        .and.returnValue(response.promise),
     });
+    let allow = false;
+    const policy = jasmine
+      .createSpy<(url: string) => string>("resourcePolicy")
+      .and.callFake((url) => {
+        if (!allow) throw new Error("resource denied");
+        return url;
+      });
     const request = createTemplateRequestService(cache, http, {}, policy);
     await expectAsync(
       request("https://blocked.example/template.html"),
@@ -203,17 +221,19 @@ describe("$templateRequest", () => {
     await expectAsync(request("/pending.html")).toBeRejectedWithError(
       "resource denied",
     );
-    response.resolve({ data: "approved template" });
+    response.resolve(httpResponse("approved template"));
     await expectAsync(pending).toBeResolvedTo("approved template");
     expect(policy).toHaveBeenCalledTimes(3);
   });
 
   it("uses the resource-policy result for requests and cache keys", async () => {
-    const cache = new Map();
-    const http = {
+    const cache = new Map<string, string>();
+    const http = httpFixture({
       defaults: {},
-      get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
-    };
+      get: jasmine
+        .createSpy<ng.HttpService["get"]>("get")
+        .and.resolveTo(httpResponse("template")),
+    });
     const request = createTemplateRequestService(
       cache,
       http,
@@ -230,44 +250,54 @@ describe("$templateRequest", () => {
   });
 
   it("removes a lone default response transform", async () => {
-    const cache = new Map();
-    const http = {
+    const cache = new Map<string, string>();
+    const http = httpFixture({
       defaults: { transformResponse: defaultHttpResponseTransform },
-      get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
-    };
+      get: jasmine
+        .createSpy<ng.HttpService["get"]>("get")
+        .and.resolveTo(httpResponse("template")),
+    });
     const request = createTemplateRequestService(cache, http, {}, (url) => url);
 
     await expectAsync(request("/template.html")).toBeResolvedTo("template");
 
-    expect(http.get).toHaveBeenCalledOnceWith("/template.html", {
-      transformResponse: null,
-      signal: jasmine.any(AbortSignal),
-    });
+    expect(http.get).toHaveBeenCalledOnceWith(
+      "/template.html",
+      jasmine.any(Object),
+    );
+    const options = defined(http.get.calls.first().args[1]);
+    expect(options.transformResponse).toBeNull();
+    expect(options.signal).toEqual(jasmine.any(AbortSignal));
     expect(cache.get("/template.html")).toBe("template");
   });
 
   it("uses null when HTTP has no default response transform", async () => {
-    const cache = new Map();
-    const http = {
+    const cache = new Map<string, string>();
+    const http = httpFixture({
       defaults: {},
-      get: jasmine.createSpy("get").and.resolveTo({ data: "template" }),
-    };
+      get: jasmine
+        .createSpy<ng.HttpService["get"]>("get")
+        .and.resolveTo(httpResponse("template")),
+    });
     const request = createTemplateRequestService(cache, http, {}, (url) => url);
 
     await request("/plain-template.html");
 
-    expect(http.get).toHaveBeenCalledOnceWith("/plain-template.html", {
-      transformResponse: null,
-      signal: jasmine.any(AbortSignal),
-    });
+    expect(http.get).toHaveBeenCalledOnceWith(
+      "/plain-template.html",
+      jasmine.any(Object),
+    );
+    const options = defined(http.get.calls.first().args[1]);
+    expect(options.transformResponse).toBeNull();
+    expect(options.signal).toEqual(jasmine.any(AbortSignal));
   });
 
   it("serves cached templates without calling $http", async () => {
     const cache = new Map([["/cached.html", "cached template"]]);
-    const http = {
+    const http = httpFixture({
       defaults: {},
-      get: jasmine.createSpy("get"),
-    };
+      get: jasmine.createSpy<ng.HttpService["get"]>("get"),
+    });
     const request = createTemplateRequestService(cache, http, {}, (url) => url);
 
     await expectAsync(request("/cached.html")).toBeResolvedTo(
@@ -277,11 +307,11 @@ describe("$templateRequest", () => {
   });
 
   it("observes templates cached later in the request turn", async () => {
-    const cache = new Map();
-    const http = {
+    const cache = new Map<string, string>();
+    const http = httpFixture({
       defaults: {},
-      get: jasmine.createSpy("get"),
-    };
+      get: jasmine.createSpy<ng.HttpService["get"]>("get"),
+    });
     const request = createTemplateRequestService(cache, http, {}, (url) => url);
     const pending = request("/late-cached.html");
 
@@ -292,19 +322,21 @@ describe("$templateRequest", () => {
   });
 
   it("shares an in-flight request for the same template", async () => {
-    const cache = new Map();
-    const response = Promise.withResolvers();
-    const http = {
+    const cache = new Map<string, string>();
+    const response = Promise.withResolvers<ng.HttpResponse<string>>();
+    const http = httpFixture({
       defaults: {},
-      get: jasmine.createSpy("get").and.returnValue(response.promise),
-    };
+      get: jasmine
+        .createSpy<ng.HttpService["get"]>("get")
+        .and.returnValue(response.promise),
+    });
     const request = createTemplateRequestService(cache, http, {}, (url) => url);
     const first = request("/pending.html");
     const second = request("/pending.html");
 
     await Promise.resolve();
     expect(http.get).toHaveBeenCalledTimes(1);
-    response.resolve({ data: "pending template" });
+    response.resolve(httpResponse("pending template"));
     await expectAsync(Promise.all([first, second])).toBeResolvedTo([
       "pending template",
       "pending template",
@@ -330,7 +362,7 @@ describe("$templateRequest", () => {
       it("should be configurable", async () => {
         function someTransform() {}
 
-        let configuredHttp;
+        let configuredHttp: ng.HttpService | undefined;
 
         angular.createModule("test", ["ng"]).config({
           $templateRequest: {
@@ -344,7 +376,10 @@ describe("$templateRequest", () => {
         createInjector(["test"]).invoke([
           "$templateRequest",
           "$http",
-          ($templateRequest, $http) => {
+          (
+            $templateRequest: ng.TemplateRequestService,
+            $http: ng.HttpService,
+          ) => {
             configuredHttp = $http;
             spyOn($http, "get").and.callThrough();
 
@@ -353,7 +388,7 @@ describe("$templateRequest", () => {
         ]);
 
         await Promise.resolve();
-        expect(configuredHttp.get).toHaveBeenCalledOnceWith(
+        expect(defined(configuredHttp).get).toHaveBeenCalledOnceWith(
           "/public/test.html",
           {
             transformResponse: [someTransform],
@@ -364,12 +399,12 @@ describe("$templateRequest", () => {
       });
 
       it("allows an HTTP cache policy override", async () => {
-        const cache = {
+        const cache: HttpCacheConfig = {
           strategy: "cache-first",
           store: new Map(),
         };
 
-        let configuredHttp;
+        let configuredHttp: ng.HttpService | undefined;
 
         angular.createModule("test", ["ng"]).config({
           $templateRequest: {
@@ -382,7 +417,10 @@ describe("$templateRequest", () => {
         createInjector(["test"]).invoke([
           "$templateRequest",
           "$http",
-          ($templateRequest, $http) => {
+          (
+            $templateRequest: ng.TemplateRequestService,
+            $http: ng.HttpService,
+          ) => {
             configuredHttp = $http;
             spyOn($http, "get").and.callThrough();
 
@@ -391,7 +429,7 @@ describe("$templateRequest", () => {
         ]);
 
         await Promise.resolve();
-        expect(configuredHttp.get).toHaveBeenCalledOnceWith(
+        expect(defined(configuredHttp).get).toHaveBeenCalledOnceWith(
           "/public/test.html",
           {
             cache,
@@ -405,9 +443,9 @@ describe("$templateRequest", () => {
   });
 
   it("should download the provided template file", async () => {
-    let content;
+    let content: string | undefined;
 
-    await $templateRequest("/mock/div").then((html) => {
+    await $templateRequest("/mock/div").then((html: string) => {
       content = html;
     });
     await wait();
@@ -415,9 +453,9 @@ describe("$templateRequest", () => {
   });
 
   it("should cache the request to prevent extra downloads", async () => {
-    const content = [];
+    const content: unknown[] = [];
 
-    function tplRequestCb(html) {
+    function tplRequestCb(html: string) {
       content.push(html);
     }
 
@@ -432,9 +470,9 @@ describe("$templateRequest", () => {
 
   it("should return the cached value on the first request", async () => {
     $templateCache.set("/public/test.html", "_matias");
-    const content = [];
+    const content: unknown[] = [];
 
-    function tplRequestCb(html) {
+    function tplRequestCb(html: string) {
       content.push(html);
     }
 
@@ -443,7 +481,7 @@ describe("$templateRequest", () => {
   });
 
   it("should not call `$exceptionHandler` when the template is empty", async () => {
-    const onError = jasmine.createSpy("onError");
+    const onError = jasmine.createSpy<(reason: unknown) => void>("onError");
 
     await $templateRequest("/mock/empty").catch(onError);
     expect(onError).not.toHaveBeenCalled();
@@ -461,7 +499,7 @@ describe("$templateRequest", () => {
   });
 
   it("should not try to parse a response as JSON", async () => {
-    const spy = jasmine.createSpy("success");
+    const spy = jasmine.createSpy<(text: string) => void>("success");
 
     await $templateRequest("/mock/jsoninterpolation").then(spy);
 
@@ -469,9 +507,12 @@ describe("$templateRequest", () => {
   });
 
   it("should use custom response transformers (array)", async () => {
-    $http.defaults.transformResponse.push((data) => `${data}!!`);
+    const transforms = $http.defaults.transformResponse;
+    if (!Array.isArray(transforms))
+      throw new TypeError("Expected transform array");
+    transforms.push((data) => `${data}!!`);
 
-    const spy = jasmine.createSpy("success");
+    const spy = jasmine.createSpy<(text: string) => void>("success");
 
     await $templateRequest("/mock/jsoninterpolation").then(spy);
     expect(spy).toHaveBeenCalledOnceWith('"{{expr}}"!!');
@@ -481,9 +522,26 @@ describe("$templateRequest", () => {
     $http.defaults.transformResponse = function (data) {
       return `${data}!!`;
     };
-    const spy = jasmine.createSpy("success");
+    const spy = jasmine.createSpy<(text: string) => void>("success");
 
     await $templateRequest("/mock/jsoninterpolation").then(spy);
     expect(spy).toHaveBeenCalledOnceWith('"{{expr}}"!!');
   });
 });
+
+function httpResponse(data: string): ng.HttpResponse<string> {
+  return {
+    data,
+    status: 200,
+    statusText: "OK",
+    transportStatus: "complete",
+    config: { url: "/fixture", method: "GET" },
+    headers: emptyHeaders,
+  };
+}
+
+function emptyHeaders(): Record<string, string>;
+function emptyHeaders(name: string): string;
+function emptyHeaders(name?: string): Record<string, string> | string {
+  return name === undefined ? {} : "";
+}

@@ -1,16 +1,17 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode } from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("ngRepeat attribute reads", () => {
-  let $compile;
-  let $rootScope;
-  let element;
+  let $compile: ng.CompileService;
+  let $rootScope: FixtureScope;
+  let element: HTMLElement;
 
   beforeEach(() => {
-    const app = document.getElementById("app") as HTMLElement;
+    const app = defined(defined(document.getElementById("app")));
 
     dealoc(app);
     window.angular = new Angular();
@@ -20,7 +21,7 @@ describe("ngRepeat attribute reads", () => {
     injector.invoke([
       "$compile",
       "$rootScope",
-      (_$compile_, _$rootScope_) => {
+      (_$compile_: ng.CompileService, _$rootScope_: FixtureScope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },
@@ -32,9 +33,11 @@ describe("ngRepeat attribute reads", () => {
   });
 
   it("should read data-ng-repeat from the host element", async () => {
-    element = $compile(
-      '<ul><li data-ng-repeat="item in items">{{item.name}};</li></ul>',
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        '<ul><li data-ng-repeat="item in items">{{item.name}};</li></ul>',
+      )($rootScope),
+    );
 
     $rootScope.items = [{ name: "red" }, { name: "blue" }];
 
@@ -44,9 +47,11 @@ describe("ngRepeat attribute reads", () => {
   });
 
   it("should read data-index from the host element", async () => {
-    element = $compile(
-      '<ul><li ng-repeat="item in items" data-index="key">{{item.label}};</li></ul>',
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        '<ul><li ng-repeat="item in items" data-index="key">{{item.label}};</li></ul>',
+      )($rootScope),
+    );
 
     $rootScope.items = [
       { id: 1, key: "a", label: "red" },
@@ -58,3 +63,9 @@ describe("ngRepeat attribute reads", () => {
     expect(element.textContent).toBe("red;blue;");
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  items?: { name?: string; id?: number; key?: string; label?: string }[];
+}

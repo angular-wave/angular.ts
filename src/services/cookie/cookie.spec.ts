@@ -1,10 +1,9 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { CookieService } from "./cookie.ts";
 
 describe("$cookie service", () => {
-  let $injector, $cookie, el;
+  let $injector: ng.InjectorService, $cookie: ng.CookieService, el: HTMLElement;
 
   beforeEach(() => {
     el = document.createElement("div");
@@ -37,7 +36,15 @@ describe("$cookie service", () => {
   });
 
   it("applies typed module configuration", () => {
-    expect($cookie._defaults).toEqual({ path: "/" });
+    const writeCookie = spyOnProperty(
+      document,
+      "cookie",
+      "set",
+    ).and.callThrough();
+    $cookie.put("configured", "value");
+    expect(writeCookie).toHaveBeenCalledWith(
+      jasmine.stringContaining("path=/"),
+    );
   });
 
   it("should set and get a raw cookie", () => {
@@ -81,7 +88,10 @@ describe("$cookie service", () => {
 
   it("should merge user options with defaults safely", () => {
     // Only use options that work locally
-    const opts = { path: "/src/services/cookie/cookie.html", samesite: "Lax" };
+    const opts: ng.CookieOptions = {
+      path: "/src/services/cookie/cookie.html",
+      samesite: "Lax",
+    };
 
     expect(() => $cookie.put("optTest", "v", opts)).not.toThrow();
     expect($cookie.get("optTest")).toBe("v"); // Should succeed
@@ -128,6 +138,7 @@ describe("$cookie service", () => {
     ];
 
     invalidValues.forEach((val) => {
+      // @ts-expect-error Deliberately invalid expiry values exercise runtime validation.
       expect(() => $cookie.put("badExp", "x", { expires: val })).toThrowError(
         TypeError,
         /^badarg:expires/,

@@ -1,9 +1,8 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { createInjector } from "../../core/di/injector.ts";
 import { Angular } from "../../angular.ts";
 
-function byteStream(chunks) {
+function byteStream(chunks: readonly string[]) {
   const encoder = new TextEncoder();
 
   return new ReadableStream({
@@ -15,7 +14,7 @@ function byteStream(chunks) {
 }
 
 describe("$stream", () => {
-  let $stream;
+  let $stream: ng.StreamService;
 
   beforeEach(() => {
     window.angular = new Angular();
@@ -23,7 +22,7 @@ describe("$stream", () => {
   });
 
   it("should decode readable byte streams into text", async () => {
-    const chunks = [];
+    const chunks: unknown[] = [];
 
     const text = await $stream.readText(byteStream(["Hel", "lo"]), {
       onChunk: (chunk) => chunks.push(chunk),
@@ -39,7 +38,7 @@ describe("$stream", () => {
   });
 
   it("should consume readable byte streams without returning accumulated text", async () => {
-    const chunks = [];
+    const chunks: unknown[] = [];
 
     const result = await $stream.consumeText(byteStream(["Hel", "lo"]), {
       onChunk: (chunk) => chunks.push(chunk),
@@ -50,7 +49,7 @@ describe("$stream", () => {
   });
 
   it("should decode readable byte streams into lines", async () => {
-    const received = [];
+    const received: unknown[] = [];
 
     const lines = await $stream.readLines(byteStream(["a\nb", "\nc"]), {
       onLine: (line) => received.push(line),
@@ -69,7 +68,7 @@ describe("$stream", () => {
   });
 
   it("should decode newline-delimited json into values", async () => {
-    const received = [];
+    const received: unknown[] = [];
 
     const values = await $stream.readJsonLines(
       byteStream(['{"id":1}\n', "\n", '{"id":2}']),
@@ -83,7 +82,7 @@ describe("$stream", () => {
   });
 
   it("should consume newline-delimited json without returning accumulated values", async () => {
-    const received = [];
+    const received: unknown[] = [];
 
     const result = await $stream.consumeJsonLines(
       byteStream(['{"id":1}\n{"id":2}']),
@@ -122,7 +121,7 @@ describe("$stream", () => {
   it("should stop consuming when the signal is already aborted", async () => {
     const controller = new AbortController();
 
-    const chunks = [];
+    const chunks: unknown[] = [];
 
     controller.abort("stop");
 
@@ -137,7 +136,7 @@ describe("$stream", () => {
   it("should cancel pending stream reads when the signal aborts", async () => {
     const controller = new AbortController();
 
-    const cancelSpy = jasmine.createSpy("cancel");
+    const cancelSpy = jasmine.createSpy<(reason: unknown) => void>("cancel");
 
     const stream = new ReadableStream({
       cancel: cancelSpy,

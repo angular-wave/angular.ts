@@ -29,25 +29,6 @@ declare global {
   interface Window {
     ELEMENT: HTMLElement | null;
   }
-
-  interface Element {
-    innerText: string;
-  }
-
-  interface ChildNode {
-    classList: DOMTokenList;
-    getAttribute(name: string): string | null;
-    href: any;
-    innerHTML: string;
-    innerText: string;
-    style: CSSStyleDeclaration;
-  }
-
-  namespace jasmine {
-    interface NothingMatcher {
-      toBe(expected?: any): void;
-    }
-  }
 }
 
 const assert: AnyFn = strictAssert as any;

@@ -140,6 +140,13 @@ Before you submit your pull request consider the following guidelines:
   npm pack --dry-run
   ```
 
+- Keep tests typechecked. `make test-types` also checks `utils/test-typing-baseline.json`: new
+  file-wide suppressions, ignored errors, explicit `any`, double assertions, `as never`, non-null
+  assertions, and global DOM augmentations cannot increase. Remove baseline entries as fixtures
+  are migrated; do not add allowances for new tests. Use real service types, typed spies, and
+  checked DOM queries. Deliberately invalid runtime inputs may use a local `@ts-expect-error`
+  with a description of the invalid case.
+
 - Run `npx eslint ./src` to check that you have followed the automatically enforced coding rules.
 - Commit your changes using a descriptive commit message that follows our
   [commit message conventions][developers.commits]. Adherence to the

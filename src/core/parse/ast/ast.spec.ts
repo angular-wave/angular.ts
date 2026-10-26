@@ -1,4 +1,3 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { AST } from "./ast.ts";
 import { Lexer } from "../lexer/lexer.ts";
@@ -7,16 +6,16 @@ import { ASTType } from "../ast-type.ts";
 import { Angular } from "../../../angular.ts";
 
 describe("ast", () => {
-  let $rootScope;
+  let $rootScope: ng.Scope;
 
-  const logs = [];
+  const logs: unknown[] = [];
 
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
       .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
-        return (exception, cause) => {
+        return (exception: unknown, cause: unknown) => {
           logs.push(exception);
           console.error(exception, cause);
         };
@@ -26,16 +25,10 @@ describe("ast", () => {
     $rootScope = injector.get("$rootScope");
   });
 
-  let createAst;
+  let createAst: AST["_ast"];
 
   beforeEach(() => {
-    createAst = function () {
-      const lexer = new Lexer();
-
-      const ast = new AST(lexer);
-
-      return ast._ast.apply(ast, arguments);
-    };
+    createAst = (text) => new AST(new Lexer())._ast(text);
   });
 
   it("should handle an empty list of tokens", () => {

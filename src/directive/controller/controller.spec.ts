@@ -1,5 +1,6 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode } from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../../core/di/injector.ts";
 import { dealoc, createElementFromHTML } from "../../shared/dom.ts";
@@ -7,17 +8,25 @@ import { bind } from "../../shared/utils.ts";
 import { wait, waitUntil } from "../../shared/test-utils.ts";
 
 describe("ngController", () => {
-  let angular;
+  let angular: Angular;
 
-  let element;
+  let element: HTMLElement;
 
-  let injector;
+  let injector: ng.InjectorService;
 
-  let $rootScope;
+  let $rootScope: FixtureScope;
 
-  let $compile;
+  let $compile: ng.CompileService;
 
-  const Greeter = function ($scope) {
+  interface GreeterInstance {
+    prefix: string;
+    suffix: string;
+    protoGreet(name: string): string;
+  }
+  const Greeter = function (
+    this: GreeterInstance,
+    $scope: FixtureScope,
+  ): undefined {
     // private stuff (not exported to scope)
     this.prefix = "Hello ";
 
@@ -26,7 +35,7 @@ describe("ngController", () => {
 
     $scope.name = "Misko";
     $scope.expr = "Vojta";
-    $scope.greet = function (name) {
+    $scope.greet = function (name: string) {
       return ctrl.prefix + name + ctrl.suffix;
     };
 
@@ -36,7 +45,7 @@ describe("ngController", () => {
 
   Greeter.prototype = {
     suffix: "!",
-    protoGreet(name) {
+    protoGreet(this: GreeterInstance, name: string) {
       return this.prefix + name + this.suffix;
     },
   };
@@ -61,27 +70,30 @@ describe("ngController", () => {
     window.angular = angular;
     angular
       .createModule("controllerDirectiveTests", ["ng"])
-      .controller("PublicModule", function () {
+      .controller("PublicModule", function (this: { mark: string }): undefined {
         this.mark = "works";
       })
       .controller("Greeter", Greeter)
 
       .controller("Child", [
         "$scope",
-        ($scope) => {
+        ($scope: FixtureScope): undefined => {
           $scope.name = "Adam";
         },
       ])
 
       .controller("Public", [
         "$scope",
-        function ($scope) {
+        function (this: { mark: string }, $scope: FixtureScope): undefined {
           this.mark = "works";
         },
       ])
       .controller("RowsController", RowsController)
       .component("testFunctionCounter", {
-        controller: function () {
+        controller: function (this: {
+          count: number;
+          increment(): void;
+        }): undefined {
           const $ctrl = this;
 
           $ctrl.increment = () => {
@@ -97,7 +109,7 @@ describe("ngController", () => {
         `,
       });
 
-    const Foo = function ($scope) {
+    const Foo = function ($scope: FixtureScope): undefined {
       $scope.mark = "foo";
     };
 
@@ -105,10 +117,11 @@ describe("ngController", () => {
       .getModule("controllerDirectiveTests")
       .controller("BoundFoo", ["$scope", Foo.bind(null)]);
 
-    injector = createInjector(["controllerDirectiveTests"]).invoke([
+    injector = createInjector(["controllerDirectiveTests"]);
+    injector.invoke([
       "$rootScope",
       "$compile",
-      (_$rootScope_, _$compile_) => {
+      (_$rootScope_: FixtureScope, _$compile_: ng.CompileService) => {
         $rootScope = _$rootScope_;
         $compile = _$compile_;
       },
@@ -120,54 +133,60 @@ describe("ngController", () => {
   });
 
   it("should instantiate controller and bind methods", async () => {
-    element = $compile('<div ng-controller="Greeter">{{greet(name)}}</div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div ng-controller="Greeter">{{greet(name)}}</div>')(
+        $rootScope,
+      ),
     );
     await wait();
     expect(element.innerText).toBe("Hello Misko!");
   });
 
   it("should instantiate bound constructor functions", async () => {
-    element = $compile('<div ng-controller="BoundFoo">{{mark}}</div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div ng-controller="BoundFoo">{{mark}}</div>')($rootScope),
     );
     await wait();
     expect(element.innerText).toBe("foo");
   });
 
   it("should publish controller into scope", async () => {
-    element = $compile('<div ng-controller="Public as p">{{p.mark}}</div>')(
-      $rootScope,
+    element = htmlNode(
+      $compile('<div ng-controller="Public as p">{{p.mark}}</div>')($rootScope),
     );
     await wait();
     expect(element.innerText).toBe("works");
   });
 
   it("should publish controller into scope from module", async () => {
-    element = $compile(
-      '<div ng-controller="PublicModule as p">{{p.mark}}</div>',
-    )($rootScope);
+    element = htmlNode(
+      $compile('<div ng-controller="PublicModule as p">{{p.mark}}</div>')(
+        $rootScope,
+      ),
+    );
     await wait();
     expect(element.innerText).toBe("works");
   });
 
   it("should observe keyed collection mutations made by controller-as methods", async () => {
-    element = $compile(`
+    element = htmlNode(
+      $compile(`
       <div ng-controller="RowsController as vm">
         <button data-action="swap" ng-click="vm.swapRows()"></button>
         <button data-action="remove" ng-click="vm.removeRow()"></button>
         <span ng-repeat="row in vm.rows">{{row.id}}</span>
       </div>
-    `)($rootScope);
+    `)($rootScope),
+    );
     await wait();
 
-    element.querySelector('[data-action="swap"]').click();
+    htmlNode(element.querySelector('[data-action="swap"]')).click();
     await wait();
     expect(
       Array.from(element.querySelectorAll("span"), (node) => node.innerText),
     ).toEqual(["3", "2", "1"]);
 
-    element.querySelector('[data-action="remove"]').click();
+    htmlNode(element.querySelector('[data-action="remove"]')).click();
     await wait();
     expect(
       Array.from(element.querySelectorAll("span"), (node) => node.innerText),
@@ -175,43 +194,52 @@ describe("ngController", () => {
   });
 
   it("should observe component controller mutations through an arrow closure", async () => {
-    element = $compile("<test-function-counter></test-function-counter>")(
-      $rootScope,
+    element = htmlNode(
+      $compile("<test-function-counter></test-function-counter>")($rootScope),
     );
     await wait();
 
     const button = element.querySelector("button");
 
-    expect(button.innerText.trim()).toBe("Count is: 0");
+    expect(defined(button).innerText.trim()).toBe("Count is: 0");
 
-    button.click();
+    defined(button).click();
     await wait();
-    expect(button.innerText.trim()).toBe("Count is: 1");
+    expect(defined(button).innerText.trim()).toBe("Count is: 1");
   });
 
   it("should allow nested controllers", async () => {
-    element = $compile(
-      '<div ng-controller="Greeter"><div ng-controller="Child">{{greet(name)}}</div></div>',
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        '<div ng-controller="Greeter"><div ng-controller="Child">{{greet(name)}}</div></div>',
+      )($rootScope),
+    );
     await wait();
     expect(element.innerText).toBe("Hello Adam!");
     dealoc(element);
 
-    element = $compile(
-      '<div ng-controller="Greeter"><div ng-controller="Child">{{protoGreet(name)}}</div></div>',
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        '<div ng-controller="Greeter"><div ng-controller="Child">{{protoGreet(name)}}</div></div>',
+      )($rootScope),
+    );
     await wait();
     expect(element.innerText).toBe("Hello Adam!");
   });
 
   it("should work with ngInclude on the same element", async () => {
-    element = createElementFromHTML(
-      '<div><div ng-controller="Greeter" ng-include="\'/mock/interpolation\'"></div></div>',
+    element = htmlNode(
+      createElementFromHTML(
+        '<div><div ng-controller="Greeter" ng-include="\'/mock/interpolation\'"></div></div>',
+      ),
     );
     window.angular.createModule("myModule", []).controller("Greeter", [
       "$scope",
       "$element",
-      function GreeterController($scope, $element) {
+      function GreeterController(
+        $scope: FixtureScope,
+        $element: Element,
+      ): undefined {
         $scope.expr = "Vojta";
       },
     ]);
@@ -225,12 +253,14 @@ describe("ngController", () => {
   it("should only instantiate the controller once with ngInclude on the same element", async () => {
     let count = 0;
 
-    element = createElementFromHTML(
-      '<div><div ng-controller="Count" ng-include="\'/mock/interpolation\'"></div></div>',
+    element = htmlNode(
+      createElementFromHTML(
+        '<div><div ng-controller="Count" ng-include="\'/mock/interpolation\'"></div></div>',
+      ),
     );
     window.angular
       .createModule("myModule", [])
-      .controller("Count", function CountController() {
+      .controller("Count", function CountController(): undefined {
         count += 1;
       });
 
@@ -247,15 +277,17 @@ describe("ngController", () => {
   });
 
   it("when ngInclude is on the same element, the content included content should get a child scope of the controller", async () => {
-    let controllerScope;
+    let controllerScope: FixtureScope | undefined;
 
-    element = createElementFromHTML(
-      '<div><div ng-controller="ExposeScope" ng-include="\'/mock/scopeinit\'"></div></div>',
+    element = htmlNode(
+      createElementFromHTML(
+        '<div><div ng-controller="ExposeScope" ng-include="\'/mock/scopeinit\'"></div></div>',
+      ),
     );
 
     window.angular.createModule("myModule", []).controller("ExposeScope", [
       "$scope",
-      function ExposeScopeController($scope) {
+      function ExposeScopeController($scope: FixtureScope): undefined {
         controllerScope = $scope;
       },
     ]);
@@ -264,6 +296,16 @@ describe("ngController", () => {
 
     $rootScope = injector.get("$rootScope");
     await waitUntil(() => element.querySelector("[ng-init]") !== null);
-    expect(controllerScope.name).toBeUndefined();
+    expect(defined(controllerScope).name).toBeUndefined();
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  name?: string;
+  expr?: string;
+  greet?: unknown;
+  protoGreet?: unknown;
+  mark?: string;
+}

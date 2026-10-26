@@ -1,37 +1,39 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { StateRuntime } from "./state/state-service.ts";
+import { defined } from "../shared/test-fixtures.spec.ts";
 import { dealoc } from "../shared/dom.ts";
 import { Angular } from "../angular.ts";
 import { waitUntil } from "../shared/test-utils.ts";
 
 describe("view hooks", () => {
-  let app,
-    $state,
+  let $state: StateRuntime,
     log = "";
 
   class ctrl {
-    constructor() {
-      this.data = "DATA";
-    }
+    data = "DATA";
+    declare cmpdata?: string;
+    declare canExit?: (trans: ng.Transition) => unknown;
   }
 
   const component = {
-    bindings: { cmpdata: "<" },
+    bindings: { cmpdata: "<" as const },
     template: "{{$ctrl.cmpdata}}",
   };
 
   beforeEach(() => {
-    dealoc(document.getElementById("app"));
+    dealoc(defined(document.getElementById("app")));
     window.addEventListener("unhandledrejection", (event) =>
       event.preventDefault(),
     );
     window.angular = new Angular();
-    app = window.angular
+    window.angular
       .createModule("defaultModule", [])
-      .router({ name: "foo", url: "/foo", component: "foo" })
-      .router({ name: "bar", url: "/bar", component: "bar" })
-      .router({ name: "baz", url: "/baz", component: "baz" })
-      .router({ name: "redirect", redirectTo: "baz" })
+      .router([
+        { name: "foo", url: "/foo", component: "foo" },
+        { name: "bar", url: "/bar", component: "bar" },
+        { name: "baz", url: "/baz", component: "baz" },
+        { name: "redirect", redirectTo: "baz" },
+      ])
       .component(
         "foo",
         Object.assign({}, Object.assign(component, { controller: ctrl })),
@@ -39,15 +41,20 @@ describe("view hooks", () => {
       .component("bar", Object.assign({}, component))
       .component("baz", Object.assign({}, component));
 
-    const $injector = window.angular.bootstrap(document.getElementById("app"), [
-      "defaultModule",
-    ]);
+    const $injector = window.angular.bootstrap(
+      defined(document.getElementById("app")),
+      ["defaultModule"],
+    );
 
     $injector.invoke([
       "$state",
       "$compile",
       "$rootScope",
-      (_$state_, $compile, $rootScope) => {
+      (
+        _$state_: StateRuntime,
+        $compile: ng.CompileService,
+        $rootScope: ng.Scope,
+      ) => {
         $state = _$state_;
         $compile("<div><ng-view></ng-view></div>")($rootScope.new());
       },
@@ -57,7 +64,7 @@ describe("view hooks", () => {
   async function waitForState(name: string, expectedLog?: string) {
     await waitUntil(
       () =>
-        $state.current.name === name &&
+        defined($state.current).name === name &&
         (expectedLog === undefined || log === expectedLog),
     );
   }
@@ -71,11 +78,13 @@ describe("view hooks", () => {
       $state.go("foo");
       await waitForState("foo");
       expect(log).toBe("");
-      expect($state.current.name).toBe("foo");
+      expect(defined($state.current).name).toBe("foo");
     };
 
     it("can cancel a transition that would exit the view's state by returning false", async () => {
-      $state._defaultErrorHandler = function () {};
+      $state._defaultErrorHandler = function (): never {
+        throw new Error("Unexpected invocation");
+      };
       ctrl.prototype.canExit = function () {
         log += "canexit;";
 
@@ -85,7 +94,7 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("foo", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("foo");
+      expect(defined($state.current).name).toBe("foo");
     });
 
     it("can allow the transition by returning true", async () => {
@@ -99,7 +108,7 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("bar", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("bar");
+      expect(defined($state.current).name).toBe("bar");
     });
 
     it("can allow the transition by returning nothing", async () => {
@@ -111,11 +120,11 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("bar", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("bar");
+      expect(defined($state.current).name).toBe("bar");
     });
 
     it("can redirect the transition", async () => {
-      ctrl.prototype.canExit = function (trans) {
+      ctrl.prototype.canExit = function (trans: ng.Transition) {
         log += "canexit;";
 
         return $state.target("baz");
@@ -125,7 +134,7 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("baz", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("baz");
+      expect(defined($state.current).name).toBe("baz");
     });
 
     it("can cancel the transition by returning a rejected promise", async () => {
@@ -136,15 +145,19 @@ describe("view hooks", () => {
       };
       await initial();
 
-      $state._defaultErrorHandler = function () {};
+      $state._defaultErrorHandler = function (): never {
+        throw new Error("Unexpected invocation");
+      };
       $state.go("bar");
       await waitForState("foo", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("foo");
+      expect(defined($state.current).name).toBe("foo");
     });
 
     it("can wait for a promise and then reject the transition", async () => {
-      $state._defaultErrorHandler = function () {};
+      $state._defaultErrorHandler = function (): never {
+        throw new Error("Unexpected invocation");
+      };
       ctrl.prototype.canExit = function () {
         log += "canexit;";
 
@@ -160,7 +173,7 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("foo", "canexit;delay;");
       expect(log).toBe("canexit;delay;");
-      expect($state.current.name).toBe("foo");
+      expect(defined($state.current).name).toBe("foo");
     });
 
     it("can wait for a promise and then allow the transition", async () => {
@@ -179,7 +192,7 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("bar", "canexit;delay;");
       expect(log).toBe("canexit;delay;");
-      expect($state.current.name).toBe("bar");
+      expect(defined($state.current).name).toBe("bar");
     });
 
     it("has 'this' bound to the controller", async () => {
@@ -191,11 +204,11 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("bar", "DATA");
       expect(log).toBe("DATA");
-      expect($state.current.name).toBe("bar");
+      expect(defined($state.current).name).toBe("bar");
     });
 
     it("receives the new Transition as the first argument", async () => {
-      ctrl.prototype.canExit = function (trans) {
+      ctrl.prototype.canExit = function (trans: ng.Transition) {
         log += "canexit;";
         expect(trans._treeChanges).toBeDefined();
       };
@@ -204,7 +217,7 @@ describe("view hooks", () => {
       $state.go("bar");
       await waitForState("bar", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("bar");
+      expect(defined($state.current).name).toBe("bar");
     });
 
     it("should trigger once when answered truthy even if redirected", async () => {
@@ -218,7 +231,7 @@ describe("view hooks", () => {
       $state.go("redirect");
       await waitForState("baz", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("baz");
+      expect(defined($state.current).name).toBe("baz");
     });
 
     it("should trigger only once if returns a redirect", async () => {
@@ -232,7 +245,7 @@ describe("view hooks", () => {
       $state.go("redirect");
       await waitForState("bar", "canexit;");
       expect(log).toBe("canexit;");
-      expect($state.current.name).toBe("bar");
+      expect(defined($state.current).name).toBe("bar");
     });
   });
 });

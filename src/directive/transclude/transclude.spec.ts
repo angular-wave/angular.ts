@@ -1,17 +1,19 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode } from "../../shared/test-fixtures.spec.ts";
+import type { CompileRegistry } from "../../core/compile/compile.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("ngTransclude", () => {
-  let $compile;
-  let compileRegistry;
-  let $rootScope;
-  let element;
+  let $compile: ng.CompileService;
+  let compileRegistry: CompileRegistry;
+  let $rootScope: ng.Scope;
+  let element: HTMLElement;
 
   beforeEach(() => {
-    const app = document.getElementById("app") as HTMLElement;
+    const app = defined(defined(document.getElementById("app")));
 
     dealoc(app);
     window.angular = new Angular();
@@ -23,7 +25,7 @@ describe("ngTransclude", () => {
     injector.invoke([
       "$compile",
       "$rootScope",
-      (_$compile_, _$rootScope_) => {
+      (_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },
@@ -46,17 +48,23 @@ describe("ngTransclude", () => {
         '<div class="other" data-ng-transclude></div>',
     }));
 
-    element = $compile(
-      "<slot-host>" +
-        "<item>selected</item>" +
-        "<span>default</span>" +
-        "</slot-host>",
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        "<slot-host>" +
+          "<item>selected</item>" +
+          "<span>default</span>" +
+          "</slot-host>",
+      )($rootScope),
+    );
 
     await wait();
 
-    expect(element.querySelector(".item")!.textContent).toBe("selected");
-    expect(element.querySelector(".other")!.textContent).toBe("default");
+    expect(defined(element.querySelector(".item")).textContent).toBe(
+      "selected",
+    );
+    expect(defined(element.querySelector(".other")).textContent).toBe(
+      "default",
+    );
   });
 
   it("should read data-ng-transclude-slot from ng-transclude elements", async () => {
@@ -71,23 +79,29 @@ describe("ngTransclude", () => {
         '<ng-transclude class="other"></ng-transclude>',
     }));
 
-    element = $compile(
-      "<slot-host>" +
-        "<item>selected</item>" +
-        "<span>default</span>" +
-        "</slot-host>",
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        "<slot-host>" +
+          "<item>selected</item>" +
+          "<span>default</span>" +
+          "</slot-host>",
+      )($rootScope),
+    );
 
     await wait();
 
-    expect(element.querySelector(".item")!.textContent).toBe("selected");
-    expect(element.querySelector(".other")!.textContent).toBe("default");
+    expect(defined(element.querySelector(".item")).textContent).toBe(
+      "selected",
+    );
+    expect(defined(element.querySelector(".other")).textContent).toBe(
+      "default",
+    );
   });
   it("destroys a transcluded scope when its last node is destroyed", async () => {
-    let transcludedScope;
+    let transcludedScope: ng.Scope | undefined;
 
     compileRegistry.directive("captureTranscludedScope", () => ({
-      link(scope) {
+      link(scope: ng.Scope) {
         transcludedScope = scope;
       },
     }));
@@ -97,16 +111,21 @@ describe("ngTransclude", () => {
       template: "<div ng-transclude></div>",
     }));
 
-    element = $compile(
-      "<destroy-slot-host>" +
-        "<span capture-transcluded-scope>content</span>" +
-        "</destroy-slot-host>",
-    )($rootScope);
+    element = htmlNode(
+      $compile(
+        "<destroy-slot-host>" +
+          "<span capture-transcluded-scope>content</span>" +
+          "</destroy-slot-host>",
+      )($rootScope),
+    );
     await wait();
 
-    const destroy = spyOn(transcludedScope, "destroy").and.callThrough();
+    const destroy = spyOn(
+      defined<ng.Scope>(transcludedScope),
+      "destroy",
+    ).and.callThrough();
 
-    element.querySelector("span").dispatchEvent(new Event("$destroy"));
+    defined(element.querySelector("span")).dispatchEvent(new Event("$destroy"));
 
     expect(destroy).toHaveBeenCalled();
   });

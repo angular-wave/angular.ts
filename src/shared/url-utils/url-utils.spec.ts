@@ -1,5 +1,5 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import type { ResolvableUrl } from "./url-utils.ts";
 import {
   urlResolve,
   urlIsSameOrigin,
@@ -13,7 +13,9 @@ describe("urlUtils", () => {
       const urlObj = urlResolve("/foo?bar=baz#qux");
 
       expect(urlResolve(urlObj)).toBe(urlObj);
+      // @ts-expect-error Deliberately exercise null at the runtime boundary.
       expect(urlResolve(null)).toBeNull();
+      // @ts-expect-error Deliberately exercise undefined at the runtime boundary.
       expect(urlResolve(undefined)).toBeUndefined();
     });
 
@@ -49,7 +51,7 @@ describe("urlUtils", () => {
 
   describe("urlIsSameOrigin and urlIsSameOriginAsBaseUrl", () => {
     it("should support various combinations of urls - both string and parsed", () => {
-      function expectIsSameOrigin(url, expectedValue) {
+      function expectIsSameOrigin(url: ResolvableUrl, expectedValue: boolean) {
         expect(urlIsSameOrigin(url)).toBe(expectedValue);
         expect(urlIsSameOrigin(urlResolve(url))).toBe(expectedValue);
 
@@ -81,7 +83,7 @@ describe("urlUtils", () => {
   describe("urlIsAllowedOriginFactory", () => {
     const origin = urlResolve(window.location.href);
 
-    let urlIsAllowedOrigin;
+    let urlIsAllowedOrigin: (url: ResolvableUrl) => boolean;
 
     beforeEach(() => {
       urlIsAllowedOrigin = urlIsAllowedOriginFactory([
@@ -116,7 +118,7 @@ describe("urlUtils", () => {
 
       const differentPort = (parseInt(origin.port, 10) || 0) + 1;
 
-      let url;
+      let url: string;
 
       // Relative path
       url = "path";

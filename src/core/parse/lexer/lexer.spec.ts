@@ -1,22 +1,21 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { Lexer } from "./lexer.ts";
 import { Angular } from "../../../angular.ts";
 import { createInjector } from "../../di/injector.ts";
 
 describe("lexer", () => {
-  let $rootScope;
+  let $rootScope: ng.Scope;
 
-  let $parse;
+  let $parse: ng.ParseService;
 
-  const logs = [];
+  const logs: unknown[] = [];
 
   beforeEach(() => {
     window.angular = new Angular();
     window.angular
       .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
-        return (exception, cause) => {
+        return (exception: unknown, cause: unknown) => {
           logs.push(exception);
           console.error(exception, cause);
         };
@@ -28,14 +27,10 @@ describe("lexer", () => {
   });
 
   describe("lexer", () => {
-    let lex;
+    let lex: Lexer["_lex"];
 
     beforeEach(() => {
-      lex = function () {
-        const lexer = new Lexer();
-
-        return lexer._lex.apply(lexer, arguments);
-      };
+      lex = (text) => new Lexer()._lex(text);
     });
 
     it("should tokenize digit characters as numbers without consuming identifiers", () => {
@@ -121,7 +116,7 @@ describe("lexer", () => {
     });
 
     it("should tokenize identifiers with spaces around dots the same as without spaces", () => {
-      function getText(t) {
+      function getText(t: ReturnType<Lexer["_lex"]>[number]) {
         return t._text;
       }
       const spaces = lex("foo. bar . baz").map(getText);

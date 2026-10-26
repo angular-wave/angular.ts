@@ -1,5 +1,5 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined } from "./test-fixtures.spec.ts";
 import {
   AngularTSError,
   createErrorFactory,
@@ -36,7 +36,7 @@ describe("errors", () => {
     });
 
     it("should generate stack trace at the frame where the error factory was called", () => {
-      let myError;
+      let myError: AngularTSError | undefined;
 
       function someFn() {
         function nestedFn() {
@@ -50,7 +50,9 @@ describe("errors", () => {
       // only Chrome, Firefox have stack
       if (!supportStackTraces()) return;
 
-      expect(myError.stack).toMatch(/^[.\s\S]+nestedFn[.\s\S]+someFn.+/);
+      expect(defined(myError).stack).toMatch(
+        /^[.\s\S]+nestedFn[.\s\S]+someFn.+/,
+      );
     });
 
     it("should interpolate string arguments without quotes", () => {
@@ -64,15 +66,15 @@ describe("errors", () => {
 
       const obj = { a: 123, b: "baar" };
 
-      const anonFn = function (something) {
+      const anonFn = function (something: unknown) {
         return something;
       };
 
-      const namedFn = function foo(something) {
+      const namedFn = function foo(something: unknown) {
         return something;
       };
 
-      let myError;
+      let myError: AngularTSError;
 
       myError = testError(
         "26",
@@ -106,7 +108,7 @@ describe("errors", () => {
     });
 
     it("should handle arguments that are objects with cyclic references", () => {
-      const a = { b: {} };
+      const a: { b: { a?: unknown } } = { b: {} };
 
       a.b.a = a;
 
@@ -119,6 +121,7 @@ describe("errors", () => {
       [NaN, null, true, false, -1, 0].forEach((maxDepth) => {
         const a = { b: { c: { d: { e: { f: { g: 1 } } } } } };
 
+        // @ts-expect-error Invalid depths exercise the runtime fallback.
         errorFormattingConfig({ objectMaxDepth: maxDepth });
         const myError = testError("26", "a is {0}", a);
 
@@ -192,8 +195,8 @@ describe("toDebugString", () => {
         return 10;
       }),
     ).toEqual("function fn()");
-    expect(toDebugString()).toEqual("undefined");
-    const a = {};
+    expect(toDebugString(undefined)).toEqual("undefined");
+    const a: { a?: unknown } = {};
 
     a.a = a;
     expect(toDebugString(a)).toEqual('{"a":"..."}');

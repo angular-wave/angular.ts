@@ -1,16 +1,16 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined } from "../../shared/test-fixtures.spec.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { browserTrigger, wait, waitUntil } from "../../shared/test-utils.ts";
 
 describe("http directive attribute reads", () => {
-  let $compile;
-  let $rootScope;
+  let $compile: ng.CompileService;
+  let $rootScope: ng.Scope;
   let app: HTMLElement;
 
   beforeEach(() => {
-    app = document.getElementById("app") as HTMLElement;
+    app = defined(defined(document.getElementById("app")));
     dealoc(app);
     app.innerHTML = "";
 
@@ -19,7 +19,7 @@ describe("http directive attribute reads", () => {
     angular.bootstrap(app, []).invoke([
       "$compile",
       "$rootScope",
-      (_$compile_, _$rootScope_) => {
+      (_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },
@@ -36,11 +36,11 @@ describe("http directive attribute reads", () => {
 
     $compile(app)($rootScope.new());
 
-    browserTrigger(app.querySelector("button")!, "click");
+    browserTrigger(defined(app.querySelector("button")), "click");
     await wait();
     expect(app.innerText).toBe("Load");
 
-    browserTrigger(app.querySelector("button")!, "mouseover");
+    browserTrigger(defined(app.querySelector("button")), "mouseover");
     await waitUntil(() => app.innerText === "Hello");
     expect(app.innerText).toBe("Hello");
   });
@@ -52,11 +52,11 @@ describe("http directive attribute reads", () => {
 
     $compile(app)($rootScope.new());
 
-    browserTrigger(app.querySelector("button")!, "click");
+    browserTrigger(defined(app.querySelector("button")), "click");
     await waitUntil(
-      () => app.querySelector("#target")!.textContent === "Hello",
+      () => defined(app.querySelector("#target")).textContent === "Hello",
     );
-    expect(app.querySelector("#target")!.textContent).toBe("Hello");
+    expect(defined(app.querySelector("#target")).textContent).toBe("Hello");
   });
 
   it("reads data-loading-class while mutating through $attrs", async () => {
@@ -65,7 +65,7 @@ describe("http directive attribute reads", () => {
 
     $compile(app)($rootScope.new());
 
-    const button = app.querySelector("button")!;
+    const button = defined(app.querySelector("button"));
 
     browserTrigger(button, "click");
     await waitUntil(() => button.classList.contains("pending"));

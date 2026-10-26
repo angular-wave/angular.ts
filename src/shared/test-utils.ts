@@ -12,7 +12,7 @@ export type BrowserTriggerOptions =
   | string;
 
 export function browserTrigger(
-  element: HTMLElement,
+  element: EventTarget,
   options: BrowserTriggerOptions,
 ): void {
   let type: string;

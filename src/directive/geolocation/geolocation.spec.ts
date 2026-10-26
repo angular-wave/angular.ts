@@ -1,23 +1,25 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { NgModelController } from "../model/model.ts";
+import { defined, instance } from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc, getController } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 
 describe("geolocation directive", () => {
-  let $compile;
-  let $rootScope;
+  let $compile: ng.CompileService;
+  let $rootScope: FixtureScope;
   let app: HTMLElement;
 
   beforeEach(() => {
-    app = document.getElementById("app") as HTMLElement;
+    app = defined(document.getElementById("app"));
     dealoc(app);
     app.innerHTML = "";
 
     new Angular().bootstrap(app, []).invoke([
       "$compile",
       "$rootScope",
-      (_$compile_, _$rootScope_) => {
+      (_$compile_: ng.CompileService, _$rootScope_: FixtureScope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },
@@ -36,12 +38,16 @@ describe("geolocation directive", () => {
     $compile(app)(scope);
 
     return {
-      element: app.querySelector("geolocation") as HTMLElement,
+      element: instance(app.querySelector("geolocation"), HTMLElement),
       scope,
     };
   }
 
-  function exposeResult(element, readPosition, readError = () => null) {
+  function exposeResult(
+    element: HTMLElement,
+    readPosition: () => unknown,
+    readError: () => unknown = () => null,
+  ) {
     Object.defineProperties(element, {
       position: { configurable: true, get: readPosition },
       error: { configurable: true, get: readError },
@@ -90,12 +96,14 @@ describe("geolocation directive", () => {
     expect(element.querySelector("button")?.textContent).toBe(
       "Use my location",
     );
-    expect(getController(element, "ngModel").valid).toBeTrue();
+    expect(
+      instance(getController(element, "ngModel"), NgModelController).valid,
+    ).toBeTrue();
   });
 
   it("creates a fresh snapshot for every location event", async () => {
     const { element, scope } = compileGeolocation();
-    let nativePosition = position();
+    let nativePosition: ReturnType<typeof position> | null = position();
     exposeResult(element, () => nativePosition);
 
     element.dispatchEvent(new Event("location"));
@@ -106,15 +114,15 @@ describe("geolocation directive", () => {
     element.dispatchEvent(new Event("location"));
     await wait();
 
-    expect(scope.position.latitude).toBe(57.1);
+    expect(defined(scope.position).latitude).toBe(57.1);
     expect(scope.position).not.toBe(first);
-    expect(first.latitude).toBe(56.9496);
+    expect(defined(first).latitude).toBe(56.9496);
   });
 
   it("clears the model and reports geolocation failures", async () => {
     const { element, scope } = compileGeolocation();
-    let nativePosition = position();
-    let nativeError = null;
+    let nativePosition: ReturnType<typeof position> | null = position();
+    let nativeError: { code: number; message: string } | null = null;
     exposeResult(
       element,
       () => nativePosition,
@@ -129,7 +137,10 @@ describe("geolocation directive", () => {
     element.dispatchEvent(new Event("location"));
     await wait();
 
-    const controller = getController(element, "ngModel");
+    const controller = instance(
+      getController(element, "ngModel"),
+      NgModelController,
+    );
     expect(scope.position).toBeUndefined();
     expect(controller.invalid).toBeTrue();
     expect(controller.error.geolocation).toBeTrue();
@@ -166,7 +177,7 @@ describe("geolocation directive", () => {
 
   it("stops observing after element and scope teardown", async () => {
     const { element, scope } = compileGeolocation();
-    let nativePosition = position();
+    let nativePosition: ReturnType<typeof position> | null = position();
     exposeResult(element, () => nativePosition);
 
     element.dispatchEvent(new Event("location"));
@@ -178,6 +189,12 @@ describe("geolocation directive", () => {
     element.dispatchEvent(new Event("location"));
     await wait();
 
-    expect(scope.position.latitude).toBe(56.9496);
+    expect(defined(scope.position).latitude).toBe(56.9496);
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  position?: Partial<ng.GeolocationValue>;
+}

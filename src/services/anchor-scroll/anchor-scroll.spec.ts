@@ -1,5 +1,5 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined } from "../../shared/test-fixtures.spec.ts";
 import { Angular } from "../../angular.ts";
 import {
   applyAnchorScrollConfiguration,
@@ -9,6 +9,17 @@ import {
 } from "./anchor-scroll.ts";
 
 describe("AnchorScroll composition", () => {
+  let angular: Angular;
+  let rootScope: ng.Scope;
+  let location: ng.LocationService;
+  beforeEach(() => {
+    angular = new Angular();
+    const injector = angular.bootstrap(document.createElement("div"), []);
+    rootScope = injector.get("$rootScope");
+    location = injector.get("$location");
+    spyOn(location, "getHash").and.returnValue("");
+  });
+  afterEach(() => angular._composition.destroy());
   it("defaults automatic scrolling to enabled", () => {
     const state = createAnchorScrollRuntimeState();
 
@@ -17,27 +28,23 @@ describe("AnchorScroll composition", () => {
 
   it("applies configuration before and after service construction", () => {
     const state = createAnchorScrollRuntimeState();
-    const removeLocationListener = jasmine.createSpy("removeLocationListener");
-    const removeDestroyListener = jasmine.createSpy("removeDestroyListener");
-    const listeners = new Map();
-    const rootScope = {
-      on(name, listener) {
-        listeners.set(name, listener);
+    const removeLocationListener = jasmine.createSpy<() => void>(
+      "removeLocationListener",
+    );
+    const removeDestroyListener = jasmine.createSpy<() => void>(
+      "removeDestroyListener",
+    );
+    const listeners = new Map<string, Parameters<ng.Scope["on"]>[1]>();
+    spyOn(rootScope, "on").and.callFake((name, listener) => {
+      listeners.set(name, listener);
 
-        return name === "$destroy"
-          ? removeDestroyListener
-          : removeLocationListener;
-      },
-    };
+      return name === "$destroy"
+        ? removeDestroyListener
+        : removeLocationListener;
+    });
 
     applyAnchorScrollConfiguration(state, { autoScrolling: false });
-    createAnchorScrollService(
-      state,
-      { getHash: () => "" },
-      rootScope,
-      document,
-      window,
-    );
+    createAnchorScrollService(state, location, rootScope, document, window);
 
     expect(listeners.has("$locationChangeSuccess")).toBeFalse();
 
@@ -66,87 +73,66 @@ describe("AnchorScroll composition", () => {
       "Anchor-scroll runtime has already been disposed.",
     );
     expect(() =>
-      createAnchorScrollService(
-        state,
-        { getHash: () => "" },
-        { on: () => () => undefined },
-        document,
-        window,
-      ),
+      createAnchorScrollService(state, location, rootScope, document, window),
     ).toThrowError("Anchor-scroll runtime has already been disposed.");
   });
 
   it("owns pending load listeners and ignores them after destruction", () => {
-    const listeners = new Map();
-    const scopeListeners = new Map();
-    const runtimeWindow = {
-      Element,
-      HTMLElement,
-      addEventListener: jasmine
-        .createSpy("addEventListener")
-        .and.callFake((name, listener) => listeners.set(name, listener)),
-      removeEventListener: jasmine.createSpy("removeEventListener"),
-      getComputedStyle: window.getComputedStyle.bind(window),
-      queueMicrotask,
-      scrollBy: jasmine.createSpy("scrollBy"),
-      scrollTo: jasmine.createSpy("scrollTo"),
-    };
-    const runtimeDocument = {
-      readyState: "loading",
-      getElementById: () => null,
-      getElementsByName: () => [],
-    };
+    const scopeListeners = new Map<string, Parameters<ng.Scope["on"]>[1]>();
+    const add = spyOn(window, "addEventListener").and.callThrough();
+    const remove = spyOn(window, "removeEventListener").and.callThrough();
+    const scroll = spyOn(window, "scrollTo");
+    spyOnProperty(document, "readyState", "get").and.returnValue("loading");
+    spyOn(rootScope, "on").and.callFake((name, listener) => {
+      scopeListeners.set(name, listener);
+      return () => undefined;
+    });
     const state = createAnchorScrollRuntimeState();
-    createAnchorScrollService(
-      state,
-      { getHash: () => "" },
-      {
-        on(name, listener) {
-          scopeListeners.set(name, listener);
-          return () => undefined;
-        },
-      },
-      runtimeDocument,
-      runtimeWindow,
-    );
+    createAnchorScrollService(state, location, rootScope, document, window);
 
-    scopeListeners.get("$locationChangeSuccess")(
+    defined(scopeListeners.get("$locationChangeSuccess"))(
       {},
       "https://example.test/#top",
       "https://example.test/",
     );
 
-    expect(runtimeWindow.addEventListener).toHaveBeenCalled();
+    expect(add).toHaveBeenCalled();
 
-    listeners.get("load")();
+    const invokeLoad = () => {
+      const listener = add.calls.mostRecent().args[1];
+      if (typeof listener === "function")
+        listener.call(window, new Event("load"));
+      else listener.handleEvent(new Event("load"));
+    };
+    invokeLoad();
 
-    expect(runtimeWindow.scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(scroll).toHaveBeenCalledWith(0, 0);
 
-    scopeListeners.get("$locationChangeSuccess")(
+    defined(scopeListeners.get("$locationChangeSuccess"))(
       {},
       "https://example.test/#top",
       "https://example.test/",
     );
 
-    const instance = [...state.instances][0];
+    const instance = defined([...state.instances][0]);
 
     instance.destroy();
     instance.destroy();
-    listeners.get("load")();
+    invokeLoad();
 
-    expect(runtimeWindow.removeEventListener).toHaveBeenCalled();
-    expect(runtimeWindow.scrollTo).toHaveBeenCalledTimes(1);
+    expect(remove).toHaveBeenCalled();
+    expect(scroll).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("AnchorScrollService", () => {
-  let $anchorScroll;
+  let $anchorScroll: ng.AnchorScrollService;
 
-  let $injector;
+  let $injector: ng.InjectorService;
 
-  let el;
+  let el: HTMLElement;
 
-  let angular;
+  let angular: Angular;
 
   beforeEach(() => {
     el = document.createElement("div");
@@ -270,9 +256,13 @@ describe("AnchorScrollService", () => {
     target.id = "fixedOffset";
     el.append(target, offset);
     spyOn(target, "scrollIntoView");
-    spyOn(target, "getBoundingClientRect").and.returnValue({ top: 120 });
-    spyOn(offset, "getBoundingClientRect").and.returnValue({ bottom: 30 });
-    spyOn(window, "getComputedStyle").and.returnValue({ position: "fixed" });
+    spyOn(target, "getBoundingClientRect").and.returnValue(
+      new DOMRect(0, 120, 0, 0),
+    );
+    spyOn(offset, "getBoundingClientRect").and.returnValue(
+      new DOMRect(0, 0, 0, 30),
+    );
+    offset.style.position = "fixed";
     spyOn(window, "scrollBy");
     $anchorScroll.yOffset = offset;
 
@@ -288,7 +278,7 @@ describe("AnchorScrollService", () => {
     target.id = "staticOffset";
     el.append(target, offset);
     spyOn(target, "scrollIntoView");
-    spyOn(window, "getComputedStyle").and.returnValue({ position: "static" });
+    offset.style.position = "static";
     spyOn(window, "scrollBy");
     $anchorScroll.yOffset = offset;
 

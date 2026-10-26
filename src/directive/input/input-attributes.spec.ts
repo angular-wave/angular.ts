@@ -1,16 +1,16 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined } from "../../shared/test-fixtures.spec.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
 
 describe("modern input directive attribute reads", () => {
-  let $compile;
-  let $rootScope;
+  let $compile: ng.CompileService;
+  let $rootScope: ng.Scope;
   let app: HTMLElement;
 
   beforeEach(() => {
-    app = document.getElementById("app") as HTMLElement;
+    app = defined(defined(document.getElementById("app")));
     dealoc(app);
     app.innerHTML = "";
 
@@ -19,7 +19,7 @@ describe("modern input directive attribute reads", () => {
     angular.bootstrap(app, []).invoke([
       "$compile",
       "$rootScope",
-      (_$compile_, _$rootScope_) => {
+      (_$compile_: ng.CompileService, _$rootScope_: ng.Scope) => {
         $compile = _$compile_;
         $rootScope = _$rootScope_;
       },
@@ -36,7 +36,7 @@ describe("modern input directive attribute reads", () => {
     app.innerHTML = '<input data-type="number" ng-model="age" />';
     $compile(app)(scope);
 
-    const input = app.querySelector("input") as HTMLInputElement;
+    const input = defined(app.querySelector("input"));
 
     input.value = "42";
     browserTrigger(input, "input");
@@ -52,7 +52,7 @@ describe("modern input directive attribute reads", () => {
       '<input type="date" data-ng-model-type="date" ng-model="birthday" />';
     $compile(app)(scope);
 
-    const input = app.querySelector("input") as HTMLInputElement;
+    const input = defined(app.querySelector("input"));
 
     input.value = "2026-05-16";
     browserTrigger(input, "input");
@@ -68,7 +68,7 @@ describe("modern input directive attribute reads", () => {
       '<input data-ng-trim="true" ng-model="name" value=" Lucas " />';
     $compile(app)(scope);
 
-    const input = app.querySelector("input") as HTMLInputElement;
+    const input = defined(app.querySelector("input"));
 
     input.value = " Lucas ";
     browserTrigger(input, "input");

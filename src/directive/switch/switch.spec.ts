@@ -1,28 +1,30 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode } from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait, waitUntil } from "../../shared/test-utils.ts";
 
 describe("ngSwitch", () => {
-  let $scope;
+  let $scope: FixtureScope;
 
-  let $compile;
+  let $compile: ng.CompileService;
 
-  let element;
+  let element: HTMLElement;
 
   beforeEach(() => {
-    dealoc(document.getElementById("app"));
+    dealoc(defined(document.getElementById("app")));
     window.angular = new Angular();
     window.angular.createModule("test", []);
     const injector = window.angular.bootstrap(
-      document.getElementById("app", ["test"]),
+      defined(document.getElementById("app")),
+      ["test"],
     );
 
     injector.invoke([
       "$rootScope",
       "$compile",
-      ($rootScope, _$compile_) => {
+      ($rootScope: FixtureScope, _$compile_: ng.CompileService) => {
         $scope = $rootScope.new();
         $compile = _$compile_;
       },
@@ -53,14 +55,14 @@ describe("ngSwitch", () => {
     try {
       scope.shape = "circle";
       await wait();
-      expect(element.querySelector("circle").namespaceURI).toBe(
+      expect(defined(element.querySelector("circle")).namespaceURI).toBe(
         "http://www.w3.org/2000/svg",
       );
       expect(element.querySelector("rect")).toBeNull();
 
       scope.shape = "rect";
       await wait();
-      expect(element.querySelector("rect").namespaceURI).toBe(
+      expect(defined(element.querySelector("rect")).namespaceURI).toBe(
         "http://www.w3.org/2000/svg",
       );
       expect(element.querySelector("circle")).toBeNull();
@@ -70,13 +72,15 @@ describe("ngSwitch", () => {
   });
 
   it("should switch on value change", async () => {
-    element = $compile(
-      '<div ng-switch="select">' +
-        '<div ng-switch-when="1">first:{{name}}</div>' +
-        '<div ng-switch-when="2">second:{{name}}</div>' +
-        '<div ng-switch-when="true">true:{{name}}</div>' +
-        "</div>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<div ng-switch="select">' +
+          '<div ng-switch-when="1">first:{{name}}</div>' +
+          '<div ng-switch-when="2">second:{{name}}</div>' +
+          '<div ng-switch-when="true">true:{{name}}</div>' +
+          "</div>",
+      )($scope),
+    );
     expect(element.innerHTML).toEqual("<!----><!----><!---->");
     $scope.select = 1;
     await wait();
@@ -99,12 +103,14 @@ describe("ngSwitch", () => {
   });
 
   it("should read data-ng-switch and data-ng-switch-when from host elements", async () => {
-    element = $compile(
-      '<div data-ng-switch="select">' +
-        '<div data-ng-switch-when="1">first</div>' +
-        '<div data-ng-switch-when="2">second</div>' +
-        "</div>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<div data-ng-switch="select">' +
+          '<div data-ng-switch-when="1">first</div>' +
+          '<div data-ng-switch-when="2">second</div>' +
+          "</div>",
+      )($scope),
+    );
 
     $scope.select = 1;
     await wait();
@@ -116,12 +122,14 @@ describe("ngSwitch", () => {
   });
 
   it("should use the default case when the switch expression is missing", async () => {
-    element = $compile(
-      "<ng-switch>" +
-        '<div ng-switch-when="1">first</div>' +
-        "<div ng-switch-default>default</div>" +
-        "</ng-switch>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        "<ng-switch>" +
+          '<div ng-switch-when="1">first</div>' +
+          "<div ng-switch-default>default</div>" +
+          "</ng-switch>",
+      )($scope),
+    );
 
     await wait();
 
@@ -129,14 +137,16 @@ describe("ngSwitch", () => {
   });
 
   it("should show all switch-whens that match the current value", async () => {
-    element = $compile(
-      '<ul ng-switch="select">' +
-        '<li ng-switch-when="1">first:{{name}}</li>' +
-        '<li ng-switch-when="1">, first too:{{name}}</li>' +
-        '<li ng-switch-when="2">second:{{name}}</li>' +
-        '<li ng-switch-when="true">true:{{name}}</li>' +
-        "</ul>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<ul ng-switch="select">' +
+          '<li ng-switch-when="1">first:{{name}}</li>' +
+          '<li ng-switch-when="1">, first too:{{name}}</li>' +
+          '<li ng-switch-when="2">second:{{name}}</li>' +
+          '<li ng-switch-when="true">true:{{name}}</li>' +
+          "</ul>",
+      )($scope),
+    );
     expect(element.innerHTML).toEqual("<!----><!----><!----><!---->");
     $scope.select = 1;
     await wait();
@@ -158,12 +168,14 @@ describe("ngSwitch", () => {
   });
 
   it("should switch on switch-when-default", async () => {
-    element = $compile(
-      '<ng-switch on="select">' +
-        '<div ng-switch-when="1">one</div>' +
-        "<div ng-switch-default>other</div>" +
-        "</ng-switch>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<ng-switch on="select">' +
+          '<div ng-switch-when="1">one</div>' +
+          "<div ng-switch-default>other</div>" +
+          "</ng-switch>",
+      )($scope),
+    );
     await wait();
     expect(element.textContent).toEqual("other");
     $scope.select = 1;
@@ -172,13 +184,15 @@ describe("ngSwitch", () => {
   });
 
   it("should show all switch-when-default", async () => {
-    element = $compile(
-      '<ul ng-switch="select">' +
-        '<li ng-switch-when="1">one</li>' +
-        "<li ng-switch-default>other</li>" +
-        "<li ng-switch-default>, other too</li>" +
-        "</ul>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<ul ng-switch="select">' +
+          '<li ng-switch-when="1">one</li>' +
+          "<li ng-switch-default>other</li>" +
+          "<li ng-switch-default>, other too</li>" +
+          "</ul>",
+      )($scope),
+    );
     await wait();
     expect(element.textContent).toEqual("other, other too");
     $scope.select = 1;
@@ -187,15 +201,17 @@ describe("ngSwitch", () => {
   });
 
   it("should always display the elements that do not match a switch", async () => {
-    element = $compile(
-      '<ul ng-switch="select">' +
-        "<li>always </li>" +
-        '<li ng-switch-when="1">one </li>' +
-        '<li ng-switch-when="2">two </li>' +
-        "<li ng-switch-default>other, </li>" +
-        "<li ng-switch-default>other too </li>" +
-        "</ul>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<ul ng-switch="select">' +
+          "<li>always </li>" +
+          '<li ng-switch-when="1">one </li>' +
+          '<li ng-switch-when="2">two </li>' +
+          "<li ng-switch-default>other, </li>" +
+          "<li ng-switch-default>other too </li>" +
+          "</ul>",
+      )($scope),
+    );
     await wait();
     expect(element.textContent).toEqual("always other, other too ");
     $scope.select = 1;
@@ -209,18 +225,20 @@ describe("ngSwitch", () => {
       "first and last elements in the ngSwitch body do not have a ngSwitch* " +
       "directive",
     async () => {
-      element = $compile(
-        '<ul ng-switch="select">' +
-          "<li>1</li>" +
-          '<li ng-switch-when="1">2</li>' +
-          "<li>3</li>" +
-          '<li ng-switch-when="2">4</li>' +
-          "<li ng-switch-default>5</li>" +
-          "<li>6</li>" +
-          "<li ng-switch-default>7</li>" +
-          "<li>8</li>" +
-          "</ul>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<ul ng-switch="select">' +
+            "<li>1</li>" +
+            '<li ng-switch-when="1">2</li>' +
+            "<li>3</li>" +
+            '<li ng-switch-when="2">4</li>' +
+            "<li ng-switch-default>5</li>" +
+            "<li>6</li>" +
+            "<li ng-switch-default>7</li>" +
+            "<li>8</li>" +
+            "</ul>",
+        )($scope),
+      );
       await wait();
       expect(element.textContent).toEqual("135678");
       $scope.select = 1;
@@ -234,16 +252,18 @@ describe("ngSwitch", () => {
       "ngSwitchDefault at the position specified in the template when the " +
       "first and last elements in the ngSwitch have a ngSwitch* directive",
     async () => {
-      element = $compile(
-        '<ul ng-switch="select">' +
-          '<li ng-switch-when="1">2</li>' +
-          "<li>3</li>" +
-          '<li ng-switch-when="2">4</li>' +
-          "<li ng-switch-default>5</li>" +
-          "<li>6</li>" +
-          "<li ng-switch-default>7</li>" +
-          "</ul>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<ul ng-switch="select">' +
+            '<li ng-switch-when="1">2</li>' +
+            "<li>3</li>" +
+            '<li ng-switch-when="2">4</li>' +
+            "<li ng-switch-default>5</li>" +
+            "<li>6</li>" +
+            "<li ng-switch-default>7</li>" +
+            "</ul>",
+        )($scope),
+      );
       await wait();
       expect(element.textContent).toEqual("3567");
       $scope.select = 1;
@@ -253,13 +273,15 @@ describe("ngSwitch", () => {
   );
 
   it("should properly support case labels with different numbers of transclude fns", async () => {
-    element = $compile(
-      '<div ng-switch="mode">' +
-        '<p ng-switch-when="a">Block1</p>' +
-        '<p ng-switch-when="a">Block2</p>' +
-        '<a href ng-switch-when="b">a</a>' +
-        "</div>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<div ng-switch="mode">' +
+          '<p ng-switch-when="a">Block1</p>' +
+          '<p ng-switch-when="a">Block2</p>' +
+          '<a href ng-switch-when="b">a</a>' +
+          "</div>",
+      )($scope),
+    );
 
     $scope.mode = "a";
     await wait();
@@ -283,7 +305,7 @@ describe("ngSwitch", () => {
     let switchFrameCalls = 0;
 
     spyOn(window, "requestAnimationFrame").and.callFake(
-      (callback: () => void): number => {
+      (callback: FrameRequestCallback): number => {
         if (trackSwitchFrames) {
           switchFrameCalls += 1;
         }
@@ -296,13 +318,15 @@ describe("ngSwitch", () => {
 
     trackSwitchFrames = true;
 
-    element = $compile(
-      '<div ng-switch="mode">' +
-        '<div ng-switch-when="one" animate>one</div>' +
-        '<div ng-switch-when="two" animate>two</div>' +
-        '<div ng-switch-when="three" animate>three</div>' +
-        "</div>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<div ng-switch="mode">' +
+          '<div ng-switch-when="one" animate>one</div>' +
+          '<div ng-switch-when="two" animate>two</div>' +
+          '<div ng-switch-when="three" animate>three</div>' +
+          "</div>",
+      )($scope),
+    );
 
     $scope.mode = "one";
     await waitUntil(
@@ -355,12 +379,14 @@ describe("ngSwitch", () => {
   });
 
   it("does not defer switch scheduling for unrelated retention mode", async () => {
-    element = $compile(
-      '<div ng-switch="mode">' +
-        '<div ng-switch-when="one" animate>one</div>' +
-        '<div ng-switch-when="two" animate>two</div>' +
-        "</div>",
-    )($scope);
+    element = htmlNode(
+      $compile(
+        '<div ng-switch="mode">' +
+          '<div ng-switch-when="one" animate>one</div>' +
+          '<div ng-switch-when="two" animate>two</div>' +
+          "</div>",
+      )($scope),
+    );
 
     $scope.mode = "one";
     await waitUntil(
@@ -401,14 +427,16 @@ describe("ngSwitch", () => {
       }
     });
 
-    element = $compile(
-      '<div ng-switch="value">' +
-        '<div ng-switch-when="foo">FOO 1</div>' +
-        '<div ng-switch-when="foo">FOO 2</div>' +
-        '<div ng-switch-when="bar">BAR</div>' +
-        '<div ng-switch-when="baz">BAZ</div>' +
-        "</div>",
-    )(scope);
+    element = htmlNode(
+      $compile(
+        '<div ng-switch="value">' +
+          '<div ng-switch-when="foo">FOO 1</div>' +
+          '<div ng-switch-when="foo">FOO 2</div>' +
+          '<div ng-switch-when="bar">BAR</div>' +
+          '<div ng-switch-when="baz">BAZ</div>' +
+          "</div>",
+      )(scope),
+    );
 
     await wait();
     expect(element.textContent).toBe("FOO 1FOO 2");
@@ -421,13 +449,15 @@ describe("ngSwitch", () => {
 
   describe("ngSwitchWhen separator", () => {
     it("should be possible to define a separator", async () => {
-      element = $compile(
-        '<div ng-switch="mode">' +
-          '<p ng-switch-when="a|b" ng-switch-when-separator="|">Block1|</p>' +
-          '<p ng-switch-when="a">Block2|</p>' +
-          "<p ng-switch-default>Block3|</div>" +
-          "</div>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<div ng-switch="mode">' +
+            '<p ng-switch-when="a|b" ng-switch-when-separator="|">Block1|</p>' +
+            '<p ng-switch-when="a">Block2|</p>' +
+            "<p ng-switch-default>Block3|</div>" +
+            "</div>",
+        )($scope),
+      );
 
       $scope.mode = "a";
       await wait();
@@ -444,12 +474,14 @@ describe("ngSwitch", () => {
     });
 
     it("should read data-ng-switch-when-separator from the host element", async () => {
-      element = $compile(
-        '<div ng-switch="mode">' +
-          '<p data-ng-switch-when="a|b" data-ng-switch-when-separator="|">Block1|</p>' +
-          "<p ng-switch-default>Block2|</p>" +
-          "</div>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<div ng-switch="mode">' +
+            '<p data-ng-switch-when="a|b" data-ng-switch-when-separator="|">Block1|</p>' +
+            "<p ng-switch-default>Block2|</p>" +
+            "</div>",
+        )($scope),
+      );
 
       $scope.mode = "b";
       await wait();
@@ -458,13 +490,15 @@ describe("ngSwitch", () => {
     });
 
     it("should be possible to use a separator at the end of the value", async () => {
-      element = $compile(
-        '<div ng-switch="mode">' +
-          '<p ng-switch-when="a|b|" ng-switch-when-separator="|">Block1|</p>' +
-          '<p ng-switch-when="a">Block2|</p>' +
-          "<p ng-switch-default>Block3|</div>" +
-          "</div>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<div ng-switch="mode">' +
+            '<p ng-switch-when="a|b|" ng-switch-when-separator="|">Block1|</p>' +
+            '<p ng-switch-when="a">Block2|</p>' +
+            "<p ng-switch-default>Block3|</div>" +
+            "</div>",
+        )($scope),
+      );
 
       $scope.mode = "a";
       await wait();
@@ -481,13 +515,15 @@ describe("ngSwitch", () => {
     });
 
     it("should be possible to use the empty string as a separator", async () => {
-      element = $compile(
-        '<div ng-switch="mode">' +
-          '<p ng-switch-when="ab" ng-switch-when-separator="">Block1|</p>' +
-          '<p ng-switch-when="a">Block2|</p>' +
-          "<p ng-switch-default>Block3|</div>" +
-          "</div>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<div ng-switch="mode">' +
+            '<p ng-switch-when="ab" ng-switch-when-separator="">Block1|</p>' +
+            '<p ng-switch-when="a">Block2|</p>' +
+            "<p ng-switch-default>Block3|</div>" +
+            "</div>",
+        )($scope),
+      );
 
       $scope.mode = "a";
       await wait();
@@ -504,13 +540,15 @@ describe("ngSwitch", () => {
     });
 
     it("should be possible to use separators that are multiple characters long", async () => {
-      element = $compile(
-        '<div ng-switch="mode">' +
-          '<p ng-switch-when="a||b|a" ng-switch-when-separator="||">Block1|</p>' +
-          '<p ng-switch-when="a">Block2|</p>' +
-          "<p ng-switch-default>Block3|</div>" +
-          "</div>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<div ng-switch="mode">' +
+            '<p ng-switch-when="a||b|a" ng-switch-when-separator="||">Block1|</p>' +
+            '<p ng-switch-when="a">Block2|</p>' +
+            "<p ng-switch-default>Block3|</div>" +
+            "</div>",
+        )($scope),
+      );
 
       $scope.mode = "a";
       await wait();
@@ -527,13 +565,15 @@ describe("ngSwitch", () => {
     });
 
     it("should ignore multiple appearances of the same item", async () => {
-      element = $compile(
-        '<div ng-switch="mode">' +
-          '<p ng-switch-when="a|b|a" ng-switch-when-separator="|">Block1|</p>' +
-          '<p ng-switch-when="a">Block2|</p>' +
-          "<p ng-switch-default>Block3|</div>" +
-          "</div>",
-      )($scope);
+      element = htmlNode(
+        $compile(
+          '<div ng-switch="mode">' +
+            '<p ng-switch-when="a|b|a" ng-switch-when-separator="|">Block1|</p>' +
+            '<p ng-switch-when="a">Block2|</p>' +
+            "<p ng-switch-default>Block3|</div>" +
+            "</div>",
+        )($scope),
+      );
 
       $scope.mode = "a";
       await wait();
@@ -550,3 +590,13 @@ describe("ngSwitch", () => {
     });
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  shape?: string;
+  select?: number | undefined | boolean;
+  name?: string;
+  mode?: string;
+  value?: string;
+}

@@ -1,43 +1,53 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import {
+  callable,
+  defined,
+  htmlNode,
+  instance,
+} from "../../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
 import { ngBindHtmlDirective } from "./bind.ts";
 
 describe("ng-bind", () => {
-  let $rootScope;
+  let $rootScope: FixtureScope;
 
-  let $compile;
+  let $compile: ng.CompileService;
+  let $parse: ng.ParseService;
 
-  let element;
+  let element: HTMLElement;
 
   beforeEach(() => {
-    dealoc(document.getElementById("app"));
+    dealoc(defined(document.getElementById("app")));
     window.angular = new Angular();
     window.angular
       .createModule("myModule", ["ng"])
       .decorator("$exceptionHandler", function () {
-        return (exception) => {
-          throw new Error(exception.message);
+        return (exception: unknown) => {
+          throw new Error(instance(exception, Error).message);
         };
       });
-    window.angular
-      .bootstrap(document.getElementById("app"), ["myModule"])
-      .invoke([
-        "$rootScope",
-        "$compile",
+    const injector = window.angular.bootstrap(
+      defined(document.getElementById("app")),
+      ["myModule"],
+    );
+    $parse = injector.get("$parse");
+    injector.invoke([
+      "$rootScope",
+      "$compile",
 
-        (_$rootScope_, _$compile_) => {
-          $rootScope = _$rootScope_;
-          $compile = _$compile_;
-        },
-      ]);
+      (_$rootScope_: FixtureScope, _$compile_: ng.CompileService) => {
+        $rootScope = _$rootScope_;
+        $compile = _$compile_;
+      },
+    ]);
   });
 
   describe("ngBind", () => {
     it("should set text", async () => {
-      element = $compile('<div ng-bind="a"></div>')($rootScope);
+      element = htmlNode($compile('<div ng-bind="a"></div>')($rootScope));
       await wait();
       expect(element.textContent).toEqual("");
       $rootScope.a = "misko";
@@ -46,14 +56,14 @@ describe("ng-bind", () => {
     });
 
     it("should support normalized data-ng-bind aliases", async () => {
-      element = $compile('<div data-ng-bind="a"></div>')($rootScope);
+      element = htmlNode($compile('<div data-ng-bind="a"></div>')($rootScope));
       $rootScope.a = "misko";
       await wait();
       expect(element.textContent).toEqual("misko");
     });
 
     it("should set text to blank if undefined", async () => {
-      element = $compile('<div ng-bind="a"></div>')($rootScope);
+      element = htmlNode($compile('<div ng-bind="a"></div>')($rootScope));
       $rootScope.a = "misko";
       await wait();
       expect(element.textContent).toEqual("misko");
@@ -66,26 +76,30 @@ describe("ng-bind", () => {
     });
 
     it("should suppress rendering of falsy values", async () => {
-      element = $compile(
-        '<div><span ng-bind="null"></span>' +
-          '<span ng-bind="undefined"></span>' +
-          "<span ng-bind=\"''\"></span>-" +
-          '<span ng-bind="0"></span>' +
-          '<span ng-bind="false"></span>' +
-          "</div>",
-      )($rootScope);
+      element = htmlNode(
+        $compile(
+          '<div><span ng-bind="null"></span>' +
+            '<span ng-bind="undefined"></span>' +
+            "<span ng-bind=\"''\"></span>-" +
+            '<span ng-bind="0"></span>' +
+            '<span ng-bind="false"></span>' +
+            "</div>",
+        )($rootScope),
+      );
       await wait();
       expect(element.textContent).toEqual("-0false");
     });
 
-    [
-      [{ a: 1 }, '{"a":1}'],
-      [true, "true"],
-      [false, "false"],
-    ].forEach((prop) => {
+    (
+      [
+        [{ a: 1 }, '{"a":1}'],
+        [true, "true"],
+        [false, "false"],
+      ] satisfies [unknown, string][]
+    ).forEach((prop) => {
       it(`should jsonify $prop ${prop}`, async () => {
         $rootScope.value = prop[0];
-        element = $compile('<div ng-bind="value"></div>')($rootScope);
+        element = htmlNode($compile('<div ng-bind="value"></div>')($rootScope));
         await wait();
         expect(element.textContent).toEqual(prop[1]);
       });
@@ -97,14 +111,14 @@ describe("ng-bind", () => {
           return "foo";
         },
       };
-      element = $compile('<div ng-bind="value"></div>')($rootScope);
+      element = htmlNode($compile('<div ng-bind="value"></div>')($rootScope));
       await wait();
       expect(element.textContent).toEqual("foo");
     });
 
     it("should NOT use toString on array objects", async () => {
       $rootScope.value = [];
-      element = $compile('<div ng-bind="value"></div>')($rootScope);
+      element = htmlNode($compile('<div ng-bind="value"></div>')($rootScope));
       await wait();
       expect(element.textContent).toEqual("[]");
     });
@@ -114,7 +128,7 @@ describe("ng-bind", () => {
 
       $rootScope.value = date;
 
-      element = $compile('<div ng-bind="value"></div>')($rootScope);
+      element = htmlNode($compile('<div ng-bind="value"></div>')($rootScope));
       await wait();
 
       expect(element.textContent).toBe(JSON.stringify(date));
@@ -123,8 +137,10 @@ describe("ng-bind", () => {
     it("should support `data-lazy` attribute", async () => {
       $rootScope.value = 0;
       await wait();
-      element = $compile('<div ng-bind="value" data-lazy="true">Content</div>')(
-        $rootScope,
+      element = htmlNode(
+        $compile('<div ng-bind="value" data-lazy="true">Content</div>')(
+          $rootScope,
+        ),
       );
       expect(element.textContent).toEqual("Content");
 
@@ -135,9 +151,11 @@ describe("ng-bind", () => {
 
     it("should support conditional fallback expressions", async () => {
       $rootScope.vm = {};
-      element = $compile(
-        `<div ng-bind="vm.caseItem ? vm.caseItem.objectAddress : 'Loading case'"></div>`,
-      )($rootScope);
+      element = htmlNode(
+        $compile(
+          `<div ng-bind="vm.caseItem ? vm.caseItem.objectAddress : 'Loading case'"></div>`,
+        )($rootScope),
+      );
 
       await wait();
       expect(element.textContent).toEqual("Loading case");
@@ -164,26 +182,32 @@ describe("ng-bind", () => {
         }
       }
 
-      element = $compile(
-        '<section><button type="button" ng-click="$ctrl.rename()">Rename</button>' +
-          '<span ng-bind="$ctrl.label"></span></section>',
-      )($rootScope);
+      element = htmlNode(
+        $compile(
+          '<section><button type="button" ng-click="$ctrl.rename()">Rename</button>' +
+            '<span ng-bind="$ctrl.label"></span></section>',
+        )($rootScope),
+      );
       $rootScope.$ctrl = new TestController();
 
       await wait();
-      expect(element.querySelector("span").textContent).toEqual("before");
+      expect(defined(element.querySelector("span")).textContent).toEqual(
+        "before",
+      );
 
-      element.querySelector("button").click();
+      defined(element.querySelector("button")).click();
       await wait();
 
-      expect(element.querySelector("span").textContent).toEqual("after");
+      expect(defined(element.querySelector("span")).textContent).toEqual(
+        "after",
+      );
     });
   });
 
   describe("ngBindTemplate", () => {
     it("should ngBindTemplate", async () => {
-      element = $compile('<div ng-bind-template="Hello {{name}}!"></div>')(
-        $rootScope,
+      element = htmlNode(
+        $compile('<div ng-bind-template="Hello {{name}}!"></div>')($rootScope),
       );
       $rootScope.name = "Misko";
       await wait();
@@ -191,8 +215,8 @@ describe("ng-bind", () => {
     });
 
     it("should render object as JSON ignore $$", async () => {
-      element = $compile('<pre>{{ {key:"value", $$key:"hide"}  }}</pre>')(
-        $rootScope,
+      element = htmlNode(
+        $compile('<pre>{{ {key:"value", $$key:"hide"}  }}</pre>')($rootScope),
       );
       await wait();
       expect(JSON.parse(element.textContent)).toEqual({ key: "value" });
@@ -201,14 +225,16 @@ describe("ng-bind", () => {
     it("should support logical fallback expressions in interpolation", async () => {
       $rootScope.vm = { caseItem: {} };
       $rootScope.event = {};
-      element = $compile(
-        `<div ng-bind-template="{{vm.caseItem.customerName || 'Unknown'}} / {{event.fromStatus || 'none'}}"></div>`,
-      )($rootScope);
+      element = htmlNode(
+        $compile(
+          `<div ng-bind-template="{{vm.caseItem.customerName || 'Unknown'}} / {{event.fromStatus || 'none'}}"></div>`,
+        )($rootScope),
+      );
 
       await wait();
       expect(element.textContent).toEqual("Unknown / none");
 
-      $rootScope.vm.caseItem.customerName = "Ada";
+      defined($rootScope.vm.caseItem).customerName = "Ada";
       $rootScope.event.fromStatus = "open";
       await wait();
       expect(element.textContent).toEqual("Ada / open");
@@ -222,38 +248,46 @@ describe("ng-bind", () => {
 
   describe("ngBindHtml", () => {
     it("should parse the expression during compile", () => {
-      const parse = jasmine.createSpy("$parse").and.returnValue(() => {});
+      const parse = jasmine
+        .createSpy<ng.ParseService>("$parse")
+        .and.returnValue($parse("html"));
 
       const directive = ngBindHtmlDirective(parse, $compile);
       const element = document.createElement("div");
 
       element.setAttribute("ng-bind-html", "html");
 
-      const link = directive.compile(element);
+      callable(directive, "compile");
+      const link = defined(directive.compile)(element);
 
       expect(parse).toHaveBeenCalledWith("html");
       expect(link).toEqual(jasmine.any(Function));
     });
 
     it("should create a link function that writes watched html", () => {
-      const directive = ngBindHtmlDirective(() => {}, {
-        _prepareHtml: (html) => html,
+      const directive = ngBindHtmlDirective($parse, $compile);
+      spyOn($compile, "_prepareHtml").and.callFake((html) => {
+        if (typeof html !== "string") throw new TypeError("Expected HTML");
+        return html;
       });
       const element = document.createElement("div");
 
       element.setAttribute("ng-bind-html", "html");
 
-      const link = directive.compile(element);
+      callable(directive, "compile");
+      const link = defined(directive.compile)(element);
 
-      const scope = {
-        watch: jasmine.createSpy("watch").and.callFake((_expr, listener) => {
-          listener("<span>trusted</span>");
-        }),
-      };
+      spyOn($rootScope, "watch").and.callFake((_expr, listener) => {
+        if (typeof listener !== "function")
+          throw new TypeError("Expected listener");
+        listener("<span>trusted</span>", $rootScope._target);
+        return undefined;
+      });
+      if (typeof link !== "function")
+        throw new TypeError("Expected link function");
+      link($rootScope, element, () => undefined);
 
-      link(scope, element);
-
-      expect(scope.watch).toHaveBeenCalledWith(
+      expect($rootScope.watch).toHaveBeenCalledWith(
         "html",
         jasmine.any(Function),
         false,
@@ -269,3 +303,13 @@ describe("ng-bind", () => {
     });
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  "new"(childInstance?: ng.Scope): FixtureScope;
+  newIsolate(childInstance?: ng.Scope): FixtureScope;
+  a?: string | undefined | null;
+  value?: unknown;
+  vm?: { caseItem?: null | { objectAddress?: string; customerName?: string } };
+  name?: string;
+  event?: { fromStatus?: string };
+}

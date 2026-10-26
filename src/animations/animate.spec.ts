@@ -1,9 +1,10 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
+import { defined, htmlNode, instance } from "../shared/test-fixtures.spec.ts";
+
 import { Angular } from "../angular.ts";
 import { createElementFromHTML, dealoc } from "../shared/dom.ts";
 import { wait } from "../shared/test-utils.ts";
-import { AnimationRegistry } from "./animate.ts";
+import { AnimationHandle, AnimationRegistry } from "./animate.ts";
 import {
   addClass as addClassHelper,
   removeClass as removeClassHelper,
@@ -44,14 +45,14 @@ describe("AnimationRegistry", () => {
 });
 
 describe("$animate", () => {
-  let host;
+  let host: HTMLElement | null;
 
-  let $animate;
+  let $animate: ng.AnimateService;
 
-  let style;
+  let style: HTMLStyleElement;
 
   beforeEach(() => {
-    host = document.getElementById("app");
+    host = defined(document.getElementById("app"));
     host.innerHTML = "";
     style = document.createElement("style");
     document.head.append(style);
@@ -60,7 +61,7 @@ describe("$animate", () => {
 
     angular.bootstrap(host, []).invoke([
       "$animate",
-      (_$animate_) => {
+      (_$animate_: ng.AnimateService) => {
         $animate = _$animate_;
       },
     ]);
@@ -76,20 +77,20 @@ describe("$animate", () => {
 
     const handle = $animate.enter(child, host, null, { duration: 1 });
 
-    expect(host.firstElementChild).toBe(child);
+    expect(defined(host).firstElementChild).toBe(child);
     await handle.finished;
   });
 
   it("removes elements after leave animations finish", async () => {
     const child = createElementFromHTML('<div animate="fade">child</div>');
 
-    host.append(child);
+    defined(host).append(child);
 
     const handle = $animate.leave(child, { duration: 1 });
 
-    expect(host.firstElementChild).toBe(child);
+    expect(defined(host).firstElementChild).toBe(child);
     await handle.finished;
-    expect(host.firstElementChild).toBeNull();
+    expect(defined(host).firstElementChild).toBeNull();
   });
 
   it("moves elements immediately and returns a native handle", async () => {
@@ -97,11 +98,11 @@ describe("$animate", () => {
 
     const second = createElementFromHTML("<div>second</div>");
 
-    host.append(first, second);
+    defined(host).append(first, second);
 
     const handle = $animate.move(first, host, second, { duration: 1 });
 
-    expect(host.textContent).toBe("secondfirst");
+    expect(defined(host).textContent).toBe("secondfirst");
     expect(handle.finished.then).toBeDefined();
     await handle.finished;
   });
@@ -111,12 +112,16 @@ describe("$animate", () => {
     const entered = document.createElement("div");
     const moved = document.createElement("div");
 
-    host.append(anchor, moved);
+    defined(host).append(anchor, moved);
 
-    await $animate.enter(entered, undefined, anchor, { duration: 0 }).finished;
-    await $animate.move(moved, undefined, entered, { duration: 0 }).finished;
+    await $animate.enter(entered, null, anchor, { duration: 0 }).finished;
+    await $animate.move(moved, null, entered, { duration: 0 }).finished;
 
-    expect(Array.from(host.children)).toEqual([anchor, entered, moved]);
+    expect(Array.from(defined(host).children)).toEqual([
+      anchor,
+      entered,
+      moved,
+    ]);
   });
 
   it("requires an insertion parent or attached anchor", () => {
@@ -130,7 +135,7 @@ describe("$animate", () => {
   it("applies class changes directly", async () => {
     const child = createElementFromHTML('<div animate="fade"></div>');
 
-    host.append(child);
+    defined(host).append(child);
 
     await $animate.addClass(child, "active", { duration: 1 }).finished;
     expect(child.classList.contains("active")).toBe(true);
@@ -144,7 +149,7 @@ describe("$animate", () => {
       '<div animate="fade" class="old keep"></div>',
     );
 
-    host.append(child);
+    defined(host).append(child);
 
     await $animate.setClass(child, "new extra", "old", { duration: 1 })
       .finished;
@@ -156,9 +161,9 @@ describe("$animate", () => {
   });
 
   it("runs inline keyframe animations with final styles", async () => {
-    const child = createElementFromHTML('<div animate="fade"></div>');
+    const child = htmlNode(createElementFromHTML('<div animate="fade"></div>'));
 
-    host.append(child);
+    defined(host).append(child);
 
     await $animate.animate(
       child,
@@ -173,9 +178,11 @@ describe("$animate", () => {
   });
 
   it("supports style-only animations without a named preset or to styles", async () => {
-    const child = createElementFromHTML('<div animate="false"></div>');
+    const child = htmlNode(
+      createElementFromHTML('<div animate="false"></div>'),
+    );
 
-    host.append(child);
+    defined(host).append(child);
 
     await $animate.animate(
       child,
@@ -202,8 +209,10 @@ describe("$animate", () => {
       }
     `;
 
-    const child = createElementFromHTML(
-      '<div class="css-fade" data-animate="css-fade"></div>',
+    const child = htmlNode(
+      createElementFromHTML(
+        '<div class="css-fade" data-animate="css-fade"></div>',
+      ),
     );
 
     let started = false;
@@ -234,10 +243,10 @@ describe("$animate", () => {
       '<div class="css-fade" data-animate="fade"></div>',
     );
 
-    let animationName;
+    let animationName: string | undefined;
 
     child.addEventListener("animationstart", (event) => {
-      animationName = event.animationName;
+      animationName = instance(event, AnimationEvent).animationName;
     });
 
     await $animate.enter(child, host, null).finished;
@@ -296,12 +305,12 @@ describe("$animate", () => {
     child.addEventListener("animationstart", () => {
       started = true;
     });
-    host.append(child);
+    defined(host).append(child);
 
     await $animate.leave(child, { duration: 1 }).finished;
 
     expect(started).toBe(true);
-    expect(host.firstElementChild).toBeNull();
+    expect(defined(host).firstElementChild).toBeNull();
   });
 
   it("switches from CSS enter to leave when animations overlap", async () => {
@@ -324,10 +333,10 @@ describe("$animate", () => {
 
     const child = createElementFromHTML('<div class="css-fade" animate></div>');
 
-    const started = [];
+    const started: unknown[] = [];
 
     child.addEventListener("animationstart", (event) => {
-      started.push(event.animationName);
+      started.push(instance(event, AnimationEvent).animationName);
     });
 
     $animate.enter(child, host, null);
@@ -336,7 +345,7 @@ describe("$animate", () => {
 
     expect(started).toContain("css-fade-out");
     expect(started[started.length - 1]).toBe("css-fade-out");
-    expect(host.firstElementChild).toBeNull();
+    expect(defined(host).firstElementChild).toBeNull();
   });
 
   it("supports named JavaScript animation presets", async () => {
@@ -348,10 +357,11 @@ describe("$animate", () => {
       enter(element) {
         called = true;
         element.setAttribute("data-animated", "true");
+        return undefined;
       },
     });
 
-    host.append(child);
+    defined(host).append(child);
     await $animate.enter(child, host, null).finished;
 
     expect(called).toBe(true);
@@ -371,7 +381,7 @@ describe("$animate", () => {
     document.body.append(registeredHost);
     angular.bootstrap(registeredHost, ["cached-animations"]).invoke([
       "$animate",
-      (_$animate_) => {
+      (_$animate_: ng.AnimateService) => {
         $animate = _$animate_;
       },
     ]);
@@ -397,13 +407,13 @@ describe("$animate", () => {
   it("ships built-in presets through angular-animate.css", async () => {
     const child = createElementFromHTML('<div animate="scale"></div>');
 
-    host.append(child);
+    defined(host).append(child);
     spyOn(child, "animate").and.callThrough();
 
-    let animationName;
+    let animationName: string | undefined;
 
     child.addEventListener("animationstart", (event) => {
-      animationName = event.animationName;
+      animationName = instance(event, AnimationEvent).animationName;
     });
 
     await $animate.enter(child, host, null).finished;
@@ -415,12 +425,12 @@ describe("$animate", () => {
   it("supports CSS built-in presets selected through options", async () => {
     const child = createElementFromHTML("<div></div>");
 
-    host.append(child);
+    defined(host).append(child);
 
-    let animationName;
+    let animationName: string | undefined;
 
     child.addEventListener("animationstart", (event) => {
-      animationName = event.animationName;
+      animationName = instance(event, AnimationEvent).animationName;
     });
 
     await $animate.enter(child, host, null, { animation: "scale" }).finished;
@@ -430,21 +440,25 @@ describe("$animate", () => {
   });
 
   it("animates auto-height presets with cleanup", async () => {
-    const child = createElementFromHTML(
-      '<div animate="collapse" style="height: 40px">content</div>',
+    const child = htmlNode(
+      createElementFromHTML(
+        '<div animate="collapse" style="height: 40px">content</div>',
+      ),
     );
 
-    host.append(child);
+    defined(host).append(child);
     spyOn(child, "animate").and.callThrough();
 
     const handle = $animate.leave(child, { duration: 20 });
     const animation = child.getAnimations()[0];
 
-    expect(animation.animationName).toBe("ng-auto-height-leave");
+    expect(instance(animation, CSSAnimation).animationName).toBe(
+      "ng-auto-height-leave",
+    );
     expect(child.style.getPropertyValue("--ng-animate-auto-height")).toBe(
       "40px",
     );
-    expect(animation.effect.getTiming().duration).toBe(20);
+    expect(defined(animation.effect).getTiming().duration).toBe(20);
 
     await handle.finished;
 
@@ -454,8 +468,10 @@ describe("$animate", () => {
   });
 
   it("measures auto-height entry and restores an existing custom property", async () => {
-    const child = createElementFromHTML(
-      '<div animate="expand" style="--ng-animate-auto-height: 12px">content</div>',
+    const child = htmlNode(
+      createElementFromHTML(
+        '<div animate="expand" style="--ng-animate-auto-height: 12px">content</div>',
+      ),
     );
 
     Object.defineProperty(child, "scrollHeight", { value: 48 });
@@ -472,13 +488,13 @@ describe("$animate", () => {
   });
 
   it("falls back to scroll height when leave layout height is zero", async () => {
-    const child = createElementFromHTML(
-      '<div animate="collapse">content</div>',
+    const child = htmlNode(
+      createElementFromHTML('<div animate="collapse">content</div>'),
     );
 
     Object.defineProperty(child, "offsetHeight", { value: 0 });
     Object.defineProperty(child, "scrollHeight", { value: 36 });
-    host.append(child);
+    defined(host).append(child);
 
     const handle = $animate.leave(child);
 
@@ -518,11 +534,11 @@ describe("$animate", () => {
       document,
       "startViewTransition",
     );
-    const calls = [];
+    const calls: ("start" | "finished" | "update")[] = [];
 
     Object.defineProperty(document, "startViewTransition", {
       configurable: true,
-      value(update) {
+      value(update: () => void) {
         calls.push("start");
         update();
 
@@ -532,7 +548,9 @@ describe("$animate", () => {
       },
     });
 
-    await $animate.transition(() => calls.push("update"));
+    await $animate.transition(() => {
+      calls.push("update");
+    });
 
     expect(calls).toEqual(["start", "update", "finished"]);
 
@@ -546,9 +564,9 @@ describe("$animate", () => {
   it("runs lifecycle callbacks and removes temporary classes", async () => {
     const child = createElementFromHTML('<div animate="fade"></div>');
 
-    const events = [];
+    const events: string[] = [];
 
-    host.append(child);
+    defined(host).append(child);
 
     await $animate.enter(child, host, null, {
       duration: 1,
@@ -568,9 +586,9 @@ describe("$animate", () => {
   it("runs cancel callbacks for cancelled animations", async () => {
     const child = createElementFromHTML('<div animate="fade"></div>');
 
-    const events = [];
+    const events: string[] = [];
 
-    host.append(child);
+    defined(host).append(child);
 
     const handle = $animate.enter(child, host, null, {
       duration: 1000,
@@ -586,11 +604,12 @@ describe("$animate", () => {
   });
 
   it("skips animations for reduced motion by default", async () => {
-    spyOn(window, "matchMedia").and.returnValue({ matches: true });
+    const media = reducedMotion();
+    spyOn(window, "matchMedia").and.returnValue(media);
 
     const child = createElementFromHTML('<div animate="fade"></div>');
 
-    host.append(child);
+    defined(host).append(child);
     spyOn(child, "animate").and.callThrough();
 
     await $animate.enter(child, host, null).finished;
@@ -599,11 +618,12 @@ describe("$animate", () => {
   });
 
   it("does not allow animation options to override reduced-motion preference", async () => {
-    spyOn(window, "matchMedia").and.returnValue({ matches: true });
+    const media = reducedMotion();
+    spyOn(window, "matchMedia").and.returnValue(media);
 
     const child = createElementFromHTML('<div animate="fade"></div>');
 
-    host.append(child);
+    defined(host).append(child);
     spyOn(child, "animate").and.callThrough();
 
     await $animate.enter(child, host, null, {
@@ -620,8 +640,9 @@ describe("$animate", () => {
     const angular = new Angular();
 
     angular.createModule("animations", []).animation("registered", () => ({
-      enter(element) {
+      enter(element: Element) {
         element.setAttribute("data-registered", "true");
+        return undefined;
       },
     }));
 
@@ -629,7 +650,7 @@ describe("$animate", () => {
 
     angular.bootstrap(registeredHost, ["animations"]).invoke([
       "$animate",
-      (_$animate_) => {
+      (_$animate_: ng.AnimateService) => {
         $animate = _$animate_;
       },
     ]);
@@ -647,11 +668,11 @@ describe("$animate", () => {
   it("cancels active native animations", async () => {
     const child = createElementFromHTML('<div animate="fade"></div>');
 
-    host.append(child);
+    defined(host).append(child);
 
     const handle = $animate.enter(child, host, null, { duration: 1000 });
 
-    let status;
+    let status: boolean | undefined;
 
     handle.done((ok) => {
       status = ok;
@@ -664,7 +685,9 @@ describe("$animate", () => {
 });
 
 describe("class mutation helpers", () => {
-  function splitClasses(className) {
+  let angular: Angular;
+  afterEach(() => angular?._composition.destroy());
+  function splitClasses(className: string) {
     const trimmed = className.trim();
 
     return trimmed ? trimmed.split(/\s+/) : [];
@@ -694,22 +717,27 @@ describe("class mutation helpers", () => {
     const element = createElementFromHTML(
       '<div animate="fade" class="old keep"></div>',
     );
-    const calls = [];
-    const animate = {
-      addClass(target, className) {
-        calls.push(["addClass", className]);
-        target.classList.add(...splitClasses(className));
-      },
-      removeClass(target, className) {
-        calls.push(["removeClass", className]);
-        target.classList.remove(...splitClasses(className));
-      },
-      setClass(target, add, remove) {
-        calls.push(["setClass", add, remove]);
-        target.classList.add(...splitClasses(add));
-        target.classList.remove(...splitClasses(remove));
-      },
-    };
+    const calls: unknown[] = [];
+    angular = new Angular();
+    const animate = angular
+      .bootstrap(document.createElement("div"), [])
+      .get("$animate");
+    spyOn(animate, "addClass").and.callFake((target, className) => {
+      calls.push(["addClass", className]);
+      target.classList.add(...splitClasses(className));
+      return completedAnimation();
+    });
+    spyOn(animate, "removeClass").and.callFake((target, className) => {
+      calls.push(["removeClass", className]);
+      target.classList.remove(...splitClasses(className));
+      return completedAnimation();
+    });
+    spyOn(animate, "setClass").and.callFake((target, add, remove) => {
+      calls.push(["setClass", add, remove]);
+      target.classList.add(...splitClasses(add));
+      target.classList.remove(...splitClasses(remove));
+      return completedAnimation();
+    });
     const getAnimate = () => animate;
 
     addClassHelper(element, "added", getAnimate);
@@ -728,3 +756,12 @@ describe("class mutation helpers", () => {
     expect(element.classList.contains("next")).toBe(false);
   });
 });
+
+function reducedMotion(): MediaQueryList {
+  const query = window.matchMedia("all");
+  spyOnProperty(query, "matches", "get").and.returnValue(true);
+  return query;
+}
+function completedAnimation(): ng.AnimationHandle {
+  return new AnimationHandle(undefined);
+}
