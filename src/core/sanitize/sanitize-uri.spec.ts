@@ -1,20 +1,19 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { createBindingPolicies } from "../compile/binding-policy.ts";
 
 describe("sanitizeUri", () => {
-  let sanitizeHref;
+  let sanitizeHref: (uri: unknown) => unknown;
 
-  let sanitizeImg;
+  let sanitizeImg: (uri: unknown) => unknown;
 
-  let policies;
+  let policies: ReturnType<typeof createBindingPolicies>;
 
-  let testUrl;
+  let testUrl: string;
 
   beforeEach(() => {
     policies = createBindingPolicies();
 
-    sanitizeHref = function (uri) {
+    sanitizeHref = function (uri: unknown) {
       return policies._apply("url", uri);
     };
     sanitizeImg = function (uri) {
@@ -22,7 +21,7 @@ describe("sanitizeUri", () => {
     };
   });
 
-  function isEvilInCurrentBrowser(uri) {
+  function isEvilInCurrentBrowser(uri: string) {
     const a = document.createElement("a");
 
     a.setAttribute("href", uri);

@@ -33,12 +33,6 @@
     "neverAssertion": 2,
     "nonNullAssertion": 4
   },
-  "src/core/compile/programmatic-view-api.spec.ts": {
-    "@ts-nocheck": 1
-  },
-  "src/core/compile/programmatic-view.spec.ts": {
-    "@ts-nocheck": 1
-  },
   "src/core/composition/runtime-composition.spec.ts": {
     "doubleAssertion": 4
   },
@@ -69,9 +63,6 @@
   "src/core/render/after-render.spec.ts": {
     "explicitAny": 4,
     "nonNullAssertion": 3
-  },
-  "src/core/sanitize/sanitize-uri.spec.ts": {
-    "@ts-nocheck": 1
   },
   "src/core/scope/scope.spec.ts": {
     "@ts-nocheck": 1,
@@ -120,12 +111,6 @@
   "src/directive/http/delete.spec.ts": {
     "explicitAny": 5
   },
-  "src/directive/http/get.spec.ts": {
-    "@ts-nocheck": 1
-  },
-  "src/directive/http/post.spec.ts": {
-    "@ts-nocheck": 1
-  },
   "src/directive/http/put.spec.ts": {
     "explicitAny": 5
   },
@@ -162,9 +147,6 @@
   "src/directive/observe/observe.spec.ts": {
     "explicitAny": 10,
     "nonNullAssertion": 1
-  },
-  "src/directive/on/on.spec.ts": {
-    "@ts-nocheck": 1
   },
   "src/directive/options/options.spec.ts": {
     "@ts-nocheck": 1
@@ -281,10 +263,6 @@
     "nonNullAssertion": 3,
     "explicitAny": 1
   },
-  "src/services/event-bus/event-bus.spec.ts": {
-    "@ts-nocheck": 1,
-    "neverAssertion": 1
-  },
   "src/services/exception/exception.spec.ts": {
     "neverAssertion": 1
   },
@@ -308,9 +286,6 @@
     "@ts-nocheck": 1,
     "doubleAssertion": 2,
     "neverAssertion": 1
-  },
-  "src/services/rest/rest.spec.ts": {
-    "@ts-nocheck": 1
   },
   "src/services/rest/rest.test.ts": {
     "explicitAny": 1

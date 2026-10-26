@@ -1,4 +1,5 @@
-// @ts-nocheck
+import type { ProgrammaticViewProperties } from "./programmatic-view.ts";
+import { defined, instance } from "../../shared/test-fixtures.spec.ts";
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { addElementDisposer, dealoc } from "../../shared/dom.ts";
@@ -29,7 +30,7 @@ describe("programmatic view API", () => {
 
   function bootstrap(
     html: string,
-    register: (module: ng.IModule) => void,
+    register: (module: ng.NgModule) => void,
   ): ng.InjectorService {
     new Angular();
     const name = `programmaticViewApiSpec${moduleIndex++}`;
@@ -51,7 +52,7 @@ describe("programmatic view API", () => {
       (value) => value,
       (value) => String(value()),
     );
-    const emptyKeyed = each(
+    const emptyKeyed = each<never>(
       () => null,
       (value) => value,
       () => null,
@@ -61,8 +62,8 @@ describe("programmatic view API", () => {
     expect(tagNS("http://www.w3.org/2000/svg", "circle").namespaceURI).toBe(
       "http://www.w3.org/2000/svg",
     );
-    expect(keyed()).toEqual(["1"]);
-    expect(emptyKeyed()).toEqual([]);
+    expect<unknown>(keyed()).toEqual(["1"]);
+    expect<unknown>(emptyKeyed()).toEqual([]);
     expect(Reflect.get(tags, "then")).toBeUndefined();
     expect(
       Reflect.get(tags("http://www.w3.org/2000/svg"), "then"),
@@ -83,8 +84,8 @@ describe("programmatic view API", () => {
 
   it("supports cancellable element-owned cleanup", () => {
     const element = document.createElement("div");
-    const cancelled = jasmine.createSpy("cancelled");
-    const active = jasmine.createSpy("active");
+    const cancelled = jasmine.createSpy<() => void>("cancelled");
+    const active = jasmine.createSpy<() => void>("active");
     const cancel = addElementDisposer(element, cancelled);
 
     addElementDisposer(element, active);
@@ -97,7 +98,8 @@ describe("programmatic view API", () => {
   });
 
   it("supports object listeners and explicit removal semantics", () => {
-    const handleEvent = jasmine.createSpy("handleEvent");
+    const handleEvent =
+      jasmine.createSpy<(event: Event) => void>("handleEvent");
     const listener = event({ handleEvent });
     const element = tags.div(
       attrs({ hidden: null, inert: false, itemscope: true }),
@@ -131,67 +133,64 @@ describe("programmatic view API", () => {
   });
 
   it("supports reactive readers, literal properties, and event bindings", async () => {
-    let context;
-    const clicks = jasmine.createSpy("clicks");
-    const callback = jasmine.createSpy("callback");
+    let context: ViewContext | undefined;
+    const clicks = jasmine.createSpy<(event: Event) => void>("clicks");
+    const callback = jasmine.createSpy<() => void>("callback");
 
     bootstrap("<binding-view></binding-view>", (module) => {
       module.component("bindingView", {
-        view: (value) => {
+        view: (value: ViewContext) => {
           context = value;
           value.scope.label = "first";
 
-          return tags.button(
-            {
-              ...attrs({
-                "aria-hidden": false,
-                "data-label": () => value.scope.label,
-              }),
-              ...props({ callback }),
-              class: () => value.scope.label,
-              customValue: () => value.scope.label,
-              activate: event(clicks, { once: true }),
-            },
-            () => value.scope.label,
-          );
+          const bindings: ProgrammaticViewProperties<
+            HTMLButtonElement & { customValue: string }
+          > & { activate: EventListener } = {
+            ...attrs({
+              "aria-hidden": false,
+              "data-label": () => value.scope.label,
+            }),
+            ...props({ callback }),
+            class: () => value.scope.label,
+            customValue: () => value.scope.label,
+            activate: event(clicks, { once: true }),
+          };
+          return tags.button(bindings, () => value.scope.label);
         },
       });
     });
 
-    const button = host.querySelector("button") as HTMLButtonElement & {
-      callback: typeof callback;
-      customValue: string;
-    };
+    const button = defined(host.querySelector("button"));
 
     expect(button.getAttribute("data-label")).toBe("first");
     expect(button.className).toBe("first");
     expect(button.getAttribute("aria-hidden")).toBe("false");
-    expect(button.callback).toBe(callback);
+    expect(Reflect.get(button, "callback")).toBe(callback);
     expect(callback).not.toHaveBeenCalled();
-    expect(button.customValue).toBe("first");
+    expect(Reflect.get(button, "customValue")).toBe("first");
     expect(button.textContent).toBe("first");
 
     button.dispatchEvent(new Event("activate"));
     button.dispatchEvent(new Event("activate"));
     expect(clicks).toHaveBeenCalledTimes(1);
 
-    context.scope.label = "second";
+    defined(context).scope.label = "second";
     await settle();
 
     expect(button.getAttribute("data-label")).toBe("second");
     expect(button.className).toBe("second");
-    expect(button.customValue).toBe("second");
+    expect(Reflect.get(button, "customValue")).toBe("second");
     expect(button.textContent).toBe("second");
   });
 
   it("retains keyed nodes across reorders and replaces changed identities", async () => {
-    let context;
+    let context: ViewContext | undefined;
     const first = { id: 1, label: "one" };
     const second = { id: 2, label: "two" };
 
     bootstrap("<keyed-view></keyed-view>", (module) => {
       module.component("keyedView", {
-        view: (value) => {
+        view: (value: ViewContext) => {
           context = value;
           value.scope.items = [first, second];
 
@@ -209,20 +208,22 @@ describe("programmatic view API", () => {
 
     const initial = Array.from(host.querySelectorAll("li"));
 
-    context.scope.items = [second, first];
+    defined(context).scope.items = [second, first];
     await settle();
 
     const reordered = Array.from(host.querySelectorAll("li"));
     expect(reordered).toEqual([initial[1], initial[0]]);
 
-    context.scope.items.push({ id: 3, label: "three" });
+    defined(defined(context).scope.items).push({ id: 3, label: "three" });
     await settle();
     expect(host.querySelectorAll("li").length).toBe(3);
 
     const third = host.querySelectorAll("li")[2];
 
-    context.scope.items[0] = context.scope.items[2];
-    context.scope.items[2] = second;
+    defined(defined(context).scope.items)[0] = defined(
+      defined(context).scope.items,
+    )[2];
+    defined(defined(context).scope.items)[2] = second;
     await settle();
     expect(Array.from(host.querySelectorAll("li"))).toEqual([
       third,
@@ -230,7 +231,7 @@ describe("programmatic view API", () => {
       initial[1],
     ]);
 
-    context.scope.items.splice(1, 1);
+    defined(defined(context).scope.items).splice(1, 1);
     await settle();
     expect(Array.from(host.querySelectorAll("li"))).toEqual([
       third,
@@ -238,13 +239,13 @@ describe("programmatic view API", () => {
     ]);
 
     const list = host.querySelector("ul");
-    const insertBefore = spyOn(list, "insertBefore").and.callThrough();
+    const insertBefore = spyOn(defined(list), "insertBefore").and.callThrough();
 
-    context.scope.items = [{ id: 3, label: "three" }, second];
+    defined(context).scope.items = [{ id: 3, label: "three" }, second];
     await settle();
     expect(insertBefore).not.toHaveBeenCalled();
 
-    context.scope.items = [
+    defined(context).scope.items = [
       { id: 3, label: "three" },
       { id: 2, label: "replacement" },
     ];
@@ -255,38 +256,45 @@ describe("programmatic view API", () => {
     expect(replaced[1]).toBe(initial[1]);
     expect(replaced[1].textContent).toBe("replacement");
 
-    context.scope.items = null;
+    defined(context).scope.items = null;
     await settle();
     expect(host.querySelectorAll("li").length).toBe(0);
 
-    context.scope.items = [first];
+    defined(context).scope.items = [first];
     await settle();
 
     const walker = document.createTreeWalker(host, NodeFilter.SHOW_COMMENT);
-    let anchor;
+    let anchor: Comment | undefined;
 
-    while ((anchor = walker.nextNode())) {
-      if (anchor.data === "ng-view-each") break;
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (node instanceof Comment && node.data === "ng-view-each") {
+        anchor = node;
+        break;
+      }
     }
 
-    anchor.remove();
-    context.scope.items = [];
+    defined(anchor).remove();
+    defined(context).scope.items = [];
     await settle();
 
-    context.scope.destroy();
-    dealoc(context.host);
-    context.host.remove();
+    defined(context).scope.destroy();
+    dealoc(defined(context).host);
+    defined(context).host.remove();
   });
 
   it("rejects duplicate keyed items without replacing existing DOM", async () => {
-    let context;
+    let context: ViewContext | undefined;
     const errors: unknown[] = [];
 
     bootstrap("<duplicate-view></duplicate-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("duplicateView", {
-          view: (value) => {
+          view: (value: ViewContext) => {
             context = value;
             value.scope.items = [{ id: 1 }];
             return tags.div(
@@ -302,22 +310,27 @@ describe("programmatic view API", () => {
 
     const original = host.querySelector("span");
 
-    context.scope.items = [{ id: 1 }, { id: 1 }];
+    defined(context).scope.items = [{ id: 1 }, { id: 1 }];
     await settle();
 
     expect(host.querySelector("span")).toBe(original);
-    expect(errors[0].message).toBe("Duplicate programmatic view key '1'.");
+    expect(instance(errors[0], Error).message).toBe(
+      "Duplicate programmatic view key '1'.",
+    );
   });
 
   it("preserves keyed DOM when a staged renderer fails", async () => {
-    let context;
+    let context: ViewContext | undefined;
     const errors: unknown[] = [];
 
     bootstrap("<transactional-view></transactional-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("transactionalView", {
-          view: (value) => {
+          view: (value: ViewContext) => {
             context = value;
             value.scope.items = [{ id: 1, label: "stable" }];
             return tags.div(
@@ -336,14 +349,14 @@ describe("programmatic view API", () => {
 
     const original = host.querySelector("span");
 
-    context.scope.items = [{ id: 2, label: "replacement" }];
+    defined(context).scope.items = [{ id: 2, label: "replacement" }];
     await settle();
 
     expect(host.querySelector("span")).toBe(original);
-    expect(original.textContent).toBe("stable");
-    expect(errors[0].message).toBe("render failed");
+    expect(defined(original).textContent).toBe("stable");
+    expect(instance(errors[0], Error).message).toBe("render failed");
 
-    context.scope.items = [{ id: 3, label: "committed" }];
+    defined(context).scope.items = [{ id: 3, label: "committed" }];
     await settle();
 
     expect(host.querySelector("span")).not.toBe(original);
@@ -352,14 +365,14 @@ describe("programmatic view API", () => {
   });
 
   it("keeps keyed DOM identity and disposes removed items exactly once", async () => {
-    let context;
+    let context: ViewContext | undefined;
     let nextId = 6;
     let seed = 0x51ced;
     const disposed = new Map<number, number>();
 
     bootstrap("<random-keyed-view></random-keyed-view>", (module) => {
       module.component("randomKeyedView", {
-        view: (value) => {
+        view: (value: ViewContext) => {
           context = value;
           value.scope.items = Array.from({ length: 6 }, (_, id) => ({
             id,
@@ -402,7 +415,7 @@ describe("programmatic view API", () => {
     };
 
     for (let step = 0; step < 40; step++) {
-      const items = context.scope.items.slice();
+      const items = defined(defined(context).scope.items).slice();
       const operation = Math.floor(random() * 6);
 
       if (operation === 0 || items.length === 0) {
@@ -430,7 +443,7 @@ describe("programmatic view API", () => {
         items[index] = { id, label: `item-${id}` };
       }
 
-      context.scope.items = items;
+      defined(context).scope.items = items;
       await settle();
 
       const rendered = Array.from(host.querySelectorAll("li"));
@@ -439,7 +452,7 @@ describe("programmatic view API", () => {
         .toEqual(items.map((item) => item.id));
       expect(rendered.map((node) => node.textContent))
         .withContext(`step ${step}`)
-        .toEqual(items.map((item) => item.label));
+        .toEqual(items.map((item) => defined(item.label)));
 
       rendered.forEach((node) => {
         const id = Number(node.dataset.id);
@@ -459,14 +472,17 @@ describe("programmatic view API", () => {
   });
 
   it("preserves keyed DOM when key selection fails", async () => {
-    let context;
+    let context: ViewContext | undefined;
     const errors: unknown[] = [];
 
     bootstrap("<key-error-view></key-error-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("keyErrorView", {
-          view: (value) => {
+          view: (value: ViewContext) => {
             context = value;
             value.scope.items = [{ id: 1 }];
 
@@ -486,55 +502,59 @@ describe("programmatic view API", () => {
 
     const original = host.querySelector("span");
 
-    context.scope.items = [{ id: 2 }];
+    defined(context).scope.items = [{ id: 2 }];
     await settle();
 
     expect(host.querySelector("span")).toBe(original);
-    expect(errors[0].message).toBe("key failed");
+    expect(instance(errors[0], Error).message).toBe("key failed");
   });
 
   it("routes programmatic event errors through the exception handler", () => {
     const errors: unknown[] = [];
-    const handled = jasmine.createSpy("handled");
-    const blurred = jasmine.createSpy("blurred");
+    const handled = jasmine.createSpy<(event: Event) => void>("handled");
+    const blurred = jasmine.createSpy<(event: Event) => void>("blurred");
 
     bootstrap("<event-error-view></event-error-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("eventErrorView", {
-          view: () =>
-            tags.button(
-              {
-                onClick: () => {
-                  throw new Error("event failed");
-                },
-                onfocus: { handleEvent: handled },
-                onblur: event(blurred),
-                once: "ordinary-property",
+          view: () => {
+            const bindings: ProgrammaticViewProperties<HTMLButtonElement> & {
+              once: string;
+            } = {
+              onclick: () => {
+                throw new Error("event failed");
               },
-              "trigger",
-            ),
+              onfocus: { handleEvent: handled },
+              onblur: event(blurred),
+              once: "ordinary-property",
+            };
+            return tags.button(bindings, "trigger");
+          },
         });
     });
 
     const button = host.querySelector("button");
 
-    button.click();
-    button.dispatchEvent(new Event("focus"));
-    button.dispatchEvent(new Event("blur"));
+    defined(button).click();
+    defined(button).dispatchEvent(new Event("focus"));
+    defined(button).dispatchEvent(new Event("blur"));
 
-    expect(button.getAttribute("once")).toBe("ordinary-property");
-    expect(errors[0].message).toBe("event failed");
+    expect(defined(button).getAttribute("once")).toBe("ordinary-property");
+    expect(instance(errors[0], Error).message).toBe("event failed");
     expect(handled).toHaveBeenCalledTimes(1);
     expect(blurred).toHaveBeenCalledTimes(1);
   });
 
   it("omits false reactive children", async () => {
-    let context;
+    let context: ViewContext | undefined;
 
     bootstrap("<false-child-view></false-child-view>", (module) => {
       module.component("falseChildView", {
-        view: (value) => {
+        view: (value: ViewContext) => {
           context = value;
           value.scope.visible = "shown";
           return tags.div(() => value.scope.visible);
@@ -542,12 +562,12 @@ describe("programmatic view API", () => {
       });
     });
 
-    expect(host.querySelector("div").textContent).toBe("shown");
+    expect(defined(host.querySelector("div")).textContent).toBe("shown");
 
-    context.scope.visible = false;
+    defined(context).scope.visible = false;
     await settle();
 
-    expect(host.querySelector("div").textContent).toBe("");
+    expect(defined(host.querySelector("div")).textContent).toBe("");
   });
 
   it("sanitizes deferred static HTML properties", () => {
@@ -555,7 +575,10 @@ describe("programmatic view API", () => {
 
     bootstrap("<static-html-view></static-html-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("staticHtmlView", {
           view: () =>
             tags.div(props({ innerHTML: '<img src="x" onerror="alert(1)">' })),
@@ -582,14 +605,17 @@ describe("programmatic view API", () => {
         ]);
     });
 
-    expect(host.querySelector("strong").textContent).toBe("trusted");
+    expect(defined(host.querySelector("strong")).textContent).toBe("trusted");
   });
 
   it("validates static resource and link properties before insertion", () => {
-    const errors: Error[] = [];
+    const errors: unknown[] = [];
     bootstrap("<static-url-view></static-url-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("staticUrlView", {
           view: () =>
             tags.div(
@@ -598,11 +624,17 @@ describe("programmatic view API", () => {
             ),
         });
     });
-    expect(host.querySelector("a").getAttribute("href")).toBe(
+    expect(defined(host.querySelector("a")).getAttribute("href")).toBe(
       "unsafe:javascript:alert(1)",
     );
-    expect(host.querySelector("iframe").getAttribute("src")).toBeNull();
-    expect(errors.some((error) => /insecurl/.test(error.message))).toBeTrue();
+    expect(
+      defined(host.querySelector("iframe")).getAttribute("src"),
+    ).toBeNull();
+    expect(
+      errors.some((error: unknown) =>
+        /insecurl/.test(instance(error, Error).message),
+      ),
+    ).toBeTrue();
   });
 
   it("routes deferred static assignment failures", () => {
@@ -615,13 +647,18 @@ describe("programmatic view API", () => {
 
     bootstrap("<static-failure-view></static-failure-view>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("staticFailureView", {
           view: () => tags.iframe(props({ srcdoc: invalid })),
         });
     });
 
-    expect(errors[0].message).toContain("static assignment failed");
+    expect(instance(errors[0], Error).message).toContain(
+      "static assignment failed",
+    );
   });
 
   it("routes deferred read-only property failures", () => {
@@ -645,7 +682,10 @@ describe("programmatic view API", () => {
 
     bootstrap("<div readonly-static></div>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .config({ $compile: { htmlPolicy: (html) => html } })
         .directive("readonlyStatic", [
           () => ({
@@ -654,21 +694,21 @@ describe("programmatic view API", () => {
         ]);
     });
 
-    expect(errors[0].message).toBe(
+    expect(instance(errors[0], Error).message).toBe(
       "DOM property 'innerHTML' cannot be assigned.",
     );
   });
 
   it("runs active cleanup once and permits cancellation", () => {
-    const active = jasmine.createSpy("active");
-    const cancelled = jasmine.createSpy("cancelled");
-    const late = jasmine.createSpy("late");
-    let context;
-    let cancelActive;
+    const active = jasmine.createSpy<() => void>("active");
+    const cancelled = jasmine.createSpy<() => void>("cancelled");
+    const late = jasmine.createSpy<() => void>("late");
+    let context: ViewContext | undefined;
+    let cancelActive: (() => void) | undefined;
 
     bootstrap("<cleanup-view></cleanup-view>", (module) => {
       module.component("cleanupView", {
-        view: (value) => {
+        view: (value: ViewContext) => {
           context = value;
           cancelActive = value.onDestroy(active);
           const cancel = value.onDestroy(cancelled);
@@ -680,12 +720,12 @@ describe("programmatic view API", () => {
       });
     });
 
-    context.scope.destroy();
-    context.scope.destroy();
-    dealoc(context.host.querySelector("span"));
-    cancelActive();
-    cancelActive();
-    context.onDestroy(late)();
+    defined(context).scope.destroy();
+    defined(context).scope.destroy();
+    dealoc(defined(context).host.querySelector("span"));
+    defined(cancelActive)();
+    defined(cancelActive)();
+    defined(context).onDestroy(late)();
 
     expect(active).toHaveBeenCalledTimes(1);
     expect(cancelled).not.toHaveBeenCalled();
@@ -694,13 +734,16 @@ describe("programmatic view API", () => {
 
   it("routes cleanup failures through the exception handler", () => {
     const errors: unknown[] = [];
-    let context;
+    let context: ViewContext | undefined;
 
     bootstrap("<failing-cleanup></failing-cleanup>", (module) => {
       module
-        .decorator("$exceptionHandler", () => (error) => errors.push(error))
+        .decorator(
+          "$exceptionHandler",
+          () => (error: unknown) => errors.push(error),
+        )
         .component("failingCleanup", {
-          view: (value) => {
+          view: (value: ViewContext) => {
             context = value;
             value.onDestroy(() => {
               throw new Error("cleanup failed");
@@ -710,22 +753,22 @@ describe("programmatic view API", () => {
         });
     });
 
-    context.scope.destroy();
-    context.onDestroy(() => {
+    defined(context).scope.destroy();
+    defined(context).onDestroy(() => {
       throw new Error("late cleanup failed");
     });
 
-    expect(errors[0].message).toBe("cleanup failed");
-    expect(errors[1].message).toBe("late cleanup failed");
+    expect(instance(errors[0], Error).message).toBe("cleanup failed");
+    expect(instance(errors[1], Error).message).toBe("late cleanup failed");
   });
 
   it("owns null-view cleanup through the host fragment", () => {
-    const cleanup = jasmine.createSpy("cleanup");
-    let context;
+    const cleanup = jasmine.createSpy<() => void>("cleanup");
+    let context: ViewContext | undefined;
 
     bootstrap("<div host-cleanup></div>", (module) => {
       module.directive("hostCleanup", () => ({
-        view: (value) => {
+        view: (value: ViewContext) => {
           context = value;
           value.onDestroy(cleanup);
           return null;
@@ -733,8 +776,8 @@ describe("programmatic view API", () => {
       }));
     });
 
-    dealoc(context.host);
-    context.host.remove();
+    dealoc(defined(context).host);
+    defined(context).host.remove();
 
     expect(cleanup).toHaveBeenCalledTimes(1);
   });
@@ -744,6 +787,7 @@ describe("programmatic view API", () => {
       bootstrap("<invalid-cleanup></invalid-cleanup>", (module) => {
         module.component("invalidCleanup", {
           view: ({ onDestroy }) => {
+            // @ts-expect-error Deliberately invalid cleanup input tests runtime validation.
             onDestroy(null);
             return null;
           },
@@ -752,3 +796,21 @@ describe("programmatic view API", () => {
     }).toThrowError("Programmatic view cleanup must be a function.");
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  label?: string;
+  href?: string;
+  srcset?: string;
+  state?: string | null;
+  metadata?: Map<string, string>;
+  child?: ng.ProgrammaticViewChild;
+  value?: ng.ProgrammaticViewChild;
+  visible?: string | boolean;
+  items?: { id: number; label?: string }[] | null;
+}
+type ViewContext = ng.ProgrammaticViewContext<
+  unknown,
+  unknown,
+  FixtureScope,
+  Element
+>;

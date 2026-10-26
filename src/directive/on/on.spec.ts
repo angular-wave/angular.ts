@@ -1,4 +1,8 @@
-// @ts-nocheck
+import {
+  defined,
+  instance,
+  elementNode,
+} from "../../shared/test-fixtures.spec.ts";
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { browserTrigger, wait } from "../../shared/test-utils.ts";
@@ -6,9 +10,15 @@ import { createInjector } from "../../core/di/injector.ts";
 import { getNormalizedAttr, getNormalizedAttrName } from "../../shared/dom.ts";
 
 describe("ngOn* event binding", () => {
-  let $rootScope, module, injector, $compile;
+  let $rootScope: ng.Scope & {
+      fooEvent?: jasmine.Spy<() => void>;
+      barEvent?: jasmine.Spy<() => void>;
+    },
+    module: ng.NgModule,
+    injector: ng.InjectorService,
+    $compile: ng.CompileService;
 
-  const app = document.getElementById("app");
+  const app = defined(document.getElementById("app"));
 
   beforeEach(() => {
     window.angular = new Angular();
@@ -20,8 +30,8 @@ describe("ngOn* event binding", () => {
 
   it("should add event listener of specified name", () => {
     $rootScope.name = "Misko";
-    const element = $compile('<span ng-on-foo="name = name + 3"></span>')(
-      $rootScope,
+    const element = elementNode(
+      $compile('<span ng-on-foo="name = name + 3"></span>')($rootScope),
     );
 
     expect($rootScope.name).toBe("Misko");
@@ -32,19 +42,21 @@ describe("ngOn* event binding", () => {
 
   it("should allow access to the $event object", async () => {
     app.innerHTML = '<span ng-on-foo="e = $event"></span>';
-    $compile(app)($rootScope);
+    elementNode($compile(app)($rootScope));
     await wait();
-    browserTrigger(app.querySelector("span"), "foo");
-    expect($rootScope.e.target).toBeDefined();
-    expect($rootScope.e.target).toBe(app.querySelector("span"));
+    browserTrigger(defined(app.querySelector("span")), "foo");
+    expect(instance($rootScope.e, Event).target).toBeDefined();
+    expect(instance($rootScope.e, Event).target).toBe(
+      app.querySelector("span"),
+    );
   });
 
   it("should call the listener synchronously", () => {
-    const element = $compile('<span ng-on-foo="fooEvent()"></span>')(
-      $rootScope,
+    const element = elementNode(
+      $compile('<span ng-on-foo="fooEvent()"></span>')($rootScope),
     );
 
-    $rootScope.fooEvent = jasmine.createSpy("fooEvent");
+    $rootScope.fooEvent = jasmine.createSpy<() => void>("fooEvent");
 
     browserTrigger(element, "foo");
 
@@ -52,19 +64,21 @@ describe("ngOn* event binding", () => {
   });
 
   it("should support multiple events on a single element", () => {
-    const element = $compile(
-      '<span ng-on-foo="fooEvent()" ng-on-bar="barEvent()"></span>',
-    )($rootScope);
+    const element = elementNode(
+      $compile('<span ng-on-foo="fooEvent()" ng-on-bar="barEvent()"></span>')(
+        $rootScope,
+      ),
+    );
 
-    $rootScope.fooEvent = jasmine.createSpy("fooEvent");
-    $rootScope.barEvent = jasmine.createSpy("barEvent");
+    $rootScope.fooEvent = jasmine.createSpy<() => void>("fooEvent");
+    $rootScope.barEvent = jasmine.createSpy<() => void>("barEvent");
 
     browserTrigger(element, "foo");
     expect($rootScope.fooEvent).toHaveBeenCalled();
     expect($rootScope.barEvent).not.toHaveBeenCalled();
 
-    $rootScope.fooEvent.calls.reset();
-    $rootScope.barEvent.calls.reset();
+    defined($rootScope.fooEvent).calls.reset();
+    defined($rootScope.barEvent).calls.reset();
 
     browserTrigger(element, "bar");
     expect($rootScope.fooEvent).not.toHaveBeenCalled();
@@ -72,11 +86,14 @@ describe("ngOn* event binding", () => {
   });
 
   it("should apply element event policy to all ng-on-* handlers", () => {
-    const seen = ($rootScope.seen = jasmine.createSpy("seen"));
+    const seen = ($rootScope.seen =
+      jasmine.createSpy<(event: Event) => void>("seen"));
 
-    const element = $compile(
-      '<span data-event-prevent ng-on-foo="seen($event)" ng-on-bar="seen($event)"></span>',
-    )($rootScope);
+    const element = elementNode(
+      $compile(
+        '<span data-event-prevent ng-on-foo="seen($event)" ng-on-bar="seen($event)"></span>',
+      )($rootScope),
+    );
 
     const fooEvent = new Event("foo", {
       bubbles: true,
@@ -98,11 +115,14 @@ describe("ngOn* event binding", () => {
   });
 
   it("should work with different prefixes", () => {
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
-    const element = $compile(
-      '<span ng-on-test="cb(1)" ng-On-test2="cb(2)"></span>',
-    )($rootScope);
+    const element = elementNode(
+      $compile('<span ng-on-test="cb(1)" ng-On-test2="cb(2)"></span>')(
+        $rootScope,
+      ),
+    );
 
     browserTrigger(element, "test");
     expect(cb).toHaveBeenCalledWith(1);
@@ -112,12 +132,15 @@ describe("ngOn* event binding", () => {
   });
 
   it("should work if they are prefixed with data- and different prefixes", () => {
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
-    const element = $compile(
-      '<span data-ng-on-test2="cb(2)" ng-on-test3="cb(3)" data-ng-on-test4="cb(4)" ' +
-        'ng-on-test5="cb(5)" ng-on-test6="cb(6)"></span>',
-    )($rootScope);
+    const element = elementNode(
+      $compile(
+        '<span data-ng-on-test2="cb(2)" ng-on-test3="cb(3)" data-ng-on-test4="cb(4)" ' +
+          'ng-on-test5="cb(5)" ng-on-test6="cb(6)"></span>',
+      )($rootScope),
+    );
 
     browserTrigger(element, "test2");
     expect(cb).toHaveBeenCalledWith(2);
@@ -136,11 +159,12 @@ describe("ngOn* event binding", () => {
   });
 
   it("should work independently of attributes with the same name", () => {
-    const element = $compile('<span ng-on-asdf="cb()" asdf="foo" />')(
-      $rootScope,
+    const element = elementNode(
+      $compile('<span ng-on-asdf="cb()" asdf="foo" />')($rootScope),
     );
 
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
     browserTrigger(element, "asdf");
     expect(cb).toHaveBeenCalled();
@@ -148,11 +172,12 @@ describe("ngOn* event binding", () => {
   });
 
   it("should work independently of (ng-)attributes with the same name", () => {
-    const element = $compile('<span ng-on-asdf="cb()" ng-attr-asdf="foo" />')(
-      $rootScope,
+    const element = elementNode(
+      $compile('<span ng-on-asdf="cb()" ng-attr-asdf="foo" />')($rootScope),
     );
 
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
     browserTrigger(element, "asdf");
     expect(cb).toHaveBeenCalled();
@@ -160,24 +185,25 @@ describe("ngOn* event binding", () => {
   });
 
   it("should work independently of properties with the same name", () => {
-    const element = $compile('<span ng-on-asdf="cb()" ng-prop-asdf="123" />')(
-      $rootScope,
+    const element = elementNode(
+      $compile('<span ng-on-asdf="cb()" ng-prop-asdf="123" />')($rootScope),
     );
 
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
     browserTrigger(element, "asdf");
     expect(cb).toHaveBeenCalled();
-    expect(element.asdf).toBe(123);
+    expect(Reflect.get(element, "asdf")).toBe(123);
   });
 
   it("should use the full ng-on-* attribute name in $attr mappings", () => {
-    let snapshot;
+    let snapshot: Record<string, string | undefined> = {};
 
     window.angular
       .createModule("test", ["ng"])
       .directive("attrExposer", () => ({
-        link($scope, $element) {
+        link($scope: ng.Scope, $element: Element) {
           snapshot = {
             title: getNormalizedAttr($element, "title"),
             titleAttr: getNormalizedAttrName($element, "title"),
@@ -203,9 +229,11 @@ describe("ngOn* event binding", () => {
     injector = createInjector(["ng", "test"]);
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
-    $compile(
-      '<div attr-exposer ng-on-title="cb(1)" ng-on-super-title="cb(2)" ng-on-my-camel-title="cb(3)">',
-    )($rootScope);
+    elementNode(
+      $compile(
+        '<div attr-exposer ng-on-title="cb(1)" ng-on-super-title="cb(2)" ng-on-my-camel-title="cb(3)">',
+      )($rootScope),
+    );
 
     expect(snapshot.title).toBeUndefined();
     expect(snapshot.titleAttr).toBeUndefined();
@@ -224,12 +252,12 @@ describe("ngOn* event binding", () => {
   });
 
   it("should not conflict with (ng-attr-)attribute mappings of the same name", () => {
-    let snapshot;
+    let snapshot: Record<string, string | undefined> = {};
 
     window.angular
       .createModule("test", ["ng"])
       .directive("attrExposer", () => ({
-        link($scope, $element) {
+        link($scope: ng.Scope, $element: Element) {
           snapshot = {
             title: getNormalizedAttr($element, "title"),
             titleAttr: getNormalizedAttrName($element, "title"),
@@ -241,18 +269,23 @@ describe("ngOn* event binding", () => {
     $rootScope = injector.get("$rootScope");
     $compile = injector.get("$compile");
 
-    $compile(
-      '<div attr-exposer ng-on-title="42" ng-attr-title="foo" title="bar">',
-    )($rootScope);
+    elementNode(
+      $compile(
+        '<div attr-exposer ng-on-title="42" ng-attr-title="foo" title="bar">',
+      )($rootScope),
+    );
     expect(snapshot.title).toBe("foo");
     expect(snapshot.titleAttr).toBe("title");
     expect(snapshot.ngOnTitleAttr).toBe("ng-on-title");
   });
 
   it("should correctly bind to kebab-cased event names", () => {
-    const element = $compile('<span ng-on-foo-bar="cb()"></span>')($rootScope);
+    const element = elementNode(
+      $compile('<span ng-on-foo-bar="cb()"></span>')($rootScope),
+    );
 
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
     browserTrigger(element, "foobar");
     browserTrigger(element, "fooBar");
@@ -263,9 +296,12 @@ describe("ngOn* event binding", () => {
   });
 
   it("should correctly bind to camelCased event names", () => {
-    const element = $compile('<span ng-on-foo_bar="cb()"></span>')($rootScope);
+    const element = elementNode(
+      $compile('<span ng-on-foo_bar="cb()"></span>')($rootScope),
+    );
 
-    const cb = ($rootScope.cb = jasmine.createSpy("ng-on cb"));
+    const cb = ($rootScope.cb =
+      jasmine.createSpy<(value?: number) => void>("ng-on cb"));
 
     browserTrigger(element, "foobar");
     browserTrigger(element, "foo-bar");

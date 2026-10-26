@@ -1,4 +1,6 @@
-// @ts-nocheck
+import type { ProgrammaticViewProperties } from "./programmatic-view.ts";
+import { createScope } from "../scope/scope.ts";
+import { defined, instance } from "../../shared/test-fixtures.spec.ts";
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { _compile, _exceptionHandler } from "../../injection-tokens.ts";
@@ -28,7 +30,7 @@ describe("programmatic views", () => {
 
   function bootstrap(
     html: string,
-    register: (module: ng.IModule) => void,
+    register: (module: ng.NgModule) => void,
   ): ng.InjectorService {
     new Angular();
     const name = `programmaticViewSpec${moduleIndex++}`;
@@ -51,7 +53,7 @@ describe("programmatic views", () => {
 
       const firstSvg = tags("http://www.w3.org/2000/svg");
       const secondSvg = tags("http://www.w3.org/2000/svg");
-      const circle = firstSvg.circle({ cx: 4, hidden: true });
+      const circle = firstSvg.circle(attrs({ cx: 4, hidden: true }));
 
       expect(firstSvg).toBe(secondSvg);
       expect(firstSvg.circle).toBe(firstSvg.circle);
@@ -62,12 +64,19 @@ describe("programmatic views", () => {
 
     it("sets native properties and falls back to attributes", () => {
       const input = tags.input({ value: "ready", checked: true });
-      const div = tags.div({
+      const properties: ProgrammaticViewProperties<
+        HTMLDivElement & {
+          removable: string;
+          absent: string;
+          disabledFlag: boolean;
+        }
+      > = {
         "data-state": "ready",
         removable: "present",
         absent: null,
         disabledFlag: false,
-      });
+      };
+      const div = tags.div(properties);
 
       expect(input.value).toBe("ready");
       expect(input.checked).toBeTrue();
@@ -76,7 +85,10 @@ describe("programmatic views", () => {
       expect(div.hasAttribute("absent")).toBeFalse();
       expect(div.hasAttribute("disabledFlag")).toBeFalse();
 
-      const second = tags.div({ removable: "cached fallback" });
+      const secondProperties: typeof properties = {
+        removable: "cached fallback",
+      };
+      const second = tags.div(secondProperties);
       expect(second.getAttribute("removable")).toBe("cached fallback");
     });
 
@@ -116,9 +128,11 @@ describe("programmatic views", () => {
     });
 
     it("accepts event functions and listener objects", () => {
-      const functionListener = jasmine.createSpy("function listener");
+      const functionListener =
+        jasmine.createSpy<(event: Event) => void>("function listener");
       const objectListener = {
-        handleEvent: jasmine.createSpy("object listener"),
+        handleEvent:
+          jasmine.createSpy<(event: Event) => void>("object listener"),
       };
       const button = tags.button({
         onclick: functionListener,
@@ -128,6 +142,7 @@ describe("programmatic views", () => {
       });
 
       expect(button).toBeInstanceOf(HTMLButtonElement);
+      // @ts-expect-error Deliberately invalid event listener tests runtime validation.
       expect(() => tags.button({ onclick: "invalid" })).toThrowError(
         TypeError,
         "Event property 'onclick' must be an event listener.",
@@ -172,10 +187,10 @@ describe("programmatic views", () => {
   describe("srcset sanitization", () => {
     it("unwraps and sanitizes every candidate while retaining descriptors", () => {
       const valueOf = jasmine
-        .createSpy("valueOf")
+        .createSpy<(value: unknown) => unknown>("valueOf")
         .and.callFake((value) => value);
       const trust = jasmine
-        .createSpy("trust")
+        .createSpy<(value: unknown) => string>("trust")
         .and.callFake((value) => `safe:${value}`);
 
       expect(
@@ -207,13 +222,13 @@ describe("programmatic views", () => {
 
   describe("directive integration", () => {
     it("provides controller, required controller, scope, host, and transclusion", () => {
-      let context;
+      let context: ViewContext | undefined;
 
       bootstrap(
         '<section owner view-panel><em class="projected">projected</em></section>',
         (module) => {
           module.directive("owner", () => ({
-            controller() {
+            controller: function (this: { name: string }): undefined {
               this.name = "owner";
             },
           }));
@@ -221,16 +236,16 @@ describe("programmatic views", () => {
             restrict: "A",
             transclude: true,
             require: "owner",
-            controller() {
+            controller: function (this: { name: string }): undefined {
               this.name = "view";
             },
-            view(value) {
+            view(value: ViewContext) {
               context = value;
               return tags.div(
                 { className: "rendered" },
-                value.controller.name,
+                nameOf(value.controller),
                 ":",
-                value.required.name,
+                nameOf(value.required),
               );
             },
           }));
@@ -239,23 +254,27 @@ describe("programmatic views", () => {
 
       const element = host.querySelector("section");
 
-      expect(context.controller).toBe(getController(element, "viewPanel"));
-      expect(context.required).toBe(getController(element, "owner"));
-      expect(context.host).toBe(element);
-      expect(context.scope).toBeDefined();
-      expect(context.transclude).toEqual(jasmine.any(Function));
-      expect(element.textContent).toBe("view:owner");
-      expect(element.innerHTML).not.toContain("ng-programmatic-view");
+      expect(defined(context).controller).toBe(
+        getController(defined(element), "viewPanel"),
+      );
+      expect(defined(context).required).toBe(
+        getController(defined(element), "owner"),
+      );
+      expect(defined(context).host).toBe(defined(element));
+      expect(defined(context).scope).toBeDefined();
+      expect(defined(context).transclude).toEqual(jasmine.any(Function));
+      expect(defined(element).textContent).toBe("view:owner");
+      expect(defined(element).innerHTML).not.toContain("ng-programmatic-view");
     });
 
     it("supports controller-free directives and composes compile lifecycle hooks", () => {
       const order: string[] = [];
-      let context;
+      let context: ViewContext | undefined;
 
       bootstrap("<article composed-view></article>", (module) => {
         module.directive("composedView", () => ({
           restrict: "A",
-          view(value) {
+          view(value: ViewContext) {
             context = value;
             order.push("view");
             return tags.p("rendered");
@@ -263,10 +282,10 @@ describe("programmatic views", () => {
           compile() {
             order.push("compile");
             return {
-              pre(_scope, element) {
+              pre(_scope: ng.Scope, element: Element) {
                 order.push(`pre:${element.textContent}`);
               },
-              post(_scope, element) {
+              post(_scope: ng.Scope, element: Element) {
                 order.push(`post:${element.textContent}`);
               },
             };
@@ -274,8 +293,8 @@ describe("programmatic views", () => {
         }));
       });
 
-      expect(context.controller).toBeUndefined();
-      expect(context.required).toBeUndefined();
+      expect(defined(context).controller).toBeUndefined();
+      expect(defined(context).required).toBeUndefined();
       expect(order).toEqual([
         "compile",
         "view",
@@ -285,9 +304,15 @@ describe("programmatic views", () => {
     });
 
     it("composes a plain link function after rendering", () => {
-      let context;
+      let context: ViewContext | undefined;
       const link = jasmine
-        .createSpy("link")
+        .createSpy<
+          (
+            scope: ng.Scope,
+            element: HTMLElement,
+            transclude: ng.TranscludeFn,
+          ) => void
+        >("link")
         .and.callFake((_scope, element, transclude) => {
           expect(element.textContent).toBe("ready");
           expect(transclude).toEqual(jasmine.any(Function));
@@ -296,7 +321,7 @@ describe("programmatic views", () => {
       bootstrap("<div linked-view><i>projected</i></div>", (module) => {
         module.directive("linkedView", () => ({
           transclude: true,
-          view: (value) => {
+          view: (value: ViewContext) => {
             context = value;
             return tags.span("ready");
           },
@@ -305,8 +330,8 @@ describe("programmatic views", () => {
       });
 
       expect(link).toHaveBeenCalledTimes(1);
-      expect(context.required).toBeUndefined();
-      expect(context.transclude).toEqual(jasmine.any(Function));
+      expect(defined(context).required).toBeUndefined();
+      expect(defined(context).transclude).toEqual(jasmine.any(Function));
     });
 
     it("reacts to scope reads and removes listeners on disposal", async () => {
@@ -314,7 +339,7 @@ describe("programmatic views", () => {
       const injector = bootstrap("<div reactive-view></div>", (module) => {
         module.directive("reactiveView", () => ({
           scope: true,
-          view: ({ scope }) =>
+          view: ({ scope }: ViewContext) =>
             tags.button(
               {
                 title: () => scope.label,
@@ -322,7 +347,7 @@ describe("programmatic views", () => {
               },
               () => scope.label,
             ),
-          link(scope) {
+          link(scope: FixtureScope) {
             scope.label = "first";
           },
         }));
@@ -331,25 +356,25 @@ describe("programmatic views", () => {
       const button = host.querySelector("button");
 
       await settle();
-      expect(button.title).toBe("first");
-      expect(button.textContent).toBe("first");
+      expect(defined(button).title).toBe("first");
+      expect(defined(button).textContent).toBe("first");
 
-      button.click();
+      defined(button).click();
       expect(clicks).toBe(1);
 
       scope.destroy();
-      button.click();
+      defined(button).click();
       expect(clicks).toBe(1);
     });
 
     it("updates reactive properties and replaces reactive child fragments", async () => {
-      let directiveScope;
+      let directiveScope: FixtureScope | undefined;
       let clicks = 0;
 
       bootstrap("<div rich-view></div>", (module) => {
         module.directive("richView", () => ({
           scope: true,
-          view: ({ scope }) => {
+          view: ({ scope }: ViewContext) => {
             directiveScope = scope;
 
             return tags.section(
@@ -361,7 +386,7 @@ describe("programmatic views", () => {
               () => scope.child,
             );
           },
-          link(scope) {
+          link(scope: FixtureScope) {
             scope.href = "https://example.test/first";
             scope.srcset = "first.png 1x, second.png 2x";
             scope.state = "ready";
@@ -376,56 +401,60 @@ describe("programmatic views", () => {
       const image = host.querySelector("img");
       const state = host.querySelector("[data-state]");
 
-      expect(link.href).toContain("https://example.test/first");
-      expect(image.srcset).toContain("first.png 1x");
-      expect(state.getAttribute("data-state")).toBe("ready");
-      expect(host.querySelector("p").title).toBe("stable");
-      expect(host.querySelector("section").textContent).toBe("linkfirst");
+      expect(defined(link).href).toContain("https://example.test/first");
+      expect(defined(image).srcset).toContain("first.png 1x");
+      expect(defined(state).getAttribute("data-state")).toBe("ready");
+      expect(defined(host.querySelector("p")).title).toBe("stable");
+      expect(defined(host.querySelector("section")).textContent).toBe(
+        "linkfirst",
+      );
 
-      directiveScope.href = "javascript:alert(1)";
-      directiveScope.state = null;
-      directiveScope.child = "second";
+      defined(directiveScope).href = "javascript:alert(1)";
+      defined(directiveScope).state = null;
+      defined(directiveScope).child = "second";
       await settle();
 
-      expect(link.getAttribute("href")).toContain("unsafe:");
-      expect(state.hasAttribute("data-state")).toBeFalse();
-      expect(host.querySelector("section").textContent).toBe("linksecond");
+      expect(defined(link).getAttribute("href")).toContain("unsafe:");
+      expect(defined(state).hasAttribute("data-state")).toBeFalse();
+      expect(defined(host.querySelector("section")).textContent).toBe(
+        "linksecond",
+      );
 
-      directiveScope.metadata.set("unrelated", "change");
+      defined(defined(directiveScope).metadata).set("unrelated", "change");
       await settle();
-      expect(host.querySelector("p").title).toBe("stable");
+      expect(defined(host.querySelector("p")).title).toBe("stable");
 
       const detachedButton = tags.button(
         { onclick: () => clicks++ },
         "replace me",
       );
-      directiveScope.child = detachedButton;
+      defined(directiveScope).child = detachedButton;
       await settle();
       detachedButton.click();
       expect(clicks).toBe(1);
 
-      directiveScope.child = undefined;
+      defined(directiveScope).child = undefined;
       await settle();
       detachedButton.click();
       expect(clicks).toBe(1);
       expect(detachedButton.isConnected).toBeFalse();
 
-      directiveScope.href = "javascript:alert(1)";
+      defined(directiveScope).href = "javascript:alert(1)";
       await settle();
-      expect(link.getAttribute("href")).toContain("unsafe:");
+      expect(defined(link).getAttribute("href")).toContain("unsafe:");
     });
 
     it("ignores reactive child notifications after its anchor is detached", async () => {
-      let directiveScope;
+      let directiveScope: FixtureScope | undefined;
 
       bootstrap("<div detached-anchor-view></div>", (module) => {
         module.directive("detachedAnchorView", () => ({
           scope: true,
-          view: ({ scope }) => {
+          view: ({ scope }: ViewContext) => {
             directiveScope = scope;
             return tags.div(() => scope.value);
           },
-          link(scope) {
+          link(scope: FixtureScope) {
             scope.value = "attached";
           },
         }));
@@ -433,14 +462,18 @@ describe("programmatic views", () => {
 
       await settle();
       const walker = document.createTreeWalker(host, NodeFilter.SHOW_COMMENT);
-      let anchor;
+      let anchor: Comment | undefined;
 
-      while ((anchor = walker.nextNode())) {
-        if (anchor.data === "ng-view-binding") break;
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (node instanceof Comment && node.data === "ng-view-binding") {
+          anchor = node;
+          break;
+        }
       }
 
-      anchor.remove();
-      directiveScope.value = "detached";
+      defined(anchor).remove();
+      defined(directiveScope).value = "detached";
       await settle();
 
       expect(host.textContent).toBe("attached");
@@ -449,31 +482,29 @@ describe("programmatic views", () => {
     it("supports compiler replacement results and reports child compile failures", () => {
       const replacement = document.createElement("strong");
       replacement.textContent = "replacement";
-      const exceptionHandler = jasmine.createSpy("exception handler");
-      const scope = { on: () => () => {} };
+      const exceptionHandler =
+        jasmine.createSpy<(error: unknown) => void>("exception handler");
+      const scope = createScope();
       const replacingCompile = createProgrammaticDirectiveCompile({
         name: "replacementView",
         view: () => tags.span("raw"),
-        injector: {
-          get(token) {
-            if (token === _compile) {
-              return (node) => () => {
-                node.remove();
-                return [replacement];
-              };
-            }
-            if (token === _exceptionHandler) return exceptionHandler;
-            throw new Error("unexpected token");
-          },
-        },
+        injector: compilerInjector((node) => {
+          node.remove();
+          return [replacement];
+        }, exceptionHandler),
         sanitizeProperty: (_element, _name, value) => value,
       });
       const replacementHost = document.createElement("div");
       replacementHost.innerHTML = PROGRAMMATIC_VIEW_TEMPLATE;
       const replacementLinks = replacingCompile(replacementHost);
 
-      replacementLinks.pre(scope, replacementHost, undefined, undefined);
-      replacementLinks.post({}, replacementHost);
+      defined(replacementLinks).pre(
+        scope,
+        replacementHost,
+        undefined,
+        undefined,
+      );
+      defined(replacementLinks).post(scope, replacementHost);
       expect(replacementHost.textContent).toBe("replacement");
       expect(exceptionHandler).not.toHaveBeenCalled();
 
@@ -481,36 +512,29 @@ describe("programmatic views", () => {
       const failingCompile = createProgrammaticDirectiveCompile({
         name: "failingView",
         view: () => tags.span("removed"),
-        injector: {
-          get(token) {
-            if (token === _compile)
-              return () => () => {
-                throw failure;
-              };
-            if (token === _exceptionHandler) return exceptionHandler;
-            throw new Error("unexpected token");
-          },
-        },
+        injector: compilerInjector(() => {
+          throw failure;
+        }, exceptionHandler),
         sanitizeProperty: (_element, _name, value) => value,
       });
       const failureHost = document.createElement("div");
       failureHost.innerHTML = PROGRAMMATIC_VIEW_TEMPLATE;
       const failureLinks = failingCompile(failureHost);
 
-      failureLinks.pre(scope, failureHost, undefined, undefined);
-      failureLinks.post({}, failureHost);
+      defined(failureLinks).pre(scope, failureHost, undefined, undefined);
+      defined(failureLinks).post(scope, failureHost);
       expect(failureHost.textContent).toBe("");
       expect(exceptionHandler).toHaveBeenCalledWith(failure);
     });
 
     it("reports conflicting directive view definitions", () => {
-      const errors = [];
+      const errors: unknown[] = [];
 
       bootstrap(
         "<div view-template view-template-url view-replace></div>",
         (module) => {
-          module.decorator("$exceptionHandler", () => (error) => {
-            errors.push(error.message);
+          module.decorator("$exceptionHandler", () => (error: unknown) => {
+            errors.push(instance(error, Error).message);
           });
           module.directive("viewTemplate", () => ({
             view: () => null,
@@ -533,7 +557,7 @@ describe("programmatic views", () => {
     });
 
     it("allows an existing compile function to return no link hooks", () => {
-      const compile = jasmine.createSpy("compile");
+      const compile = jasmine.createSpy<ng.DirectiveCompileFn>("compile");
 
       bootstrap("<div empty-compile-view></div>", (module) => {
         module.directive("emptyCompileView", () => ({
@@ -547,26 +571,26 @@ describe("programmatic views", () => {
     });
 
     it("routes component properties through binding policies and rejects view with replace", async () => {
-      let controller;
+      let controller: { href: string } | undefined;
 
       bootstrap("<safe-link></safe-link>", (module) => {
         module.component("safeLink", {
-          controller() {
+          controller: function (this: { href: string }): undefined {
             controller = this;
             this.href = "https://example.test/safe";
           },
           view: ({ controller }) =>
-            tags.a({ href: () => controller.href }, "safe"),
+            tags.a({ href: () => hrefOf(controller) }, "safe"),
         });
       });
 
       await settle();
       const link = host.querySelector("a");
-      expect(link.href).toContain("https://example.test/safe");
+      expect(defined(link).href).toContain("https://example.test/safe");
 
-      controller.href = "javascript:alert(1)";
+      defined(controller).href = "javascript:alert(1)";
       await settle();
-      expect(link.getAttribute("href")).toContain("unsafe:");
+      expect(defined(link).getAttribute("href")).toContain("unsafe:");
 
       const invalidHost = document.createElement("div");
       invalidHost.innerHTML = "<invalid-view></invalid-view>";
@@ -575,6 +599,7 @@ describe("programmatic views", () => {
       const invalidModuleName = `programmaticViewSpec${moduleIndex++}`;
       window.angular
         .createModule(invalidModuleName, ["ng"])
+        // @ts-expect-error Programmatic views deliberately reject replace to test runtime validation.
         .component("invalidView", {
           view: () => null,
           replace: true,
@@ -592,13 +617,21 @@ describe("programmatic views", () => {
       const compile = createProgrammaticDirectiveCompile({
         name: "missingMarker",
         view: () => null,
-        injector: { get: jasmine.createSpy("get") },
+        injector: compilerInjector(
+          () => [],
+          jasmine.createSpy<(error: unknown) => void>("exception"),
+        ),
         sanitizeProperty: (_element, _name, value) => value,
       });
       const links = compile(document.createElement("div"));
 
       expect(() =>
-        links.pre({}, document.createElement("div"), undefined, undefined),
+        defined(links).pre(
+          createScope(),
+          document.createElement("div"),
+          undefined,
+          undefined,
+        ),
       ).toThrowError(
         "Programmatic component 'missingMarker' has no view marker.",
       );
@@ -618,3 +651,62 @@ describe("programmatic views", () => {
     expect(host.querySelector("static-markup div")?.textContent).toBe("");
   });
 });
+
+interface FixtureScope extends ng.Scope {
+  label?: string;
+  href?: string;
+  srcset?: string;
+  state?: string | null;
+  metadata?: Map<string, string>;
+  child?: ng.ProgrammaticViewChild;
+  value?: ng.ProgrammaticViewChild;
+  visible?: string | boolean;
+  items?: { id: number; label?: string }[] | null;
+}
+type ViewContext = ng.ProgrammaticViewContext<
+  unknown,
+  unknown,
+  FixtureScope,
+  Element
+>;
+
+function nameOf(value: unknown): string {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("name" in value) ||
+    typeof value.name !== "string"
+  )
+    throw new TypeError("Expected named controller");
+  return value.name;
+}
+function hrefOf(value: unknown): string {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("href" in value) ||
+    typeof value.href !== "string"
+  )
+    throw new TypeError("Expected link controller");
+  return value.href;
+}
+
+function compilerInjector(
+  link: (node: Element) => Node | Node[],
+  exceptionHandler: (error: unknown) => void,
+): ng.InjectorService {
+  const angular = new Angular();
+  const injector = angular.injector(["ng"]);
+  const original = injector.get("$compile");
+  const compile: ng.CompileService = Object.assign(
+    (node: Parameters<ng.CompileService>[0]) => () =>
+      link(instance(node, Element)),
+    original,
+  );
+  // This fixture exercises the generic compiler fallback rather than its optimized node hook.
+  Reflect.deleteProperty(compile, "_linkProgrammaticNode");
+  const get = spyOn(injector, "get").and.callThrough();
+  get.withArgs(_compile).and.returnValue(compile);
+  get.withArgs(_exceptionHandler).and.returnValue(exceptionHandler);
+  return injector;
+}

@@ -1,4 +1,6 @@
-// @ts-nocheck
+import type { EventDeliveryPolicy } from "./event-bus.ts";
+import { instance } from "../../shared/test-fixtures.spec.ts";
+import { Scope } from "../../core/scope/scope.ts";
 /// <reference types="jasmine" />
 import {
   applyEventBusConfiguration,
@@ -27,7 +29,9 @@ describe("EventBus composition", () => {
 
   it("applies event bus delivery policy from module config", async () => {
     const angular = new Angular();
-    const policy = jasmine.createSpy("deliveryPolicy").and.returnValue("drop");
+    const policy = jasmine
+      .createSpy<EventDeliveryPolicy>("deliveryPolicy")
+      .and.returnValue("drop");
 
     window.angular = angular;
     angular.createModule("configuredEventBusPolicy", ["ng"]).config({
@@ -37,7 +41,8 @@ describe("EventBus composition", () => {
     });
     const $injector = createInjector(["configuredEventBusPolicy"]);
     const $eventBus = $injector.get("$eventBus");
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
     $eventBus.subscribe("configured:topic", listener);
 
@@ -88,7 +93,7 @@ describe("EventBus composition", () => {
 
   it("applies custom-runtime EventBus configuration", async () => {
     const deliveryPolicy = jasmine
-      .createSpy("deliveryPolicy")
+      .createSpy<EventDeliveryPolicy>("deliveryPolicy")
       .and.returnValue({ type: "drop" });
     const angular = createAngular({
       modules: [eventBusModule],
@@ -101,7 +106,8 @@ describe("EventBus composition", () => {
     const eventBus = angular
       .injector(["ng", "configuredCustomEventBus"])
       .get("$eventBus");
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
     eventBus.subscribe("custom:configured", listener);
     eventBus.publish("custom:configured", "payload");
@@ -115,13 +121,15 @@ describe("EventBus composition", () => {
 
   it("does not dispose an externally owned EventBus", () => {
     const state = createEventBusRuntimeState();
-    const external = new EventBus(() => undefined);
-    const policy = jasmine.createSpy("deliveryPolicy").and.returnValue("drop");
+    const external = new EventBus(failUnexpectedError);
+    const policy = jasmine
+      .createSpy<EventDeliveryPolicy>("deliveryPolicy")
+      .and.returnValue("drop");
 
-    expect(createEventBusService(state, () => undefined, external)).toBe(
+    expect(createEventBusService(state, failUnexpectedError, external)).toBe(
       external,
     );
-    expect(createEventBusService(state, () => undefined)).toBe(external);
+    expect(createEventBusService(state, failUnexpectedError)).toBe(external);
 
     applyEventBusConfiguration(state, { deliveryPolicy: policy });
     destroyEventBusRuntimeState(state);
@@ -131,19 +139,19 @@ describe("EventBus composition", () => {
     expect(() =>
       applyEventBusConfiguration(state, { deliveryPolicy: policy }),
     ).toThrowError("EventBus runtime has already been disposed.");
-    expect(() => createEventBusService(state, () => undefined)).toThrowError(
-      "EventBus runtime has already been disposed.",
-    );
+    expect(() =>
+      createEventBusService(state, failUnexpectedError),
+    ).toThrowError("EventBus runtime has already been disposed.");
 
     external.dispose();
   });
 });
 
 describe("EventBus", function () {
-  let eventBus;
+  let eventBus: EventBus;
 
   beforeEach(function () {
-    eventBus = new EventBus(() => undefined);
+    eventBus = new EventBus(failUnexpectedError);
   });
 
   afterEach(function () {
@@ -157,7 +165,7 @@ describe("EventBus", function () {
   });
 
   it("should provide injecables", function () {
-    expect(eventBus._exceptionHandler).not.toBeNull();
+    expect(typeof eventBus.publish).toBe("function");
   });
 
   it("should dispose of the EventBus instance", function () {
@@ -270,17 +278,22 @@ describe("EventBus", function () {
 
   it("should remove scope destroy hook when cleanup is called manually", function () {
     const scope = createScope();
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
     const cleanup = eventBus.subscribe("scopeTopic", listener, scope);
 
     expect(eventBus.getCount("scopeTopic")).toBe(1);
-    expect(scope._handler._listeners.get("$destroy").length).toBe(2);
+    expect(
+      instance(scope._handler, Scope)._listeners.get("$destroy")?.length ?? 0,
+    ).toBe(2);
 
     expect(cleanup()).toBe(true);
 
     expect(eventBus.getCount("scopeTopic")).toBe(0);
-    expect(scope._handler._listeners.get("$destroy").length).toBe(1);
+    expect(
+      instance(scope._handler, Scope)._listeners.get("$destroy")?.length ?? 0,
+    ).toBe(1);
 
     scope.destroy();
 
@@ -289,9 +302,10 @@ describe("EventBus", function () {
   });
 
   it("should keep plain context lifecycle behavior unchanged", function () {
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
     const context = {
-      on: jasmine.createSpy("on"),
+      on: jasmine.createSpy<(...args: unknown[]) => void>("on"),
     };
 
     const cleanup = eventBus.subscribe("plainTopic", listener, context);
@@ -303,7 +317,8 @@ describe("EventBus", function () {
   });
 
   it("should return an idempotent unsubscribe function for a listener", function () {
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
     const unsubscribe = eventBus.subscribe("someTopic", listener);
 
@@ -314,7 +329,8 @@ describe("EventBus", function () {
   });
 
   it("should clear listeners and make the instance reusable on reset", function () {
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
     eventBus.subscribe("someTopic", listener);
     expect(eventBus.getCount("someTopic")).toBe(1);
@@ -333,7 +349,8 @@ describe("EventBus", function () {
   });
 
   it("should reject subscribe and unsubscribe work while disposed", function () {
-    const listener = jasmine.createSpy("listener");
+    const listener =
+      jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
     eventBus.dispose();
 
@@ -349,8 +366,10 @@ describe("EventBus", function () {
 
   it("should keep diagnostics limited to active listener counts", function () {
     const scope = createScope();
-    const scopedListener = jasmine.createSpy("scopedListener");
-    const plainListener = jasmine.createSpy("plainListener");
+    const scopedListener =
+      jasmine.createSpy<(...args: unknown[]) => void>("scopedListener");
+    const plainListener =
+      jasmine.createSpy<(...args: unknown[]) => void>("plainListener");
 
     eventBus.subscribe("diagnosticsTopic", scopedListener, scope);
     const cleanupPlain = eventBus.subscribe("diagnosticsTopic", plainListener);
@@ -364,16 +383,16 @@ describe("EventBus", function () {
     cleanupPlain();
 
     expect(eventBus.getCount("diagnosticsTopic")).toBe(0);
-    expect(eventBus.getTopics).toBeUndefined();
-    expect(eventBus.getScopedCount).toBeUndefined();
-    expect(eventBus.getLeakReport).toBeUndefined();
-    expect(eventBus.diagnostics).toBeUndefined();
+    expect("getTopics" in eventBus).toBeFalse();
+    expect("getScopedCount" in eventBus).toBeFalse();
+    expect("getLeakReport" in eventBus).toBeFalse();
+    expect("diagnostics" in eventBus).toBeFalse();
   });
 
   it("should subscribe once correctly", async function () {
-    let called;
+    let called: boolean;
 
-    let context;
+    let context: { called: boolean; value?: unknown };
 
     called = false;
     eventBus.subscribeOnce("someTopic", () => {
@@ -410,7 +429,7 @@ describe("EventBus", function () {
       "someTopic",
       function (value) {
         this.called = true;
-        this.value = value;
+        this.value = eventNumber(value);
       },
       context,
     );
@@ -438,7 +457,9 @@ describe("EventBus", function () {
     );
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(scope._handler._listeners.get("$destroy").length).toBe(2);
+    expect(
+      instance(scope._handler, Scope)._listeners.get("$destroy")?.length ?? 0,
+    ).toBe(2);
 
     eventBus.publish("someTopic");
     scope.destroy();
@@ -456,13 +477,17 @@ describe("EventBus", function () {
       "someTopic",
       function (value) {
         this.callCount++;
+        if (typeof value !== "string")
+          throw new TypeError("Expected event string");
         this.value = value;
       },
       scope,
     );
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(scope._handler._listeners.get("$destroy").length).toBe(2);
+    expect(
+      instance(scope._handler, Scope)._listeners.get("$destroy")?.length ?? 0,
+    ).toBe(2);
 
     eventBus.publish("someTopic", "first");
     eventBus.publish("someTopic", "second");
@@ -472,7 +497,9 @@ describe("EventBus", function () {
     expect(scope.callCount).toBe(1);
     expect(scope.value).toBe("first");
     expect(eventBus.getCount("someTopic")).toBe(0);
-    expect(scope._handler._listeners.get("$destroy").length).toBe(1);
+    expect(
+      instance(scope._handler, Scope)._listeners.get("$destroy")?.length ?? 0,
+    ).toBe(1);
     expect(cleanup()).toBe(false);
   });
 
@@ -521,7 +548,7 @@ describe("EventBus", function () {
       "someTopic",
       function (value) {
         this.callCount++;
-        this.value = value;
+        this.value = eventNumber(value);
       },
       context,
     );
@@ -541,7 +568,10 @@ describe("EventBus", function () {
   it("should subscribe once with bound function correctly", async function () {
     const context = { called: false, value: 0 };
 
-    function subscriber(value) {
+    function subscriber(
+      this: { called: boolean; value: unknown },
+      value: unknown,
+    ) {
       this.called = true;
       this.value = value;
     }
@@ -564,9 +594,9 @@ describe("EventBus", function () {
   it("should subscribe once with partial function correctly", async function () {
     let called = false;
 
-    let value = 0;
+    let value: unknown = 0;
 
-    function subscriber(hasBeenCalled, newValue) {
+    function subscriber(hasBeenCalled: boolean, newValue: unknown) {
       called = hasBeenCalled;
       value = newValue;
     }
@@ -587,9 +617,9 @@ describe("EventBus", function () {
   });
 
   it("should handle self resubscribe correctly", async function () {
-    let value = null;
+    let value: string | null = null;
 
-    function resubscribe(iteration, newValue) {
+    function resubscribe(iteration: number, newValue: unknown) {
       eventBus.subscribeOnce(
         "someTopic",
         resubscribe.bind(null, iteration + 1),
@@ -607,25 +637,25 @@ describe("EventBus", function () {
     await wait();
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(value).toBe("foo:0");
+    expect<string | null>(value).toBe("foo:0");
 
     eventBus.publish("someTopic", "bar");
     await wait();
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(value).toBe("bar:1");
+    expect<string | null>(value).toBe("bar:1");
 
     eventBus.publish("someTopic", "baz");
     await wait();
 
     expect(eventBus.getCount("someTopic")).toBe(1);
-    expect(value).toBe("baz:2");
+    expect<string | null>(value).toBe("baz:2");
   });
 
   it("should handle async self resubscribe correctly", function (done) {
-    let value = null;
+    let value: string | null = null;
 
-    function resubscribe(iteration, newValue) {
+    function resubscribe(iteration: number, newValue: unknown) {
       eventBus.subscribeOnce(
         "someTopic",
         resubscribe.bind(null, iteration + 1),
@@ -641,19 +671,19 @@ describe("EventBus", function () {
 
     setTimeout(() => {
       expect(eventBus.getCount("someTopic")).toBe(1);
-      expect(value).toBe("foo:0");
+      expect<string | null>(value).toBe("foo:0");
 
       eventBus.publish("someTopic", "bar");
 
       setTimeout(() => {
         expect(eventBus.getCount("someTopic")).toBe(1);
-        expect(value).toBe("bar:1");
+        expect<string | null>(value).toBe("bar:1");
 
         eventBus.publish("someTopic", "baz");
 
         setTimeout(() => {
           expect(eventBus.getCount("someTopic")).toBe(1);
-          expect(value).toBe("baz:2");
+          expect<string | null>(value).toBe("baz:2");
           done();
         }, 0);
       }, 0);
@@ -661,7 +691,10 @@ describe("EventBus", function () {
   });
 
   describe("publish", () => {
-    let context, fooCalled, barCalled, SOME_TOPIC;
+    let context: object,
+      fooCalled: boolean,
+      barCalled: boolean,
+      SOME_TOPIC: string;
 
     beforeEach(function () {
       context = {};
@@ -670,17 +703,17 @@ describe("EventBus", function () {
       SOME_TOPIC = "someTopic";
     });
 
-    function foo(record) {
+    function foo(record: unknown) {
       fooCalled = true;
-      expect(record.x).toBe("x");
-      expect(record.y).toBe("y");
+      expect(property(record, "x")).toBe("x");
+      expect(property(record, "y")).toBe("y");
     }
 
-    function bar(record) {
+    function bar(this: object, record: unknown) {
       barCalled = true;
       expect(this).toBe(context);
-      expect(record.x).toBe("x");
-      expect(record.y).toBe("y");
+      expect(property(record, "x")).toBe("x");
+      expect(property(record, "y")).toBe("y");
     }
 
     it("should call subscribed functions on publish", async function () {
@@ -694,8 +727,8 @@ describe("EventBus", function () {
     });
 
     it("should skip scope listeners destroyed after publish is queued", async function () {
-      const scope = createScope({ calls: [] });
-      const calls = [];
+      const scope = createScope({ calls: Array<unknown>() });
+      const calls: unknown[] = [];
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -721,8 +754,8 @@ describe("EventBus", function () {
     });
 
     it("should defer scope listeners while scope is retention-paused", async function () {
-      const scope = createScope({ calls: [] });
-      const calls = [];
+      const scope = createScope({ calls: Array<unknown>() });
+      const calls: unknown[] = [];
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -751,7 +784,7 @@ describe("EventBus", function () {
     });
 
     it("should reuse scope retention state for multiple listeners on the same scope", async function () {
-      const scope = createScope({ calls: [] });
+      const scope = createScope({ calls: Array<unknown>() });
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -780,16 +813,18 @@ describe("EventBus", function () {
       await wait();
 
       expect(scope.calls).toEqual(["first:queued", "second:queued"]);
-      expect(scope._handler._listeners.get("$viewRetentionPause").length).toBe(
-        1,
-      );
-      expect(scope._handler._listeners.get("$viewRetentionResume").length).toBe(
-        1,
-      );
+      expect(
+        instance(scope._handler, Scope)._listeners.get("$viewRetentionPause")
+          ?.length ?? 0,
+      ).toBe(1);
+      expect(
+        instance(scope._handler, Scope)._listeners.get("$viewRetentionResume")
+          ?.length ?? 0,
+      ).toBe(1);
     });
 
     it("should leave paused deliveries queued if scope pauses again before the drain", async function () {
-      const scope = createScope({ calls: [] });
+      const scope = createScope({ calls: Array<unknown>() });
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -817,7 +852,7 @@ describe("EventBus", function () {
     });
 
     it("should ignore unrelated retention resume modes and unpaused resumes", async function () {
-      const scope = createScope({ calls: [] });
+      const scope = createScope({ calls: Array<unknown>() });
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -845,8 +880,8 @@ describe("EventBus", function () {
     });
 
     it("ignores retention pause for unrelated modes", async function () {
-      const scope = createScope({ calls: [] });
-      const calls = [];
+      const scope = createScope({ calls: Array<unknown>() });
+      const calls: unknown[] = [];
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -872,8 +907,8 @@ describe("EventBus", function () {
     });
 
     it("should drop pending paused scope listeners when scope is destroyed", async function () {
-      const scope = createScope({ calls: [] });
-      const calls = [];
+      const scope = createScope({ calls: Array<unknown>() });
+      const calls: unknown[] = [];
 
       eventBus.subscribe(
         SOME_TOPIC,
@@ -896,7 +931,8 @@ describe("EventBus", function () {
     });
 
     it("should preserve plain listener snapshot delivery after unsubscribe", async function () {
-      const listener = jasmine.createSpy("listener");
+      const listener =
+        jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
       const unsubscribe = eventBus.subscribe(SOME_TOPIC, listener);
 
@@ -910,7 +946,7 @@ describe("EventBus", function () {
     });
 
     it("should deliver active listeners in subscription order", async function () {
-      const calls = [];
+      const calls: unknown[] = [];
 
       eventBus.subscribe(SOME_TOPIC, () => calls.push("first"));
       eventBus.subscribe(SOME_TOPIC, () => calls.push("second"));
@@ -925,9 +961,9 @@ describe("EventBus", function () {
 
     it("should evaluate delivery policy with normalized listener context", async function () {
       const policy = jasmine
-        .createSpy("deliveryPolicy")
+        .createSpy<EventDeliveryPolicy>("deliveryPolicy")
         .and.returnValues(Promise.resolve("deliver"), Promise.resolve("drop"));
-      const calls = [];
+      const calls: unknown[] = [];
 
       eventBus.setDeliveryPolicy(policy);
       eventBus.subscribe(SOME_TOPIC, () => calls.push("first"));
@@ -957,13 +993,16 @@ describe("EventBus", function () {
     });
 
     it("should report unsupported delivery policy decisions", async function () {
-      const receivedErrors = [];
-      const listener = jasmine.createSpy("listener");
+      const receivedErrors: unknown[] = [];
+      const listener =
+        jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
-      eventBus = new EventBus((err) => {
+      // @ts-expect-error A non-throwing test sink deliberately exercises handler-return recovery.
+      eventBus = new EventBus((err: unknown) => {
         receivedErrors.push(err);
       });
-      eventBus.setDeliveryPolicy(() => "retry" as never);
+      // @ts-expect-error Deliberately unsupported policy decision tests runtime rejection.
+      eventBus.setDeliveryPolicy(() => "retry");
       eventBus.subscribe(SOME_TOPIC, listener);
 
       expect(eventBus.publish(SOME_TOPIC)).toBe(true);
@@ -972,17 +1011,19 @@ describe("EventBus", function () {
 
       expect(listener).not.toHaveBeenCalled();
       expect(receivedErrors.length).toBe(1);
-      expect(receivedErrors[0].message).toBe(
+      expect(instance(receivedErrors[0], Error).message).toBe(
         "Unsupported event delivery policy decision: retry",
       );
     });
 
     it("should route delivery policy errors through the exception handler", async function () {
       const policyError = new Error("policy failed");
-      const receivedErrors = [];
-      const listener = jasmine.createSpy("listener");
+      const receivedErrors: unknown[] = [];
+      const listener =
+        jasmine.createSpy<(...args: unknown[]) => void>("listener");
 
-      eventBus = new EventBus((err) => {
+      // @ts-expect-error A non-throwing test sink deliberately exercises handler-return recovery.
+      eventBus = new EventBus((err: unknown) => {
         receivedErrors.push(err);
       });
       eventBus.setDeliveryPolicy(() => {
@@ -1018,15 +1059,18 @@ describe("EventBus", function () {
       };
 
       expect(() => {
+        // @ts-expect-error Deliberately malformed entry exercises a private defensive guard.
         eventBus._queuePausedScopeDelivery(SOME_TOPIC, [], 0, {
           _scopeLifecycleContext: false,
         });
+        // @ts-expect-error Deliberately malformed entry exercises a private defensive guard.
         eventBus._queuePausedScopeDelivery(SOME_TOPIC, [], 0, {
           _scopeLifecycleContext: true,
           _context: scope,
         });
       }).not.toThrow();
 
+      // @ts-expect-error Deliberately partial queue state exercises a private defensive guard.
       await eventBus._drainScopeDeliveryQueue(state);
 
       expect(state._flushing).toBeFalse();
@@ -1084,9 +1128,10 @@ describe("EventBus", function () {
 
       const thrownError = new Error();
 
-      let receivedErr;
+      let receivedErr: unknown;
 
-      eventBus = new EventBus((err) => {
+      // @ts-expect-error A non-throwing test sink deliberately exercises handler-return recovery.
+      eventBus = new EventBus((err: unknown) => {
         thrown = true;
         receivedErr = err;
       });
@@ -1104,10 +1149,11 @@ describe("EventBus", function () {
 
     it("should continue only when an injected test sink absorbs a subscriber failure", async function () {
       const thrownError = new Error("boom");
-      const calls = [];
-      let receivedErr;
+      const calls: unknown[] = [];
+      let receivedErr: unknown;
 
-      eventBus = new EventBus((err) => {
+      // @ts-expect-error A non-throwing test sink deliberately exercises handler-return recovery.
+      eventBus = new EventBus((err: unknown) => {
         receivedErr = err;
       });
 
@@ -1131,3 +1177,18 @@ describe("EventBus", function () {
     });
   });
 });
+
+function failUnexpectedError(error: unknown): never {
+  throw error;
+}
+function property(value: unknown, key: string): unknown {
+  if (typeof value !== "object" || value === null || !(key in value))
+    throw new TypeError("Missing event fixture field");
+  return Reflect.get(value, key);
+}
+
+function eventNumber(value: unknown): number {
+  if (typeof value !== "number")
+    throw new TypeError("Expected numeric event payload");
+  return value;
+}

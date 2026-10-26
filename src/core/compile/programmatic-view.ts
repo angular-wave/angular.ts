@@ -52,17 +52,21 @@ export type ProgrammaticViewLiteralProperties = Readonly<
 type ProgrammaticViewEventProperties = Partial<{
   [Name in keyof GlobalEventHandlersEventMap as `on${Name}`]:
     | ((event: GlobalEventHandlersEventMap[Name]) => unknown)
-    | EventListenerObject;
+    | EventListenerObject
+    | null
+    | undefined;
 }>;
 
 /** Typed DOM properties plus arbitrary attribute and custom-element values. */
 export type ProgrammaticViewProperties<TElement extends Element = Element> =
   Partial<{
-    [Name in keyof TElement as TElement[Name] extends (
-      ...args: never[]
-    ) => unknown
+    [Name in keyof TElement as Name extends keyof ProgrammaticViewEventProperties
       ? never
-      : Name]: ProgrammaticViewPropertyValue<TElement[Name]>;
+      : TElement[Name] extends (...args: never[]) => unknown
+        ? never
+        : Name]: ProgrammaticViewPropertyValue<
+      TElement[Name] | null | undefined
+    >;
   }> &
     ProgrammaticViewEventProperties &
     Partial<
@@ -2105,15 +2109,25 @@ function normalizeLinkResult(
   return isArray(result) ? result : [result];
 }
 
+interface ProgrammaticDirectiveLinks {
+  pre(
+    scope: ng.Scope,
+    element: HTMLElement,
+    requiredControllers?: unknown,
+    transclude?: ng.TranscludeFn,
+  ): void;
+  post(scope: ng.Scope, element: HTMLElement): void;
+}
+
 export function createProgrammaticDirectiveCompile(
   options: ProgrammaticDirectiveCompileOptions,
-): ng.DirectiveCompileFn {
-  return (() => {
+): (...args: Parameters<ng.DirectiveCompileFn>) => ProgrammaticDirectiveLinks {
+  return () => {
     const pre = (
       scope: ng.Scope,
       element: HTMLElement,
-      requiredControllers: unknown,
-      transclude: ng.TranscludeFn,
+      requiredControllers?: unknown,
+      transclude?: ng.TranscludeFn,
     ): void => {
       const marker = findMarker(element);
 
@@ -2248,7 +2262,7 @@ export function createProgrammaticDirectiveCompile(
     };
 
     return { pre, post };
-  }) as unknown as ng.DirectiveCompileFn;
+  };
 }
 
 export const createProgrammaticComponentCompile =

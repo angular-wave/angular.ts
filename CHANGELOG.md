@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
-- Enabled strict checking in 33 previously unchecked test suites using typed
+- Enabled strict checking in 41 previously unchecked test suites using typed
   services, spies, fixtures, and checked DOM queries. Removed permissive global
   DOM declarations and added a CI check preventing test type bypasses from growing.
+- Corrected programmatic-view types for empty property values, event listener
+  objects, and native event bindings. Removed the compiler hook type cast.
 
 - Added model and view type parameters to form controls and validation pipelines.
   Async validators receive a native cancellation signal; replacing a validation

@@ -425,7 +425,7 @@ ng.ProgrammaticViewProperties = function() {};
 
 /**
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
- * @type {(!Object|null|string|undefined)}
+ * @type {(function(): (null|string|undefined)|null|string|undefined)}
  */
 ng.ProgrammaticViewProperties.prototype.role;
 

@@ -1,4 +1,15 @@
-// @ts-nocheck
+import { Angular } from "../../angular.ts";
+import { defined } from "../../shared/test-fixtures.spec.ts";
+import type {
+  EntityClass,
+  RestOptions,
+  RestRequest,
+  RestResponse,
+  RestBackend,
+  RestCacheStore,
+  RestCachePolicy,
+  RestRevalidateEvent,
+} from "./rest.ts";
 /// <reference types="jasmine" />
 import {
   CachedRestBackend,
@@ -9,12 +20,15 @@ import {
 } from "./rest.ts";
 import { expandExpression, expandUriTemplate, pctEncode } from "./rfc.ts";
 
-function httpResponse(data, overrides = {}) {
+function httpResponse<T>(
+  data: T,
+  overrides: Partial<ng.HttpResponse<T>> = {},
+): ng.HttpResponse<T> {
   return {
     data,
     status: 200,
-    headers: () => ({}),
-    config: {},
+    headers: emptyHeaders,
+    config: { url: "/fixture", method: "GET" },
     statusText: "OK",
     transportStatus: "complete",
     ...overrides,
@@ -22,14 +36,30 @@ function httpResponse(data, overrides = {}) {
 }
 
 class UserEntity {
-  constructor(data) {
-    this.id = data.id;
-    this.name = data.name;
-    this.mapped = true;
+  readonly id?: number;
+  readonly name?: string;
+  readonly mapped?: boolean = true;
+  constructor(data: unknown) {
+    if (typeof data !== "object" || data === null)
+      throw new TypeError("Expected user data");
+    if ("id" in data) {
+      if (typeof data.id !== "number") throw new TypeError("Expected user id");
+      this.id = data.id;
+    }
+    if ("name" in data) {
+      if (typeof data.name !== "string")
+        throw new TypeError("Expected user name");
+      this.name = data.name;
+    }
   }
 }
 
-function restService($http, baseUrl, entityClass, options) {
+function restService<T = unknown>(
+  $http: ng.HttpService,
+  baseUrl: string,
+  entityClass?: EntityClass<T>,
+  options?: RestOptions,
+) {
   return new RestService(
     new HttpRestBackend($http),
     baseUrl,
@@ -38,24 +68,23 @@ function restService($http, baseUrl, entityClass, options) {
   );
 }
 
-class TestRestCacheStore {
-  constructor() {
-    this.cache = new Map();
+class TestRestCacheStore implements RestCacheStore {
+  readonly cache = new Map<string, RestResponse>();
+
+  async get<T>(key: string): Promise<RestResponse<T> | undefined> {
+    // The cache API lets the caller choose T; this is the single opaque storage boundary.
+    return this.cache.get(key) as RestResponse<T> | undefined;
   }
 
-  async get(key) {
-    return this.cache.get(key);
-  }
-
-  async set(key, response) {
+  async set(key: string, response: RestResponse) {
     this.cache.set(key, response);
   }
 
-  async delete(key) {
+  async delete(key: string) {
     this.cache.delete(key);
   }
 
-  async deletePrefix(prefix) {
+  async deletePrefix(prefix: string) {
     for (const key of this.cache.keys()) {
       if (key.startsWith(prefix)) {
         this.cache.delete(key);
@@ -65,11 +94,32 @@ class TestRestCacheStore {
 }
 
 describe("$rest", () => {
+  let angular: Angular;
+  beforeEach(() => {
+    angular = new Angular();
+  });
+  afterEach(() => angular._composition.destroy());
+  function networkFixture(
+    configure: (spy: jasmine.Spy<RestBackend["request"]>) => void,
+  ) {
+    const backend = new HttpRestBackend(httpSpy());
+    const requestSpy = spyOn(backend, "request");
+    requestSpy.and.throwError("Unexpected REST request");
+    configure(requestSpy);
+    return Object.assign(backend, { requestSpy });
+  }
+  function httpSpy() {
+    const http = angular
+      .bootstrap(document.createElement("div"), [])
+      .get("$http");
+    return Object.assign(jasmine.createSpy<ng.HttpService>("$http"), http);
+  }
+
   describe("RestService", () => {
-    let $http;
+    let $http: ReturnType<typeof httpSpy>;
 
     beforeEach(() => {
-      $http = jasmine.createSpy("$http");
+      $http = httpSpy();
     });
 
     it("requires a non-empty baseUrl", () => {
@@ -135,7 +185,7 @@ describe("$rest", () => {
       const missing = await service.get(8);
 
       expect(entity instanceof UserEntity).toBeTrue();
-      expect(entity.name).toBe("Grace");
+      expect(defined(entity).name).toBe("Grace");
       expect(missing).toBeNull();
     });
 
@@ -194,7 +244,7 @@ describe("$rest", () => {
       const updated = await service.update(3, { name: "Updated" });
 
       expect(updated instanceof UserEntity).toBeTrue();
-      expect(updated.name).toBe("Updated");
+      expect(defined(updated).name).toBe("Updated");
       await expectAsync(
         service.update(4, { name: "Nope" }),
       ).toBeRejectedWithError("write failed");
@@ -225,17 +275,15 @@ describe("$rest", () => {
     });
 
     it("sends normalized REST request metadata to custom backends", async () => {
-      const backend = {
-        request: jasmine
-          .createSpy("backend")
-          .and.returnValues(
-            Promise.resolve({ data: [{ id: 1, name: "Ada" }] }),
-            Promise.resolve({ data: { id: 2, name: "Grace" } }),
-            Promise.resolve({ data: { id: 3, name: "Lin" } }),
-            Promise.resolve({ data: { id: 4, name: "Updated" } }),
-            Promise.resolve({ data: null }),
-          ),
-      };
+      const backend = networkFixture((spy) => {
+        spy.and.returnValues(
+          Promise.resolve({ data: [{ id: 1, name: "Ada" }] }),
+          Promise.resolve({ data: { id: 2, name: "Grace" } }),
+          Promise.resolve({ data: { id: 3, name: "Lin" } }),
+          Promise.resolve({ data: { id: 4, name: "Updated" } }),
+          Promise.resolve({ data: null }),
+        );
+      });
 
       const options = { headers: { Accept: "application/json" } };
 
@@ -255,7 +303,7 @@ describe("$rest", () => {
       );
       await expectAsync(service.delete(5)).toBeResolvedTo(undefined);
 
-      expect(backend.request.calls.allArgs()).toEqual([
+      expect(backend.requestSpy.calls.allArgs()).toEqual([
         [
           {
             method: "GET",
@@ -317,9 +365,8 @@ describe("$rest", () => {
 
   describe("HttpRestBackend", () => {
     it("forwards REST requests through $http", async () => {
-      const $http = jasmine
-        .createSpy("$http")
-        .and.resolveTo(httpResponse({ id: 1 }));
+      const $http = httpSpy();
+      $http.and.resolveTo(httpResponse({ id: 1 }));
 
       const backend = new HttpRestBackend($http, { timeout: 25 });
 
@@ -341,9 +388,8 @@ describe("$rest", () => {
     });
 
     it("lets per-request options override backend defaults", async () => {
-      const $http = jasmine
-        .createSpy("$http")
-        .and.resolveTo(httpResponse(null));
+      const $http = httpSpy();
+      $http.and.resolveTo(httpResponse(null));
 
       const backend = new HttpRestBackend($http, {
         headers: { Accept: "text/plain" },
@@ -397,7 +443,7 @@ describe("$rest", () => {
   });
 
   describe("CachedRestBackend", () => {
-    function request(overrides = {}) {
+    function request(overrides: Partial<RestRequest> = {}): RestRequest {
       return {
         method: "GET",
         url: "/users/7",
@@ -432,14 +478,12 @@ describe("$rest", () => {
     it("evaluates cache policy with normalized request context", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 7 })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 7 }));
+      });
 
       const policy = jasmine
-        .createSpy("cachePolicy")
+        .createSpy<RestCachePolicy>("cachePolicy")
         .and.resolveTo("network-first");
 
       const backend = new CachedRestBackend({
@@ -470,7 +514,9 @@ describe("$rest", () => {
     it("uses cache policy decisions instead of the static default strategy", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = { request: jasmine.createSpy("network") };
+      const network = networkFixture((spy) => {
+        spy;
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -495,7 +541,9 @@ describe("$rest", () => {
     it("accepts structured cache policy decisions", async () => {
       const cache = new TestRestCacheStore();
       const backend = new CachedRestBackend({
-        network: { request: jasmine.createSpy("network") },
+        network: networkFixture((spy) => {
+          spy;
+        }),
         cache,
         policy: () => Promise.resolve({ type: "cache-first" }),
       });
@@ -510,8 +558,11 @@ describe("$rest", () => {
 
     it("rejects unsupported cache policy decisions", async () => {
       const backend = new CachedRestBackend({
-        network: { request: jasmine.createSpy("network") },
+        network: networkFixture((spy) => {
+          spy;
+        }),
         cache: new TestRestCacheStore(),
+        // @ts-expect-error Deliberately unsupported cache policy decision.
         policy: () => Promise.resolve("unsupported"),
       });
 
@@ -523,11 +574,9 @@ describe("$rest", () => {
     it("defaults cached backends to network-first reads", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 8 })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 8 }));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -550,11 +599,9 @@ describe("$rest", () => {
     it("fetches and caches cache-first misses", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 7 })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 7 }));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -583,7 +630,9 @@ describe("$rest", () => {
     it("serves cache-first reads without hitting the network", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = { request: jasmine.createSpy("network") };
+      const network = networkFixture((spy) => {
+        spy;
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -607,11 +656,9 @@ describe("$rest", () => {
     it("stores successful network-first reads", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 7 })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 7 }));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -639,9 +686,9 @@ describe("$rest", () => {
 
       const error = new Error("offline");
 
-      const network = {
-        request: jasmine.createSpy("network").and.rejectWith(error),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.rejectWith(error);
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -655,11 +702,9 @@ describe("$rest", () => {
     it("falls back to stale cache for network-first reads", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.rejectWith(new Error("offline")),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.rejectWith(new Error("offline"));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -683,13 +728,12 @@ describe("$rest", () => {
     it("fetches and caches stale-while-revalidate misses", async () => {
       const cache = new TestRestCacheStore();
 
-      const onRevalidate = jasmine.createSpy("onRevalidate");
+      const onRevalidate =
+        jasmine.createSpy<(event: RestRevalidateEvent) => void>("onRevalidate");
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 7 })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 7 }));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -719,13 +763,12 @@ describe("$rest", () => {
     it("returns stale-while-revalidate cache and refreshes in the background", async () => {
       const cache = new TestRestCacheStore();
 
-      const onRevalidate = jasmine.createSpy("onRevalidate");
+      const onRevalidate =
+        jasmine.createSpy<(event: RestRevalidateEvent) => void>("onRevalidate");
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 7, name: "Fresh" })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 7, name: "Fresh" }));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -771,13 +814,12 @@ describe("$rest", () => {
     it("swallows stale-while-revalidate background refresh failures", async () => {
       const cache = new TestRestCacheStore();
 
-      const onRevalidate = jasmine.createSpy("onRevalidate");
+      const onRevalidate =
+        jasmine.createSpy<(event: RestRevalidateEvent) => void>("onRevalidate");
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.rejectWith(new Error("offline")),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.rejectWith(new Error("offline"));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -814,11 +856,9 @@ describe("$rest", () => {
     it("invalidates collection and entity cache entries after writes", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.resolveTo(httpResponse({ id: 7 })),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse({ id: 7 }));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -852,11 +892,9 @@ describe("$rest", () => {
     it("does not invalidate cached reads when writes fail", async () => {
       const cache = new TestRestCacheStore();
 
-      const network = {
-        request: jasmine
-          .createSpy("network")
-          .and.rejectWith(new Error("write failed")),
-      };
+      const network = networkFixture((spy) => {
+        spy.and.rejectWith(new Error("write failed"));
+      });
 
       const backend = new CachedRestBackend({
         network,
@@ -886,7 +924,8 @@ describe("$rest", () => {
 
   describe("createRestFactory", () => {
     it("creates typed REST services", async () => {
-      const $http = jasmine.createSpy("$http").and.resolveTo(httpResponse([]));
+      const $http = httpSpy();
+      $http.and.resolveTo(httpResponse([]));
       const factory = createRestFactory($http);
 
       const service = factory("/admins", UserEntity, { timeout: 10 });
@@ -899,7 +938,8 @@ describe("$rest", () => {
     it("supports factory defaults when entityClass and options are omitted", async () => {
       const raw = { id: 5, title: "Post" };
 
-      const $http = jasmine.createSpy("$http").and.resolveTo(httpResponse(raw));
+      const $http = httpSpy();
+      $http.and.resolveTo(httpResponse(raw));
 
       const factory = createRestFactory($http);
 
@@ -909,11 +949,11 @@ describe("$rest", () => {
     });
 
     it("uses an options backend instead of the default HTTP backend", async () => {
-      const $http = jasmine.createSpy("$http");
+      const $http = httpSpy();
 
-      const backend = {
-        request: jasmine.createSpy("backend").and.resolveTo(httpResponse([])),
-      };
+      const backend = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse([]));
+      });
 
       const factory = createRestFactory($http);
 
@@ -934,10 +974,10 @@ describe("$rest", () => {
     });
 
     it("merges runtime defaults with resource options", async () => {
-      const backend = {
-        request: jasmine.createSpy("backend").and.resolveTo(httpResponse([])),
-      };
-      const factory = createRestFactory(jasmine.createSpy("$http"), {
+      const backend = networkFixture((spy) => {
+        spy.and.resolveTo(httpResponse([]));
+      });
+      const factory = createRestFactory(httpSpy(), {
         backend,
         credentials: "include",
         timeout: 100,
@@ -964,6 +1004,7 @@ describe("RFC 6570 helpers", () => {
 
   describe("expandUriTemplate", () => {
     it("throws when the template is not a string", () => {
+      // @ts-expect-error Deliberately invalid URI template input.
       expect(() => expandUriTemplate(123)).toThrowError(
         TypeError,
         "template must be a string",
@@ -1060,3 +1101,9 @@ describe("RFC 6570 helpers", () => {
     });
   });
 });
+
+function emptyHeaders(): Record<string, string>;
+function emptyHeaders(name: string): string;
+function emptyHeaders(name?: string): Record<string, string> | string {
+  return name === undefined ? {} : "";
+}
