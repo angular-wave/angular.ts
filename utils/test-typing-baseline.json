@@ -36,9 +36,6 @@
   "src/core/composition/runtime-composition.spec.ts": {
     "doubleAssertion": 4
   },
-  "src/core/controller/controller.spec.ts": {
-    "@ts-nocheck": 1
-  },
   "src/core/di/injector.spec.ts": {
     "@ts-nocheck": 1,
     "explicitAny": 6
@@ -186,12 +183,6 @@
   "src/docs-examples/cookbook-patterns.test.ts": {
     "nonNullAssertion": 2
   },
-  "src/docs-examples/optimized-runtime-cookbook.test.ts": {
-    "@ts-nocheck": 1
-  },
-  "src/docs-examples/realtime-cookbook.test.ts": {
-    "@ts-nocheck": 1
-  },
   "src/filters/collections.spec.ts": {
     "explicitAny": 4
   },
@@ -231,9 +222,6 @@
   "src/router/services.spec.ts": {
     "explicitAny": 10,
     "nonNullAssertion": 3
-  },
-  "src/router/state/state-builder.spec.ts": {
-    "@ts-nocheck": 1
   },
   "src/router/state/state.spec.ts": {
     "@ts-nocheck": 1
@@ -312,9 +300,6 @@
   "src/services/wasm/wasm.spec.ts": {
     "@ts-nocheck": 1,
     "explicitAny": 24
-  },
-  "src/services/web-component/web-component.spec.ts": {
-    "@ts-nocheck": 1
   },
   "src/services/web-component/web-component.test.ts": {
     "nonNullAssertion": 7,

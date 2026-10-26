@@ -2,6 +2,7 @@ import { writeFileSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { selectBindingSignature } from "../../shared/typescript-signatures.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const integrationRoot = resolve(dirname(__filename), "..");
@@ -408,7 +409,7 @@ function resolveClosureType(checker, type) {
   const callSignatures = type.getCallSignatures();
 
   if (callSignatures.length > 0) {
-    return closureFunctionType(checker, callSignatures[0]);
+    return closureFunctionType(checker, selectBindingSignature(callSignatures));
   }
 
   const constructSignatures = type.getConstructSignatures();
@@ -575,7 +576,7 @@ function memberExtern(checker, typeName, symbol) {
   const memberOverride = memberTypeOverrides.get(`${typeName}.${symbol.name}`);
 
   if (signatures.length > 0) {
-    const signature = signatures[0];
+    const signature = selectBindingSignature(signatures);
     const templateNames = templateNamesFromSignature(signature);
     const { params, returnType } = withActiveTemplateNames(templateNames, () => ({
       params: closureParameters(checker, signature, declaration, typeName, symbol.name),
@@ -600,7 +601,7 @@ function memberExtern(checker, typeName, symbol) {
 }
 
 function callExtern(checker, typeName, type) {
-  const signature = type.getCallSignatures()[0];
+  const signature = selectBindingSignature(type.getCallSignatures());
   const templateNames = templateNamesFromSignature(signature);
   const { params, returnType } = withActiveTemplateNames(templateNames, () => ({
     params: closureParameters(checker, signature, signature.declaration),
@@ -680,7 +681,7 @@ function typeExtern(checker, alias) {
   }
 
   if (calls.length > 0 && props.length === 0) {
-    const signature = calls[0];
+    const signature = selectBindingSignature(calls);
     lines.push(`/**\n * ${description}\n * @typedef {${closureFunctionType(checker, signature)}}\n */\nng.${name};`);
     return lines.join("\n\n");
   }

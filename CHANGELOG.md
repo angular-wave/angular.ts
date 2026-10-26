@@ -2,9 +2,14 @@
 
 ## [Unreleased]
 
-- Enabled strict checking in 41 previously unchecked test suites using typed
-  services, spies, fixtures, and checked DOM queries. Removed permissive global
-  DOM declarations and added a CI check preventing test type bypasses from growing.
+- Enabled strict checking in 44 previously unchecked test suites and both
+  cookbook test runners using typed services, spies, fixtures, and checked DOM
+  queries. Removed permissive global DOM declarations and added a CI check
+  preventing test type bypasses from growing.
+- Corrected `$controller` locals to allow optional scope/element dependencies and
+  custom injection overrides. Deferred construction now returns a typed initializer.
+  Updated language binding generators to preserve optional arguments when
+  selecting callable overloads.
 - Corrected programmatic-view types for empty property values, event listener
   objects, and native event bindings. Removed the compiler hook type cast.
 

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import ts from "typescript";
+import { selectBindingSignature } from "../../shared/typescript-signatures.mjs";
 import {
   parameterDocumentation,
   symbolDocumentation,
@@ -101,11 +102,7 @@ function collectMethods(checker, typeName, type, methods, seenMethods) {
     if (seenMethods.has(key)) continue;
     seenMethods.add(key);
 
-    const signature = signatures.reduce((selected, candidate) =>
-      !selected || candidate.parameters.length > selected.parameters.length
-        ? candidate
-        : selected,
-    );
+    const signature = selectBindingSignature(signatures, { preferMostParameters: true });
     methods.push({
       documentation: symbolDocumentation(
         checker,

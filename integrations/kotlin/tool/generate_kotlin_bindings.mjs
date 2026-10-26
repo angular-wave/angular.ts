@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { selectBindingSignature } from "../../shared/typescript-signatures.mjs";
 import {
   assertCallableDocumentation,
   documentationLines,
@@ -121,10 +122,11 @@ function collectMembers(checker, overrides, typeName, type) {
   const manual = new Set(overrides.manual ?? []);
   const unsupported = new Set(overrides.unsupported ?? []);
 
-  const callSignature = signatureWithMostParameters(
+  const callSignature = selectBindingSignature(
     checker
       .getSignaturesOfType(type, ts.SignatureKind.Call)
       .filter((signature) => isRepoTypesNode(signature.declaration)),
+    { preferMostParameters: true },
   );
 
   if (
@@ -161,7 +163,7 @@ function collectMembers(checker, overrides, typeName, type) {
       propertyType,
       ts.SignatureKind.Call,
     );
-    const signature = signatureWithMostParameters(signatures);
+    const signature = selectBindingSignature(signatures, { preferMostParameters: true });
     const forcedCallable = callableProperties.has(`${typeName}.${property.name}`);
 
     if (ts.isMethodSignature(declaration) || forcedCallable || signature) {
@@ -286,15 +288,6 @@ function renderParameter(parameter) {
   return `${parameter.name}: ${parameter.type} = definedExternally`;
 }
 
-function signatureWithMostParameters(signatures) {
-  return signatures.reduce((selected, signature) => {
-    if (!selected) return signature;
-    return signature.parameters.length > selected.parameters.length
-      ? signature
-      : selected;
-  }, undefined);
-}
-
 function signatureParameters(checker, overrides, signature) {
   const usedNames = new Set();
 
@@ -362,7 +355,7 @@ function kotlinType(checker, overrides, type) {
 
   const signatures = checker.getSignaturesOfType(type, ts.SignatureKind.Call);
   if (signatures.length > 0) {
-    return kotlinFunctionType(checker, overrides, signatureWithMostParameters(signatures));
+    return kotlinFunctionType(checker, overrides, selectBindingSignature(signatures, { preferMostParameters: true }));
   }
 
   if (checker.isArrayType(type) || checker.isTupleType(type)) {

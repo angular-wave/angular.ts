@@ -26,7 +26,10 @@ import {
   type SetNormalizedAttrOptions,
 } from "../../shared/dom.ts";
 import { NodeType } from "../../shared/node.ts";
-import { identifierForController } from "../controller/controller.ts";
+import {
+  identifierForController,
+  type ControllerLocals,
+} from "../controller/controller.ts";
 import {
   createScopeWatchPlan,
   createScope,
@@ -1276,7 +1279,7 @@ export interface OneWayBindingState {
 }
 
 /** @internal */
-export interface CompileControllerLocals {
+export interface CompileControllerLocals extends ControllerLocals {
   $scope: Scope;
   $element: Node;
   $transclude: ng.TranscludeFn;

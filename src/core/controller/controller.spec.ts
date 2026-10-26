@@ -1,15 +1,26 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { createInjector } from "../di/injector.ts";
 import { ControllerRegistry } from "./controller.ts";
+import { instance } from "../../shared/test-fixtures.spec.ts";
+
+/** Read dynamically registered ES5 controller fields without asserting their shape. */
+function field(value: unknown, name: string): unknown {
+  if (
+    value === null ||
+    (typeof value !== "object" && typeof value !== "function")
+  ) {
+    throw new TypeError("Expected a controller object");
+  }
+  return Reflect.get(value, name);
+}
 
 describe("$controller", () => {
-  let controllerRegistry;
+  let controllerRegistry: ControllerRegistry;
 
-  let $controller;
+  let $controller: ng.ControllerService;
 
-  let injector;
+  let injector: ng.InjectorService;
 
   beforeEach(() => {
     window.angular = new Angular();
@@ -18,7 +29,7 @@ describe("$controller", () => {
 
     injector.invoke([
       "$controller",
-      (_$controller_) => {
+      (_$controller_: ng.ControllerService) => {
         $controller = _$controller_;
       },
     ]);
@@ -33,7 +44,7 @@ describe("$controller", () => {
       it("instantiates controller functions", function () {
         const $controller = injector.get("$controller");
 
-        function MyController() {
+        function MyController(this: { invoked: boolean }): undefined {
           this.invoked = true;
         }
 
@@ -41,22 +52,18 @@ describe("$controller", () => {
 
         expect(controller).toBeDefined();
         expect(controller instanceof MyController).toBe(true);
-        expect(controller.invoked).toBe(true);
+        expect(field(controller, "invoked")).toBe(true);
       });
 
       it("instantiates controller classes", function () {
         const $controller = injector.get("$controller");
 
         class MyController {
-          constructor() {
-            this.invoked = true;
-          }
+          invoked = true;
         }
 
-        const controller = $controller(MyController);
+        const controller = instance($controller(MyController), MyController);
 
-        expect(controller).toBeDefined();
-        expect(controller instanceof MyController).toBe(true);
         expect(controller.invoked).toBe(true);
       });
 
@@ -68,18 +75,21 @@ describe("$controller", () => {
 
         const $controller = injector.get("$controller");
 
-        function MyController(aDep) {
+        function MyController(
+          this: { theDep: number },
+          aDep: number,
+        ): undefined {
           this.theDep = aDep;
         }
         MyController.$inject = ["aDep"];
 
         const controller = $controller(MyController);
 
-        expect(controller.theDep).toBe(42);
+        expect(field(controller, "theDep")).toBe(42);
       });
 
       it("allows registering controllers at config time", function () {
-        function MyController() {}
+        function MyController(): undefined {}
 
         window.angular
           .createModule("controllerConfig", ["ng"])
@@ -95,8 +105,8 @@ describe("$controller", () => {
       });
 
       it("allows registering several controllers in an object", function () {
-        function MyController() {}
-        function MyOtherController() {}
+        function MyController(): undefined {}
+        function MyOtherController(): undefined {}
 
         controllerRegistry.register({ MyController, MyOtherController });
         const injector = createInjector(["ng"]);
@@ -114,7 +124,10 @@ describe("$controller", () => {
       it("allows registering controllers through modules", function () {
         const module = window.angular.createModule("myModule", []);
 
-        module.controller("MyController", function MyController() {});
+        module.controller(
+          "MyController",
+          function MyController(): undefined {},
+        );
         const injector = createInjector(["ng", "myModule"]);
 
         const $controller = injector.get("$controller");
@@ -125,23 +138,29 @@ describe("$controller", () => {
       });
 
       it("does not normally look controllers up from window", function () {
-        window.MyController = function MyController() {};
+        Object.assign(window, {
+          MyController: function MyController(): undefined {},
+        });
         const injector = createInjector(["ng"]);
 
         const $controller = injector.get("$controller");
 
-        expect(function () {
-          $controller("MyController");
-        }).toThrow();
+        try {
+          expect(function () {
+            $controller("MyController");
+          }).toThrow();
+        } finally {
+          Reflect.deleteProperty(window, "MyController");
+        }
       });
     });
 
     it("should allow registration of controllers", () => {
-      const FooCtrl = function ($scope) {
+      const FooCtrl = function ($scope: { foo?: string }): undefined {
         $scope.foo = "bar";
       };
 
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
       let ctrl;
 
@@ -153,11 +172,11 @@ describe("$controller", () => {
     });
 
     it("should allow registration of bound controller functions", () => {
-      const FooCtrl = function ($scope) {
+      const FooCtrl = function ($scope: { foo?: string }): undefined {
         $scope.foo = "bar";
       };
 
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
       const BoundFooCtrl = FooCtrl.bind(null);
 
@@ -168,15 +187,15 @@ describe("$controller", () => {
     });
 
     it("should allow registration of map of controllers", () => {
-      const FooCtrl = function ($scope) {
+      const FooCtrl = function ($scope: { foo?: string }): undefined {
         $scope.foo = "foo";
       };
 
-      const BarCtrl = function ($scope) {
+      const BarCtrl = function ($scope: { bar?: string }): undefined {
         $scope.bar = "bar";
       };
 
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
       let ctrl;
 
@@ -195,11 +214,11 @@ describe("$controller", () => {
     });
 
     it("should allow registration of controllers annotated with arrays", () => {
-      const FooCtrl = function ($scope) {
+      const FooCtrl = function ($scope: { foo?: string }): undefined {
         $scope.foo = "bar";
       };
 
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
       let ctrl;
 
@@ -212,7 +231,7 @@ describe("$controller", () => {
 
     it('should throw an exception if a controller is called "hasOwnProperty"', () => {
       expect(() => {
-        controllerRegistry.register("hasOwnProperty", ($scope) => {});
+        controllerRegistry.register("hasOwnProperty", () => undefined);
       }).toThrowError(/badname/);
     });
 
@@ -256,7 +275,7 @@ describe("$controller", () => {
   });
 
   it("should return instance of given controller class", () => {
-    const MyClass = function () {};
+    const MyClass = function (): undefined {};
 
     const ctrl = $controller(MyClass);
 
@@ -265,39 +284,49 @@ describe("$controller", () => {
   });
 
   it("should inject arguments", () => {
-    const MyClass = function ($http) {
+    const MyClass = function (
+      this: { $http: ng.HttpService },
+      $http: ng.HttpService,
+    ): undefined {
       this.$http = $http;
     };
     MyClass.$inject = ["$http"];
 
     const ctrl = $controller(MyClass);
 
-    expect(ctrl.$http).toBeTruthy();
+    expect(field(ctrl, "$http")).toBeTruthy();
   });
 
   it("should inject given scope", () => {
-    const MyClass = function ($scope) {
+    const MyClass = function (
+      this: { $scope: object },
+      $scope: object,
+    ): undefined {
       this.$scope = $scope;
     };
     MyClass.$inject = ["$scope"];
 
-    const scope = {};
+    const scope: Record<string, unknown> = {};
 
     const ctrl = $controller(MyClass, { $scope: scope });
 
-    expect(ctrl.$scope).toBe(scope);
+    expect(field(ctrl, "$scope")).toBe(scope);
   });
 
   it("should not instantiate a controller defined on window", () => {
-    const scope = {};
+    const scope: Record<string, unknown> = {};
 
-    const Foo = function () {};
+    const Foo = function (): undefined {};
 
-    window.a = { Foo };
+    Object.assign(window, { a: { Foo } });
 
-    expect(() => {
-      $controller("a.Foo", { $scope: scope });
-    }).toThrow();
+    try {
+      expect(() => {
+        $controller("a.Foo", { $scope: scope });
+      }).toThrow();
+    } finally {
+      Reflect.deleteProperty(window, "a");
+    }
   });
 
   it("should throw ctrlreg when the controller name does not match a registered controller", () => {
@@ -308,35 +337,44 @@ describe("$controller", () => {
 
   describe("ctrl as syntax", () => {
     it("should publish controller instance into scope", () => {
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
-      controllerRegistry.register("FooCtrl", function () {
-        this.mark = "foo";
-      });
+      controllerRegistry.register(
+        "FooCtrl",
+        function (this: { mark: string }): undefined {
+          this.mark = "foo";
+        },
+      );
 
       const foo = $controller("FooCtrl as foo", { $scope: scope });
 
       expect(scope.foo).toBe(foo);
-      expect(scope.foo.mark).toBe("foo");
+      expect(field(scope.foo, "mark")).toBe("foo");
     });
 
     it("should allow controllers with dots", () => {
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
-      controllerRegistry.register("a.b.FooCtrl", function () {
-        this.mark = "foo";
-      });
+      controllerRegistry.register(
+        "a.b.FooCtrl",
+        function (this: { mark: string }): undefined {
+          this.mark = "foo";
+        },
+      );
 
       const foo = $controller("a.b.FooCtrl as foo", { $scope: scope });
 
       expect(scope.foo).toBe(foo);
-      expect(scope.foo.mark).toBe("foo");
+      expect(field(scope.foo, "mark")).toBe("foo");
     });
 
     it("should throw an error if $scope is not provided", () => {
-      controllerRegistry.register("a.b.FooCtrl", function () {
-        this.mark = "foo";
-      });
+      controllerRegistry.register(
+        "a.b.FooCtrl",
+        function (this: { mark: string }): undefined {
+          this.mark = "foo";
+        },
+      );
 
       expect(() => {
         $controller("a.b.FooCtrl as foo");
@@ -365,27 +403,28 @@ describe("$controller", () => {
     });
 
     it("should allow identifiers containing `$`", () => {
-      const scope = {};
+      const scope: Record<string, unknown> = {};
 
-      controllerRegistry.register("FooCtrl", function () {
-        this.mark = "foo";
-      });
+      controllerRegistry.register(
+        "FooCtrl",
+        function (this: { mark: string }): undefined {
+          this.mark = "foo";
+        },
+      );
 
       const foo = $controller("FooCtrl as $foo", { $scope: scope });
 
       expect(scope.$foo).toBe(foo);
-      expect(scope.$foo.mark).toBe("foo");
+      expect(field(scope.$foo, "mark")).toBe("foo");
     });
   });
-
-  // Add these tests to the existing file (e.g. near the end, before the final closing `});`).
 
   describe("additional coverage", () => {
     describe("later mode", () => {
       it("should defer controller instantiation until the returned function is invoked", () => {
         let invoked = false;
 
-        function MyController() {
+        function MyController(): undefined {
           invoked = true;
         }
 
@@ -399,7 +438,7 @@ describe("$controller", () => {
       });
 
       it("should create the instance with the controller prototype in later mode", () => {
-        function MyController() {}
+        function MyController(): undefined {}
         MyController.prototype.p = 1;
 
         const init = $controller(MyController, {}, true);
@@ -410,7 +449,7 @@ describe("$controller", () => {
       });
 
       it("should use the controller return value if it returns an object in later mode", () => {
-        const scope = {};
+        const scope: Record<string, unknown> = {};
 
         function MyController() {
           return { mark: "returned" };
@@ -423,19 +462,19 @@ describe("$controller", () => {
         const pre = scope.vm;
 
         expect(pre).toBeDefined();
-        expect(pre.mark).toBeUndefined();
+        expect(field(pre, "mark")).toBeUndefined();
 
         const ctrl = init();
 
-        expect(ctrl).toBe(scope.vm);
+        expect<unknown>(ctrl).toBe(scope.vm);
         expect(scope.vm).not.toBe(pre);
-        expect(scope.vm.mark).toBe("returned");
+        expect(field(scope.vm, "mark")).toBe("returned");
       });
 
       it("should ignore primitive return values in later mode", () => {
-        const scope = {};
+        const scope: Record<string, unknown> = {};
 
-        function MyController() {
+        function MyController(this: { mark: string }) {
           this.mark = "instance";
 
           return 123;
@@ -447,14 +486,14 @@ describe("$controller", () => {
 
         const ctrl = init();
 
-        expect(ctrl).toBe(scope.vm);
-        expect(scope.vm.mark).toBe("instance");
+        expect<unknown>(ctrl).toBe(scope.vm);
+        expect(field(scope.vm, "mark")).toBe("instance");
       });
 
       it("should propagate scopeName to locals.$scope in later mode", () => {
-        const scope = {};
+        const scope: Record<string, unknown> = {};
 
-        function MyController() {}
+        function MyController(): undefined {}
         MyController.scopeName = "my-scope-name";
 
         const init = $controller(MyController, { $scope: scope }, true);
@@ -466,7 +505,7 @@ describe("$controller", () => {
 
     describe("return value behavior (non-later)", () => {
       it("should return the object returned by a controller constructor", () => {
-        function MyController() {
+        function MyController(this: { instanceProp: boolean }) {
           this.instanceProp = true;
 
           return { returned: true };
@@ -475,31 +514,32 @@ describe("$controller", () => {
         const ctrl = $controller(MyController);
 
         expect(ctrl).toBeDefined();
-        expect(ctrl.returned).toBe(true);
-        expect(ctrl.instanceProp).toBeUndefined();
+        expect(field(ctrl, "returned")).toBe(true);
+        expect(field(ctrl, "instanceProp")).toBeUndefined();
         expect(ctrl instanceof MyController).toBe(false);
       });
 
       it("should ignore primitive return values from controller constructors", () => {
-        function MyController() {
+        function MyController(this: { instanceProp: boolean }) {
           this.instanceProp = true;
 
           return 123;
         }
 
+        // @ts-expect-error Runtime compatibility ignores a constructor's primitive return.
         const ctrl = $controller(MyController);
 
         expect(ctrl).toBeDefined();
-        expect(ctrl.instanceProp).toBe(true);
+        expect(field(ctrl, "instanceProp")).toBe(true);
         expect(ctrl instanceof MyController).toBe(true);
       });
     });
 
     describe("identifier behavior", () => {
       it('should let `ident` override "as" identifier in the controller string', () => {
-        const scope = {};
+        const scope: Record<string, unknown> = {};
 
-        function FooCtrl() {
+        function FooCtrl(this: { mark: string }): undefined {
           this.mark = "foo";
         }
 
@@ -513,29 +553,29 @@ describe("$controller", () => {
         );
 
         expect(scope.bar).toBe(ctrl);
-        expect(scope.bar.mark).toBe("foo");
+        expect(field(scope.bar, "mark")).toBe("foo");
         expect(scope.foo).toBeUndefined();
         expect(scope._controllerIdentifier).toBe("bar");
       });
 
       it("should publish identifier to scope when expression is a function and ident is provided", () => {
-        const scope = {};
+        const scope: Record<string, unknown> = {};
 
-        function FooCtrl() {
+        function FooCtrl(this: { mark: string }): undefined {
           this.mark = "foo";
         }
 
         const ctrl = $controller(FooCtrl, { $scope: scope }, false, "foo");
 
         expect(scope.foo).toBe(ctrl);
-        expect(scope.foo.mark).toBe("foo");
+        expect(field(scope.foo, "mark")).toBe("foo");
         expect(scope._controllerIdentifier).toBe("foo");
       });
     });
 
     describe("locals", () => {
       it("should allow creating a controller without $scope when not exporting an identifier", () => {
-        function FooCtrl() {
+        function FooCtrl(this: { ok: boolean }): undefined {
           this.ok = true;
         }
 
@@ -544,7 +584,7 @@ describe("$controller", () => {
         expect(() => {
           const ctrl = $controller("FooCtrl");
 
-          expect(ctrl.ok).toBe(true);
+          expect(field(ctrl, "ok")).toBe(true);
         }).not.toThrow();
       });
 
@@ -554,14 +594,17 @@ describe("$controller", () => {
 
         const $controller = injector.get("$controller");
 
-        function MyController(aDep) {
+        function MyController(
+          this: { theDep: number },
+          aDep: number,
+        ): undefined {
           this.theDep = aDep;
         }
         MyController.$inject = ["aDep"];
 
         const ctrl = $controller(MyController, { aDep: 2 });
 
-        expect(ctrl.theDep).toBe(2);
+        expect(field(ctrl, "theDep")).toBe(2);
       });
     });
 

@@ -1,15 +1,15 @@
-// @ts-nocheck
-import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { expect, test, type APIRequestContext } from "@playwright/test";
+import type { AngularRuntime } from "../angular-runtime.ts";
 
-const RECIPE = new URL(
-  "../../docs/content/docs/cookbook/optimized-runtime-build.md",
-  import.meta.url,
-);
+const RECIPE = "/docs/content/docs/cookbook/optimized-runtime-build.md";
 const RUNNER = "/docs/static/examples/cookbook/optimized-runtime-runner.html";
 
-async function snippets(): Promise<Map<string, string[]>> {
-  const markdown = await readFile(RECIPE, "utf8");
+async function snippets(
+  request: APIRequestContext,
+): Promise<Map<string, string[]>> {
+  const response = await request.get(RECIPE);
+  expect(response.ok()).toBe(true);
+  const markdown = await response.text();
   const result = new Map<string, string[]>();
 
   for (const match of markdown.matchAll(/```(\w+)\n([\s\S]*?)```/gu)) {
@@ -22,15 +22,15 @@ async function snippets(): Promise<Map<string, string[]>> {
 
 test("optimized runtime recipe boots its exact composition", async ({
   page,
+  request,
 }) => {
-  const example = await snippets();
+  const example = await snippets(request);
   const source = example.get("ts")?.[0];
   const html = example.get("html")?.[0];
-  expect(source).toBeDefined();
-  expect(html).toBeDefined();
+  if (!source || !html) throw new Error("Missing runtime recipe snippets");
 
   await page.goto(RUNNER);
-  await page.evaluate(
+  const runtime = await page.evaluateHandle(
     async ({ source, html }) => {
       document.body.innerHTML = html;
       const origin = location.origin;
@@ -52,8 +52,8 @@ test("optimized runtime recipe boots its exact composition", async ({
       );
 
       try {
-        const runtime = await import(url);
-        globalThis.optimizedRuntime = runtime.angular;
+        const runtime: { angular: AngularRuntime } = await import(url);
+        return runtime.angular;
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -64,29 +64,40 @@ test("optimized runtime recipe boots its exact composition", async ({
   await expect(page.locator("strong")).toHaveText("0");
   await page.getByRole("button", { name: "Increase" }).click();
   await expect(page.locator("strong")).toHaveText("1");
-  const hasHttp = await page.evaluate(() => {
-    const angular = globalThis.optimizedRuntime;
-    const injector = angular.getInjector(document.querySelector("section"));
+  const hasHttp = await runtime.evaluate((angular) => {
+    const root = document.querySelector("section");
+    if (!root) throw new Error("Missing runtime recipe root");
+    const injector = angular.getInjector(root);
     const result = injector.has("$http");
     angular._composition.destroy();
     return result;
   });
+  await runtime.dispose();
   expect(hasHttp).toBe(false);
 });
 
-test("optimized runtime recipe keeps production property names", async () => {
-  const source = (await snippets()).get("js")?.[0];
-  expect(source).toBeDefined();
+test("optimized runtime recipe keeps production property names", async ({
+  request,
+}) => {
+  const source = (await snippets(request)).get("js")?.[0];
+  if (!source) throw new Error("Missing production config snippet");
   const executable = source
     .replace("import { defineConfig } from 'vite';", "")
     .replace("export default defineConfig(", "return defineConfig(");
-  const config = Function("defineConfig", executable)((value) => value);
+  const config: unknown = Function(
+    "defineConfig",
+    executable,
+  )((value: unknown) => value);
 
-  expect(config.build).toMatchObject({
-    target: "es2022",
-    minify: "esbuild",
-    sourcemap: "hidden",
+  expect(config).toMatchObject({
+    build: {
+      target: "es2022",
+      minify: "esbuild",
+      sourcemap: "hidden",
+      rollupOptions: {
+        input: "src/runtime.ts",
+        output: { entryFileNames: expect.stringContaining("[hash]") },
+      },
+    },
   });
-  expect(config.build.rollupOptions.input).toBe("src/runtime.ts");
-  expect(config.build.rollupOptions.output.entryFileNames).toContain("[hash]");
 });

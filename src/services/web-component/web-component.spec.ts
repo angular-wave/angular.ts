@@ -1,8 +1,9 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { Angular } from "../../angular.ts";
 import { dealoc, getScope } from "../../shared/dom.ts";
 import { wait } from "../../shared/test-utils.ts";
+import { defined, instance } from "../../shared/test-fixtures.spec.ts";
+import { createScope, Scope } from "../../core/scope/scope.ts";
 import {
   createWebComponentRuntimeState,
   createWebComponentService,
@@ -13,10 +14,10 @@ import {
 let nextId = 0;
 
 describe("$webComponent", () => {
-  let app;
+  let app: HTMLElement;
 
   beforeEach(() => {
-    app = document.getElementById("app");
+    app = defined(document.getElementById("app"));
     app.innerHTML = "";
   });
 
@@ -31,8 +32,6 @@ describe("$webComponent", () => {
 
     const angular = new Angular();
 
-    let rootScope;
-
     angular.createModule(moduleName, []).appComponent(tagName, {
       shadow: true,
       scope: {
@@ -46,13 +45,8 @@ describe("$webComponent", () => {
       template: "<p>{{title}}/{{shared}}/{{count}}/{{active}}/{{local}}</p>",
     });
 
-    angular.bootstrap(app, [moduleName]).invoke([
-      "$rootScope",
-      (_$rootScope_) => {
-        rootScope = _$rootScope_;
-        rootScope.shared = "root";
-      },
-    ]);
+    const rootScope = angular.bootstrap(app, [moduleName]).get("$rootScope");
+    rootScope.shared = "root";
 
     const element = document.createElement(tagName);
 
@@ -66,22 +60,38 @@ describe("$webComponent", () => {
 
     const elementScope = getScope(element);
 
-    expect(elementScope.parent.id).toBe(rootScope.id);
-    expect(element.shadowRoot.textContent).toContain("hello/root/2/true/ready");
+    expect(defined(elementScope.parent).id).toBe(rootScope.id);
+    expect(defined(element.shadowRoot).textContent).toContain(
+      "hello/root/2/true/ready",
+    );
 
+    if (
+      !("count" in element) ||
+      typeof element.count !== "number" ||
+      !("active" in element) ||
+      typeof element.active !== "boolean"
+    ) {
+      throw new TypeError(
+        "Expected initialized numeric and boolean component inputs",
+      );
+    }
     element.title = "bye";
     element.count = 3;
     element.active = false;
 
     await wait();
 
-    expect(element.shadowRoot.textContent).toContain("bye/root/3/false/ready");
+    expect(defined(element.shadowRoot).textContent).toContain(
+      "bye/root/3/false/ready",
+    );
 
     rootScope.shared = "next";
 
     await wait();
 
-    expect(element.shadowRoot.textContent).toContain("bye/next/3/false/ready");
+    expect(defined(element.shadowRoot).textContent).toContain(
+      "bye/next/3/false/ready",
+    );
   });
 
   it("supports service-level element scopes for hand-written elements", () => {
@@ -94,13 +104,13 @@ describe("$webComponent", () => {
     angular.bootstrap(app, []).invoke([
       "$webComponent",
       "$rootScope",
-      ($webComponent, $rootScope) => {
+      ($webComponent: ng.WebComponentService, $rootScope: ng.Scope) => {
         const scope = $webComponent.createElementScope(host, {
           title: "manual",
         });
 
         expect(scope.title).toBe("manual");
-        expect(scope.parent.id).toBe($rootScope.id);
+        expect(defined(scope.parent).id).toBe($rootScope.id);
         expect(getScope(host)).toBe(scope);
       },
     ]);
@@ -112,7 +122,7 @@ describe("$webComponent", () => {
     angular.bootstrap(app, []).invoke([
       "$webComponent",
       "$rootScope",
-      ($webComponent, $rootScope) => {
+      ($webComponent: ng.WebComponentService, $rootScope: ng.Scope) => {
         const host = document.createElement("section");
         const scope = $webComponent.createElementScope(
           host,
@@ -121,7 +131,7 @@ describe("$webComponent", () => {
         );
 
         expect(scope.title).toBe("isolated");
-        expect(scope.parent.id).toBe($rootScope.id);
+        expect(defined(scope.parent).id).toBe($rootScope.id);
       },
     ]);
   });
@@ -161,18 +171,21 @@ describe("$webComponent", () => {
     const moduleName = nextModuleName();
     const angular = new Angular();
     const callbackError = new Error("connected failed");
-    const exceptions = [];
+    const exceptions: unknown[] = [];
 
     angular
       .createModule(moduleName, [])
       .config({
         $exceptionHandler: {
-          handler: (error) => exceptions.push(error),
+          // @ts-expect-error Exercise recovery after a deliberately non-throwing error reporter.
+          handler: (error: unknown) => {
+            exceptions.push(error);
+          },
         },
       })
       .appComponent(tagName, {
         template: "<span>connected</span>",
-        connected() {
+        connected(): undefined {
           throw callbackError;
         },
       });
@@ -195,13 +208,16 @@ describe("$webComponent", () => {
     const cleanupError = new Error("cleanup failed");
     const disconnectedError = new Error("disconnected failed");
     const attributeError = new Error("attribute failed");
-    const exceptions = [];
+    const exceptions: unknown[] = [];
 
     angular
       .createModule(moduleName, [])
       .config({
         $exceptionHandler: {
-          handler: (error) => exceptions.push(error),
+          // @ts-expect-error Exercise recovery after a deliberately non-throwing error reporter.
+          handler: (error: unknown) => {
+            exceptions.push(error);
+          },
         },
       })
       .appComponent(tagName, {
@@ -235,26 +251,15 @@ describe("$webComponent", () => {
       cleanupError,
       disconnectedError,
     ]);
-    expect(scope._handler._destroyed).toBeTrue();
+    expect(instance(scope._handler, Scope)._destroyed).toBeTrue();
   });
 
   it("releases runtime-owned custom element state during teardown", async () => {
     const tagName = nextTagName("runtime-owned-card");
     const angular = new Angular();
-    let injector;
-    let rootScope;
-    let compile;
-
-    angular.bootstrap(app, []).invoke([
-      "$injector",
-      "$rootScope",
-      "$compile",
-      (_$injector_, _$rootScope_, _$compile_) => {
-        injector = _$injector_;
-        rootScope = _$rootScope_;
-        compile = _$compile_;
-      },
-    ]);
+    const injector = angular.bootstrap(app, []);
+    const rootScope = injector.get("$rootScope");
+    const compile = injector.get("$compile");
 
     const state = createWebComponentRuntimeState();
     const service = createWebComponentService(
@@ -266,7 +271,7 @@ describe("$webComponent", () => {
         throw error;
       },
     );
-    const events = [];
+    const events: string[] = [];
 
     service.defineAppComponent(tagName, {
       shadow: true,
@@ -292,8 +297,8 @@ describe("$webComponent", () => {
     destroyWebComponentRuntimeState(state);
 
     expect(events).toEqual(["cleanup", "disconnected"]);
-    expect(scope._handler._destroyed).toBeTrue();
-    expect(element.shadowRoot.textContent).toBe("");
+    expect(instance(scope._handler, Scope)._destroyed).toBeTrue();
+    expect(defined(element.shadowRoot).textContent).toBe("");
     expect(() =>
       service.createElementScope(document.createElement("div")),
     ).toThrowError("Cannot use $webComponent after runtime teardown");
@@ -303,27 +308,16 @@ describe("$webComponent", () => {
     app.appendChild(element);
     await wait();
 
-    expect(element.scope).toBe(scope);
+    expect(instance(element, ScopeElement).scope).toBe(scope);
     expect(state.hosts.has(element)).toBeFalse();
   });
 
   it("cancels pending disconnect teardown during runtime destruction", async () => {
     const tagName = nextTagName("pending-destroy-card");
     const angular = new Angular();
-    let injector;
-    let rootScope;
-    let compile;
-
-    angular.bootstrap(app, []).invoke([
-      "$injector",
-      "$rootScope",
-      "$compile",
-      (_$injector_, _$rootScope_, _$compile_) => {
-        injector = _$injector_;
-        rootScope = _$rootScope_;
-        compile = _$compile_;
-      },
-    ]);
+    const injector = angular.bootstrap(app, []);
+    const rootScope = injector.get("$rootScope");
+    const compile = injector.get("$compile");
 
     const state = createWebComponentRuntimeState();
     const service = createWebComponentService(
@@ -349,7 +343,8 @@ describe("$webComponent", () => {
 
   it("ignores scopes that were already destroyed during runtime teardown", () => {
     const state = createWebComponentRuntimeState();
-    const destroyedScope = { _handler: { _destroyed: true } };
+    const destroyedScope = createScope();
+    destroyedScope.destroy();
     state.scopes.add(destroyedScope);
 
     destroyWebComponentRuntimeState(state);
@@ -359,15 +354,15 @@ describe("$webComponent", () => {
 
   it("destroys active scopes that are not connected to a host", () => {
     const state = createWebComponentRuntimeState();
-    const scope = {
-      _handler: { _destroyed: false },
-      destroy: jasmine.createSpy("destroy"),
-    };
+    const scope = createScope();
+    const destroy = spyOn(scope, "destroy").and.callThrough();
 
     state.scopes.add(scope);
     destroyWebComponentRuntimeState(state);
 
-    expect(scope.destroy).toHaveBeenCalledOnceWith();
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect<number>(destroy.calls.argsFor(0).length).toBe(0);
+    expect(instance(scope._handler, Scope)._destroyed).toBeTrue();
   });
 
   it("destroys the owned scope after disconnect", async () => {
@@ -377,7 +372,7 @@ describe("$webComponent", () => {
 
     const angular = new Angular();
 
-    const events = [];
+    const events: string[] = [];
 
     angular.createModule(moduleName, []).appComponent(tagName, {
       scope: {
@@ -409,14 +404,14 @@ describe("$webComponent", () => {
 
     const scope = getScope(element);
 
-    expect(scope._handler._destroyed).toBe(false);
+    expect(instance(scope._handler, Scope)._destroyed).toBe(false);
 
     element.remove();
 
     await wait(10);
 
     expect(events).toEqual(["cleanup", "disconnected", "destroy"]);
-    expect(scope._handler._destroyed).toBe(true);
+    expect(instance(scope._handler, Scope)._destroyed).toBe(true);
   });
 
   it("reuses the active scope when reconnected before teardown", async () => {
@@ -445,7 +440,7 @@ describe("$webComponent", () => {
     await wait(10);
 
     expect(getScope(element)).toBe(scope);
-    expect(scope._handler._destroyed).toBeFalse();
+    expect(instance(scope._handler, Scope)._destroyed).toBeFalse();
   });
 
   it("dispatches native DOM events from scoped components", async () => {
@@ -455,7 +450,7 @@ describe("$webComponent", () => {
 
     const angular = new Angular();
 
-    const events = [];
+    const events: string[] = [];
 
     angular.createModule(moduleName, []).appComponent(tagName, {
       shadow: true,
@@ -463,7 +458,7 @@ describe("$webComponent", () => {
         title: "eventful",
       },
       template: `<button ng-click="publish()">{{title}}</button>`,
-      connected({ dispatch, scope }) {
+      connected({ dispatch, scope }): undefined {
         scope.publish = () => {
           dispatch("card-select", { title: scope.title });
         };
@@ -475,7 +470,16 @@ describe("$webComponent", () => {
     const element = document.createElement(tagName);
 
     element.addEventListener("card-select", (event) => {
-      events.push(event.detail.title);
+      const detail: unknown = instance(event, CustomEvent).detail;
+      if (
+        detail === null ||
+        typeof detail !== "object" ||
+        !("title" in detail) ||
+        typeof detail.title !== "string"
+      ) {
+        throw new TypeError("Expected a title in the component event");
+      }
+      events.push(detail.title);
     });
 
     app.appendChild(element);
@@ -483,7 +487,7 @@ describe("$webComponent", () => {
     await wait();
     await wait();
 
-    element.shadowRoot.querySelector("button").click();
+    defined(defined(element.shadowRoot).querySelector("button")).click();
 
     await wait();
 
@@ -497,9 +501,13 @@ describe("$webComponent", () => {
 
     const angular = new Angular();
 
-    const events = [];
+    const events: (string | number)[] = [];
 
-    class StatusCard extends ScopeElement {
+    class StatusCard extends ScopeElement<{
+      count: number;
+      label?: string;
+      increment?: () => void;
+    }> {
       static shadow = true;
       static inputs = {
         title: String,
@@ -513,8 +521,9 @@ describe("$webComponent", () => {
         </button>
       `;
 
-      connected() {
-        this.scope.label = this.injector.get("labelService").value;
+      connected(): undefined {
+        this.scope.label =
+          this.injector.get<LabelService>("labelService").value;
         this.scope.increment = () => {
           this.scope.count++;
           this.dispatch("count-change", { count: this.scope.count });
@@ -537,11 +546,20 @@ describe("$webComponent", () => {
 
     angular.bootstrap(app, [moduleName]);
 
-    const element = document.createElement(tagName);
+    const element = instance(document.createElement(tagName), StatusCard);
 
     element.title = "Native";
     element.addEventListener("count-change", (event) => {
-      events.push(event.detail.count);
+      const detail: unknown = instance(event, CustomEvent).detail;
+      if (
+        detail === null ||
+        typeof detail !== "object" ||
+        !("count" in detail) ||
+        typeof detail.count !== "number"
+      ) {
+        throw new TypeError("Expected a numeric count in the component event");
+      }
+      events.push(detail.count);
     });
     app.appendChild(element);
 
@@ -549,16 +567,18 @@ describe("$webComponent", () => {
     await wait();
 
     expect(element instanceof StatusCard).toBe(true);
-    expect(element.scope).toBe(getScope(element));
-    expect(element.injector.get("labelService").value).toBe("ready");
-    expect(element.shadowRoot.textContent).toContain("Native/1/ready");
+    expect<ng.Scope>(element.scope).toBe(getScope(element));
+    expect(element.injector.get<LabelService>("labelService").value).toBe(
+      "ready",
+    );
+    expect(defined(element.shadowRoot).textContent).toContain("Native/1/ready");
 
-    element.shadowRoot.querySelector("button").click();
+    defined(defined(element.shadowRoot).querySelector("button")).click();
 
     await wait();
 
     expect(events).toEqual([2]);
-    expect(element.shadowRoot.textContent).toContain("Native/2/ready");
+    expect(defined(element.shadowRoot).textContent).toContain("Native/2/ready");
 
     element.remove();
 
@@ -598,17 +618,23 @@ describe("$webComponent", () => {
 
     angular.bootstrap(app, [moduleName]);
 
-    const element = document.createElement(parentTagName);
+    const element = instance(
+      document.createElement(parentTagName),
+      ParentElement,
+    );
 
     app.appendChild(element);
 
     await wait();
     await wait();
 
-    const child = element.shadowRoot.querySelector(childTagName);
+    const child = instance(
+      defined(element.shadowRoot).querySelector(childTagName),
+      ChildElement,
+    );
 
-    expect(child.scope.parent.id).toBe(element.scope.id);
-    expect(child.shadowRoot.textContent).toContain("ready");
+    expect(defined(child.scope.parent).id).toBe(element.scope.id);
+    expect(defined(child.shadowRoot).textContent).toContain("ready");
   });
 
   it("supports declarative property and custom event bindings between ScopeElements", async () => {
@@ -619,14 +645,17 @@ describe("$webComponent", () => {
 
     const angular = new Angular();
 
-    class ChildElement extends ScopeElement {
+    class ChildElement extends ScopeElement<{
+      value?: string;
+      select?: () => void;
+    }> {
       static shadow = true;
       static inputs = {
         value: String,
       };
       static template = `<button ng-click="select()">{{value}}</button>`;
 
-      connected() {
+      connected(): undefined {
         this.scope.select = () => {
           this.dispatch("child-select", {
             value: `${this.scope.value}!`,
@@ -635,7 +664,7 @@ describe("$webComponent", () => {
       }
     }
 
-    class ParentElement extends ScopeElement {
+    class ParentElement extends ScopeElement<{ value: string }> {
       static shadow = true;
       static scope = {
         value: "ready",
@@ -655,33 +684,39 @@ describe("$webComponent", () => {
 
     angular.bootstrap(app, [moduleName]);
 
-    const element = document.createElement(parentTagName);
+    const element = instance(
+      document.createElement(parentTagName),
+      ParentElement,
+    );
 
     app.appendChild(element);
 
     await wait();
     await wait();
 
-    const child = element.shadowRoot.querySelector(childTagName);
+    const child = instance(
+      defined(element.shadowRoot).querySelector(childTagName),
+      ChildElement,
+    );
 
-    expect(child.shadowRoot.textContent).toContain("ready");
+    expect(defined(child.shadowRoot).textContent).toContain("ready");
 
     element.scope.value = "updated";
 
     await wait();
 
-    expect(child.shadowRoot.textContent).toContain("updated");
+    expect(defined(child.shadowRoot).textContent).toContain("updated");
 
-    child.shadowRoot.querySelector("button").click();
+    defined(defined(child.shadowRoot).querySelector("button")).click();
 
     await wait();
 
     expect(element.scope.value).toBe("updated!");
-    expect(child.shadowRoot.textContent).toContain("updated!");
+    expect(defined(child.shadowRoot).textContent).toContain("updated!");
   });
 });
 
-function nextTagName(prefix) {
+function nextTagName(prefix: string) {
   return `x-${prefix}-${++nextId}`;
 }
 

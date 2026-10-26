@@ -1,31 +1,39 @@
-// @ts-nocheck
 /// <reference types="jasmine" />
 import { StateObject } from "./state-object.ts";
+import { StateRegistryRuntime } from "./state-registry.ts";
+import type { StateBuilder } from "./state-builder.ts";
+import type { StateDeclaration } from "./interface.ts";
+import { defined, instance } from "../../shared/test-fixtures.spec.ts";
 import { createResolveInvocationLocals } from "../resolve/resolve-context.ts";
 import { Resolvable } from "../resolve/resolvable.ts";
 import type { ResolvableToken } from "../resolve/interface.ts";
 import { Angular } from "../../angular.ts";
 import { dealoc } from "../../shared/dom.ts";
 
-// TODO refactor this to url service as it is using the provider right now
 describe("StateBuilder", function () {
-  const parent = { name: "" };
+  let builder: StateBuilder;
 
-  let builder;
-
-  let $stateRegistry;
+  let $stateRegistry: StateRegistryRuntime;
 
   beforeEach(function () {
     dealoc(document.getElementById("app"));
     window.angular = new Angular();
     window.angular.createModule("default", []);
-    const $injector = window.angular.bootstrap(document.getElementById("app"), [
-      "default",
-    ]);
+    const $injector = window.angular.bootstrap(
+      defined(document.getElementById("app")),
+      ["default"],
+    );
 
-    $stateRegistry = $injector.get("$stateRegistry");
+    $stateRegistry = instance(
+      $injector.get("$stateRegistry"),
+      StateRegistryRuntime,
+    );
     builder = $stateRegistry._builder;
   });
+
+  function build(declaration: StateDeclaration): StateObject {
+    return defined(builder._build(new StateObject(declaration)));
+  }
 
   it("expect it to be configured by state registry", () => {
     expect($stateRegistry).toBeDefined();
@@ -34,17 +42,15 @@ describe("StateBuilder", function () {
   });
 
   it("should build a single default view from state-level view properties", function () {
-    const config = builder._build({
+    const config = build({
       name: "foo",
-      self: {},
       url: "/foo",
       templateUrl: "/foo.html",
       controller: "FooController",
-      parent,
     });
 
-    expect(config._views.$default).not.toEqual(config);
-    expect(config._views.$default).toEqual(
+    expect<unknown>(defined(config._views).$default).not.toEqual(config);
+    expect(defined(config._views).$default).toEqual(
       jasmine.objectContaining({
         templateUrl: "/foo.html",
         controller: "FooController",
@@ -53,74 +59,64 @@ describe("StateBuilder", function () {
   });
 
   it("should build named views from the views object", function () {
-    const built = builder._build({
+    const built = build({
       name: "foo",
-      self: {},
-      parent,
       views: {
         main: { template: "hello", controller: "FooController" },
         sidebar: "SidebarComponent",
       },
     });
 
-    expect(built._views.main.template).toBe("hello");
-    expect(built._views.main.controller).toBe("FooController");
-    expect(built._views.main._ngViewName).toBe("main");
-    expect(built._views.sidebar.component).toBe("SidebarComponent");
-    expect(built._views.sidebar._ngViewName).toBe("sidebar");
+    expect(defined(built._views).main.template).toBe("hello");
+    expect(defined(built._views).main.controller).toBe("FooController");
+    expect(defined(built._views).main._ngViewName).toBe("main");
+    expect(defined(built._views).sidebar.component).toBe("SidebarComponent");
+    expect(defined(built._views).sidebar._ngViewName).toBe("sidebar");
   });
 
   it("should normalize inline route components to generated component names", function () {
     const inlineComponent = { template: "inline" };
-    const built = builder._build({
+    const built = build({
       name: "foo",
-      self: {},
-      parent,
       component: inlineComponent,
     });
 
-    expect(typeof built._views.$default.component).toBe("string");
-    expect(built._views.$default.component).toMatch(
+    expect(typeof defined(built._views).$default.component).toBe("string");
+    expect(defined(built._views).$default.component).toMatch(
       /^ngRouteFooDefaultComponent/,
     );
-    expect(built._views.$default.component).not.toBe(inlineComponent);
+    expect(defined(built._views).$default.component).not.toBe(inlineComponent);
   });
 
   it("should normalize inline route components in named views", function () {
-    const built = builder._build({
+    const built = build({
       name: "foo",
-      self: {},
-      parent,
       views: {
         sidebar: { component: { template: "inline" } },
       },
     });
 
-    expect(typeof built._views.sidebar.component).toBe("string");
-    expect(built._views.sidebar.component).toMatch(
+    expect(typeof defined(built._views).sidebar.component).toBe("string");
+    expect(defined(built._views).sidebar.component).toMatch(
       /^ngRouteFooSidebarComponent/,
     );
   });
 
   it("should copy state-level view fields into the default view", function () {
-    const built = builder._build({
+    const built = build({
       name: "foo",
-      self: {},
-      parent,
       template: "hello",
       controller: "FooController",
     });
 
-    expect(built._views.$default.template).toBe("hello");
-    expect(built._views.$default.controller).toBe("FooController");
+    expect(defined(built._views).$default.template).toBe("hello");
+    expect(defined(built._views).$default.controller).toBe("FooController");
   });
 
   it("should not allow state-level view fields together with views", function () {
     expect(() =>
-      builder._build({
+      build({
         name: "foo",
-        self: {},
-        parent,
         template: "hello",
         views: { main: { controller: "FooController" } },
       }),
@@ -129,20 +125,18 @@ describe("StateBuilder", function () {
 
   it("should reject removed templateProvider view declarations", function () {
     expect(() =>
-      builder._build({
+      build({
         name: "foo",
-        self: {},
-        parent,
+        // @ts-expect-error Removed provider-style templates are rejected at runtime too.
         templateProvider: () => "hello",
       }),
     ).toThrowError(/unsupported view properties: templateProvider/);
 
     expect(() =>
-      builder._build({
+      build({
         name: "foo",
-        self: {},
-        parent,
         views: {
+          // @ts-expect-error Removed named-view providers are rejected at runtime too.
           main: { templateProvider: () => "hello" },
         },
       }),
@@ -152,34 +146,29 @@ describe("StateBuilder", function () {
   it("should not allow a view config with both component and template keys", function () {
     const config = {
       name: "foo",
-      self: {},
       url: "/foo",
       template: "<h1>hey</h1>",
       controller: "FooController",
-      parent,
     };
 
-    expect(() => builder._build(Object.assign({}, config))).not.toThrow();
+    expect(() => build(Object.assign({}, config))).not.toThrow();
     expect(() =>
-      builder._build(Object.assign({ component: "fooComponent" }, config)),
+      build(Object.assign({ component: "fooComponent" }, config)),
     ).toThrow();
-    expect(() =>
-      builder._build(Object.assign({ bindings: {} }, config)),
-    ).toThrow();
+    expect(() => build(Object.assign({ bindings: {} }, config))).toThrow();
   });
 
   it("should not expose the old generic builder decorator API", function () {
-    expect($stateRegistry.builder).toBeUndefined();
-    expect(builder.builder).toBeUndefined();
-    expect($stateRegistry.decorator).toBeUndefined();
+    expect("builder" in $stateRegistry).toBeFalse();
+    expect("builder" in builder).toBeFalse();
+    expect("decorator" in $stateRegistry).toBeFalse();
   });
 
   it("should reject string shorthand in object-style resolves", function () {
     expect(() =>
-      builder._build({
+      build({
         name: "foo",
-        self: {},
-        parent,
+        // @ts-expect-error String shorthand is no longer a supported resolve declaration.
         resolve: { foo: "bar" },
       }),
     ).toThrow();
@@ -187,19 +176,17 @@ describe("StateBuilder", function () {
 
   it("rejects contradictory public navigation policy fields", () => {
     expect(() =>
-      builder._build({
+      build({
         name: "public",
-        self: {
-          name: "public",
-          policy: {
-            navigation: {
-              public: true,
-              authenticated: true,
-              permissions: ["admin"],
-            },
+        policy: {
+          navigation: {
+            public: true,
+            // @ts-expect-error Public navigation cannot also require authentication.
+            authenticated: true,
+            // @ts-expect-error Public navigation cannot require permissions.
+            permissions: ["admin"],
           },
         },
-        parent,
       }),
     ).toThrowError(
       "State 'public' public navigation policy cannot declare: authenticated, permissions",
@@ -208,11 +195,10 @@ describe("StateBuilder", function () {
 
   it("should reject provider-style resolvables in a resolve array", function () {
     expect(() =>
-      builder._build({
+      build({
         name: "foo",
-        self: {},
-        parent,
         resolve: [
+          // @ts-expect-error Provider-style resolve recipes have been removed.
           { provide: "factoryDep", useFactory: () => "ok", deps: ["dep"] },
         ],
       }),
@@ -220,10 +206,8 @@ describe("StateBuilder", function () {
   });
 
   it("should build explicit resolvable literals from a resolve array", function () {
-    const config = builder._build({
+    const config = build({
       name: "foo",
-      self: {},
-      parent,
       resolve: [
         {
           token: "factoryDep",
@@ -235,13 +219,13 @@ describe("StateBuilder", function () {
       ],
     });
 
-    expect(config.resolvables[0].token).toBe("factoryDep");
-    expect(config.resolvables[0].deps).toEqual(["dep"]);
-    expect(config.resolvables[0].eager).toBe(true);
+    expect(defined(config.resolvables)[0].token).toBe("factoryDep");
+    expect(defined(config.resolvables)[0].deps).toEqual(["dep"]);
+    expect(defined(config.resolvables)[0].eager).toBe(true);
 
-    expect(config.resolvables[1].token).toBe("prefetched");
-    expect(config.resolvables[1].data).toBe(false);
-    expect(config.resolvables[1].resolved).toBe(true);
+    expect(defined(config.resolvables)[1].token).toBe("prefetched");
+    expect(defined(config.resolvables)[1].data).toBe(false);
+    expect(defined(config.resolvables)[1].resolved).toBe(true);
   });
 
   describe("StateObject", () => {
@@ -277,8 +261,12 @@ describe("StateBuilder", function () {
     });
 
     it("returns inherited and filtered parameters", () => {
-      const parentParam = { id: "parent" };
-      const childParam = { id: "child" };
+      const parentParam = builder._paramFactory.fromConfig("parent", null, {
+        name: "parent",
+      });
+      const childParam = builder._paramFactory.fromConfig("child", null, {
+        name: "child",
+      });
       const parent = new StateObject({ name: "parent" });
       const child = new StateObject({ name: "child" });
 
@@ -297,14 +285,16 @@ describe("StateBuilder", function () {
     });
 
     it("prefers URL parameters over state params", () => {
-      const urlParam = { id: "id", source: "url" };
-      const stateParam = { id: "id", source: "state" };
-      const state = new StateObject({ name: "item" });
+      const state = build({ name: "item", url: "/item/{id}" });
+      const urlParam = defined(defined(state._url)._parameter("id"));
+      const stateParam = builder._paramFactory.fromConfig(
+        "id",
+        null,
+        state.self,
+      );
 
       state.params = { id: stateParam };
-      state._url = {
-        _parameter: jasmine.createSpy("_parameter").and.returnValue(urlParam),
-      };
+      expect(urlParam).not.toBe(stateParam);
 
       expect(state.parameter("id")).toBe(urlParam);
     });
@@ -312,7 +302,10 @@ describe("StateBuilder", function () {
 
   describe("StateRegistryRuntime", () => {
     it("queues child states until their parent is registered", () => {
-      const events = [];
+      const events: {
+        event: "registered" | "deregistered";
+        names: string[];
+      }[] = [];
 
       $stateRegistry.onStatesChanged((event, states) => {
         events.push({ event, names: states.map((state) => state.name) });
@@ -338,7 +331,10 @@ describe("StateBuilder", function () {
     });
 
     it("deregisters a state tree and notifies listeners", () => {
-      const events = [];
+      const events: {
+        event: "registered" | "deregistered";
+        names: string[];
+      }[] = [];
 
       $stateRegistry.register({ name: "removeMe", template: "parent" });
       $stateRegistry.register({ name: "removeMe.child", template: "child" });

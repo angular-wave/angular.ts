@@ -215,6 +215,7 @@ types: ensure-deps
 generated-check: integrations-generated-check
 
 integrations-generated-check: types
+	@node --test integrations/shared/typescript-signatures.test.mjs
 	@$(MAKE) --keep-going --jobs=8 --output-sync=target \
 		generated-check-android \
 		generated-check-harmonyos \

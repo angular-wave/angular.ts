@@ -2,6 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import ts from "typescript";
+import { selectBindingSignature } from "../../shared/typescript-signatures.mjs";
 import {
   assertCallableDocumentation,
   documentationLines,
@@ -396,9 +397,8 @@ function renderClass(
   const members = [];
   const usedNames = new Set();
 
-  for (const signature of isSkipped(overrides, typeName, "call")
-    ? []
-    : callSignatures.slice(0, 1)) {
+  const signature = selectBindingSignature(callSignatures);
+  if (!isSkipped(overrides, typeName, "call") && signature) {
     usedNames.add("call");
     members.push(renderCallSignature(checker, overrides, typeName, signature));
   }

@@ -12,18 +12,27 @@ import {
 import { validateFunction } from "../../shared/validate.ts";
 
 export interface ControllerLocals {
-  $scope: ng.Scope;
-  $element: Node;
+  [name: string]: unknown;
+  $scope?: object;
+  $element?: Node;
 }
 
 export type ControllerExpression = string | InjectableController;
 
-export type ControllerService = (
-  expression: ControllerExpression,
-  locals?: ControllerLocals,
-  later?: boolean,
-  ident?: string,
-) => unknown;
+export interface ControllerService {
+  (
+    expression: ControllerExpression,
+    locals: ControllerLocals | undefined,
+    later: true,
+    ident?: string,
+  ): DeferredControllerInitializer;
+  (
+    expression: ControllerExpression,
+    locals?: ControllerLocals,
+    later?: boolean,
+    ident?: string,
+  ): unknown;
+}
 
 type InjectableController =
   | Injectable<ControllerConstructor>
@@ -183,7 +192,24 @@ export function createControllerService(
   registry: ControllerRegistry,
   $injector: ng.InjectorService,
 ): ControllerService {
-  return (expression, locals, later, ident) => {
+  function controller(
+    expression: ControllerExpression,
+    locals: ControllerLocals | undefined,
+    later: true,
+    ident?: string,
+  ): DeferredControllerInitializer;
+  function controller(
+    expression: ControllerExpression,
+    locals?: ControllerLocals,
+    later?: boolean,
+    ident?: string,
+  ): unknown;
+  function controller(
+    expression: ControllerExpression,
+    locals?: ControllerLocals,
+    later?: boolean,
+    ident?: string,
+  ): unknown {
     let instance: ControllerInstance;
     let constructorName: string | undefined;
     let identifier = ident && isString(ident) ? ident : null;
@@ -284,5 +310,7 @@ export function createControllerService(
     }
 
     return instance;
-  };
+  }
+
+  return controller;
 }
