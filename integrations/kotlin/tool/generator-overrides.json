@@ -1,6 +1,10 @@
 {
   "callableProperties": [],
-  "manual": [],
+  "manual": [
+    "ModelFormatter.call",
+    "ModelParser.call",
+    "TemplateRequestOptions.signal"
+  ],
   "propertyTypes": {
     "GeolocationValue.altitude": "Double?",
     "GeolocationValue.altitudeAccuracy": "Double?",
@@ -19,10 +23,10 @@
     "Element": "org.w3c.dom.Element",
     "Event": "org.w3c.dom.events.Event",
     "HTMLElement": "org.w3c.dom.HTMLElement",
+    "ModelValidationContext": "ModelValidationContext",
     "Node": "org.w3c.dom.Node",
     "TModel": "TModel",
     "TView": "TView",
-    "ModelValidationContext": "ModelValidationContext",
     "TemplateRequestOptions": "TemplateRequestOptions"
   },
   "unsupported": []
