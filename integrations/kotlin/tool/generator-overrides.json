@@ -25,9 +25,9 @@
     "HTMLElement": "org.w3c.dom.HTMLElement",
     "ModelValidationContext": "ModelValidationContext",
     "Node": "org.w3c.dom.Node",
+    "TemplateRequestOptions": "TemplateRequestOptions",
     "TModel": "TModel",
-    "TView": "TView",
-    "TemplateRequestOptions": "TemplateRequestOptions"
+    "TView": "TView"
   },
   "unsupported": []
 }
