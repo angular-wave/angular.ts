@@ -30,13 +30,24 @@ class AngularTsTest {
         val parser: ModelParser<Double, String> = { text -> text.toDoubleOrNull() }
         control.addParser(parser)
         assertTrue(control.parsers[0]("invalid").asDynamic() === js("undefined"))
-        control.formatters = arrayOf({ value: Double? -> value?.toString() ?: "" })
+        val formatter: ModelFormatter<Double, String> = { value -> value?.toString() ?: "" }
+        control.formatters = arrayOf(formatter)
+        assertEquals("", control.formatters[0](null))
         control.validators["positive"] = { value, text -> (value ?: 0.0) > 0 && text != "" }
         assertEquals(true, control.validators["positive"]?.invoke(12.0, "12"))
         assertEquals(24.0, control.parsers[0]("24"))
         control.setViewValue("24")
         assertEquals("24", control.viewValue)
         val abort = js("new AbortController()")
+        val context = js("({})").unsafeCast<ModelValidationContext>()
+        context.signal = abort.signal
+        var validationSignal: dynamic = null
+        control.asyncValidators["remote"] = { value, text, validation ->
+            validationSignal = validation.signal
+            Promise.resolve(value != null && text != null)
+        }
+        assertNotNull(control.asyncValidators["remote"]).invoke(12.0, "12", context)
+        assertSame(abort.signal, validationSignal)
         var captured: dynamic = null
         val request: dynamic = { _: String, options: dynamic -> captured = options.signal }
         val templateRequest = TemplateRequestService(request.unsafeCast<angular.ts.generated.TemplateRequestService>())
