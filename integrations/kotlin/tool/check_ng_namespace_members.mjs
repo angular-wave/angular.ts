@@ -30,6 +30,7 @@ const stalePatterns = [
   ...staleObjectKeys("types", overrides.types, collectReferencedTypeNames()),
   ...staleListPatterns("callableProperties", overrides.callableProperties),
   ...staleListPatterns("manual", overrides.manual),
+  ...staleListPatterns("manualCoverage", overrides.manualCoverage),
   ...staleListPatterns("unsupported", overrides.unsupported),
 ];
 const orderingProblems = [
@@ -38,6 +39,7 @@ const orderingProblems = [
   ...objectOrderingProblems("types", overrides.types),
   ...listOrderingProblems("callableProperties", overrides.callableProperties),
   ...listOrderingProblems("manual", overrides.manual),
+  ...listOrderingProblems("manualCoverage", overrides.manualCoverage),
   ...listOrderingProblems("unsupported", overrides.unsupported),
 ];
 const missingCoverage = uncoveredImplementedMembers();
@@ -189,7 +191,7 @@ function isRepoTypesNode(node) {
 }
 
 function uncoveredImplementedMembers() {
-  const manual = new Set(overrides.manual ?? []);
+  const manual = new Set([...(overrides.manual ?? []), ...(overrides.manualCoverage ?? [])]);
   const unsupported = new Set(overrides.unsupported ?? []);
   const missing = [];
 
