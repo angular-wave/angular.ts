@@ -77,6 +77,11 @@ part of the Kotlin public facade.
 | `LinkFn` | generated |
 | `Model` | generated |
 | `ModelChange` | generated |
+| `ModelValidationContext` | generated |
+| `ModelParser` | manual |
+| `ModelFormatter` | manual |
+| `ModelValidators` | manual |
+| `AsyncModelValidators` | manual |
 | `ModelRestoreOptions` | generated |
 | `ModelSyncFailureMode` | generated |
 | `ModelSyncOptions` | generated |
@@ -174,6 +179,7 @@ part of the Kotlin public facade.
 | `StreamService` | generated |
 | `TemplateCacheService` | generated |
 | `TemplateRequestService` | generated |
+| `TemplateRequestOptions` | manual |
 | `TransitionsService` | generated |
 | `WebComponentService` | generated |
 | `WebSocketService` | generated |
