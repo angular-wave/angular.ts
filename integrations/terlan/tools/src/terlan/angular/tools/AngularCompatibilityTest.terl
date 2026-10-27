@@ -1,0 +1,93 @@
+module terlan.angular.tools.AngularCompatibilityTest.
+
+import std.core.Option.{None, Some}.
+import std.core.Result.{Err, Ok}.
+import std.core.String.
+import std.io.File.
+import std.system.Environment.
+import std.test.Test.{assert_equal}.
+
+runtime_path(relative: String): String ->
+    case Environment.get("TERLAN_ANGULAR_RUNTIME_ROOT") {
+        Some(root) -> root + "/" + relative;
+        None -> "../../" + relative
+    }.
+
+old_guard(): String -> "simpleCompare(destinationTarget[state._scopeName], currentValue)".
+
+fixed_guard(): String ->
+    "simpleCompare(deProxy(destinationTarget[state._scopeName]), deProxy(currentValue))".
+
+old_parent_guard(): String -> "simpleCompare(state._lastParentValue, val)".
+
+fixed_parent_guard(): String -> "simpleCompare(deProxy(state._lastParentValue), deProxy(val))".
+
+proxy_import(): String -> "import { deProxy } from '../../shared/utils.js';\n".
+
+patch(source: String): String ->
+    source.replace(old_guard(), fixed_guard()).replace(old_parent_guard(), fixed_parent_guard()).
+
+member_branch(): String ->
+    "case ASTType._MemberExpression: {\n                key = getNodePropertyName(expr);".
+
+computed_guard(): String -> "if (expr._computed) {".
+
+computed_branch(): String ->
+    "case ASTType._MemberExpression: {\n" + "                if (expr._computed) {\n" + "                    collectExpressionListenerKeys(expr, keySet, seenKeys, listener);\n" + "                    collectForeignWatchDescriptors(expr, listener, keySet, seenKeys);\n" + "                    if (keySet.length === 0) throw new Error(\"Unable to determine key\");\n" + "                    listener._dedupeUnchanged = true;\n" + "                    this._bindForeignDependency(listener);\n" + "                    break;\n" + "                }\n" + "                key = getNodePropertyName(expr);".
+
+patch_scope(source: String): String ->
+    source.replace(member_branch(), computed_branch()).
+
+write_changed(path: String, source: String, output: String): Bool ->
+    if {
+        source == output -> true;
+        true -> case File.write_text(path, output) {
+            Ok(_) -> true;
+            Err(_) -> false
+        }
+    }.
+
+repair_compile(path: String, modular: Bool): Bool ->
+    case File.read_text(path) {
+        Ok(source) ->
+            if {
+                source.contains(old_guard()) or source.contains(fixed_guard()) -> let patched = patch(source);
+                let output =
+                    if {
+                        modular and not patched.contains(proxy_import()) -> proxy_import() + patched;
+                        true -> patched
+                    };
+                write_changed(path, source, output);
+                true -> false
+            };
+        Err(_) -> false
+    }.
+
+repair_scope(path: String): Bool ->
+    case File.read_text(path) {
+        Ok(source) ->
+            if {
+                source.contains(member_branch()) -> write_changed(path, source, patch_scope(source));
+                source.contains(computed_guard()) -> true;
+                true -> false
+            };
+        Err(_) -> false
+    }.
+
+@test
+pub compatibility_patch_is_idempotent(): Bool ->
+    let source = old_parent_guard() + " && " + old_guard();
+    assert_equal(fixed_parent_guard() + " && " + fixed_guard(), patch(source))
+        and assert_equal(patch(source), patch(patch(source))).
+
+@test
+pub computed_member_patch_is_idempotent(): Bool ->
+    assert_equal(computed_branch(), patch_scope(member_branch()))
+        and assert_equal(computed_branch(), patch_scope(patch_scope(member_branch()))).
+
+@test
+pub installed_angular_has_stable_object_inputs_and_computed_watches(): Bool ->
+    repair_compile(runtime_path("dist/angular-ts.esm.js"), false)
+        and repair_scope(runtime_path("dist/angular-ts.esm.js"))
+        and repair_compile(runtime_path("dist/core/compile/compile.js"), true)
+        and repair_scope(runtime_path("dist/core/scope/scope.js")).

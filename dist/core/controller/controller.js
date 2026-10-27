@@ -84,7 +84,7 @@ function addIdentifier(locals, identifier, instance, name) {
 }
 /** @internal */
 function createControllerService(registry, $injector) {
-    return (expression, locals, later, ident) => {
+    function controller(expression, locals, later, ident) {
         let instance;
         let constructorName;
         let identifier = ident && isString(ident) ? ident : null;
@@ -144,7 +144,8 @@ function createControllerService(registry, $injector) {
             addIdentifier(locals, identifier, instance, constructorName ?? meta.name);
         }
         return instance;
-    };
+    }
+    return controller;
 }
 
 export { ControllerRegistry, createControllerService, identifierForController };

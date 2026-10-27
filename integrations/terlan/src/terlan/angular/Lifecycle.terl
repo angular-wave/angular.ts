@@ -1,0 +1,14 @@
+module terlan.angular.Lifecycle.
+
+import terlan.angular.interfaces.{OnDestroy, OnInit}.
+
+/**
+ * Attaches Angular component callbacks while preserving the controller value.
+ */
+pub attach[Controller](
+    controller: Controller,
+    initialize: () -> Unit,
+    destroy: () -> Unit,
+): Controller ->
+    let initialized = OnInit.with_members(controller, initialize);
+    OnDestroy.with_members(initialized, destroy).

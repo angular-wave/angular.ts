@@ -1117,7 +1117,7 @@ function normalizeLinkResult(result) {
     return isArray(result) ? result : [result];
 }
 function createProgrammaticDirectiveCompile(options) {
-    return (() => {
+    return () => {
         const pre = (scope, element, requiredControllers, transclude) => {
             const marker = findMarker(element);
             if (!marker) {
@@ -1229,7 +1229,7 @@ function createProgrammaticDirectiveCompile(options) {
             findMarker(element)?.remove();
         };
         return { pre, post };
-    });
+    };
 }
 const createProgrammaticComponentCompile = createProgrammaticDirectiveCompile;
 function sanitizeProgrammaticSrcset(value, valueOf, trustMediaUrl) {

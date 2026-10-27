@@ -9,3 +9,8 @@ make lint
 make check
 make coverage-check
 make types
+
+if [ -n "$(git diff --cached --name-only -- integrations/terlan)" ]; then
+  make release-build
+  make -C integrations/terlan check
+fi

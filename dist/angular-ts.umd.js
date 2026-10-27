@@ -2505,7 +2505,7 @@
     }
     /** @internal */
     function createControllerService(registry, $injector) {
-        return (expression, locals, later, ident) => {
+        function controller(expression, locals, later, ident) {
             let instance;
             let constructorName;
             let identifier = ident && isString(ident) ? ident : null;
@@ -2565,7 +2565,8 @@
                 addIdentifier(locals, identifier, instance, constructorName ?? meta.name);
             }
             return instance;
-        };
+        }
+        return controller;
     }
 
     /**
@@ -9296,7 +9297,7 @@
         return isArray(result) ? result : [result];
     }
     function createProgrammaticDirectiveCompile(options) {
-        return (() => {
+        return () => {
             const pre = (scope, element, requiredControllers, transclude) => {
                 const marker = findMarker(element);
                 if (!marker) {
@@ -9408,7 +9409,7 @@
                 findMarker(element)?.remove();
             };
             return { pre, post };
-        });
+        };
     }
     function sanitizeProgrammaticSrcset(value, valueOf, trustMediaUrl) {
         const unwrapped = valueOf(value);

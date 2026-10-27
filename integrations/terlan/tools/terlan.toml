@@ -1,0 +1,7 @@
+[package]
+name = "angular-ts-compatibility"
+version = "0.1.0"
+
+[build]
+source_roots = ["src"]
+artifact = "library"

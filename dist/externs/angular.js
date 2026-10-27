@@ -425,7 +425,7 @@ ng.ProgrammaticViewProperties = function() {};
 
 /**
  * [MDN Reference](https://developer.mozilla.org/docs/Web/API/Element/role)
- * @type {(!Object|null|string|undefined)}
+ * @type {(function(): (null|string|undefined)|null|string|undefined)}
  */
 ng.ProgrammaticViewProperties.prototype.role;
 
@@ -2372,7 +2372,7 @@ ng.CompileService;
 
 /**
  * Public AngularTS ControllerService contract exposed through the global ng namespace for Closure-annotated applications.
- * @typedef {function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|!Array<string>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object|undefined), (boolean|undefined), (string|undefined)): ?}
+ * @typedef {function((!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|!Array<string>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string), (!Object<string, ?>|undefined), (boolean|undefined), (string|undefined)): ?}
  */
 ng.ControllerService;
 
@@ -3044,7 +3044,7 @@ ng.InjectionTokenMap.prototype.$compile = function(compileNode, transcludeFn, ma
 /**
  * Public InjectionTokenMap.$controller member exposed by the AngularTS namespace contract.
  * @param {(!Array<(function(...?): !Object|function(...?): (!Object|undefined))>|!Array<string>|function(...?): (!Object|undefined)|function(new: Object, ...?)|string)} expression Value supplied for the expression parameter.
- * @param {(!Object|undefined)} locals Value supplied for the locals parameter.
+ * @param {(!Object<string, ?>|undefined)} locals Value supplied for the locals parameter.
  * @param {(boolean|undefined)} later Value supplied for the later parameter.
  * @param {(string|undefined)} ident Value supplied for the ident parameter.
  * @return {?}
