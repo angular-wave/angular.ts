@@ -1,6 +1,7 @@
 {
   "callableProperties": [],
-  "manual": [
+  "manual": [],
+  "manualCoverage": [
     "ModelFormatter.call",
     "ModelParser.call",
     "TemplateRequestOptions.signal"
