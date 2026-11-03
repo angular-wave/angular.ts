@@ -182,5 +182,8 @@
     "@vscode/test-electron": "^3.0.0",
     "@vscode/vsce": "^4.0.0",
     "typescript": "^5.8.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
   }
 }

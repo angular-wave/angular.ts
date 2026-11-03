@@ -433,7 +433,7 @@ export class Location {
         stripBaseUrl(this.appBase, url) ??
         stripBaseUrl(this.appBaseNoFile, url);
 
-      let withoutHashUrl = "";
+      let withoutHashUrl: string;
 
       if (withoutBaseUrl?.charAt(0) === "#") {
         // The rest of the URL starts with a hash so we have

@@ -112,18 +112,17 @@
     "prepack": "rm -rf .build dist @types && make release-build types"
   },
   "devDependencies": {
-    "@eslint/js": "^9.28.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "latest",
     "@rollup/plugin-commonjs": "latest",
-    "@rollup/plugin-node-resolve": "latest",
     "@rollup/plugin-terser": "latest",
     "@types/jasmine": "latest",
     "cssnano": "^7.1.1",
-    "eslint": "9.28.0",
+    "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-import-x": "^4.17.1",
     "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-promise": "^7.3.0",
     "globals": "^16.2.0",
     "husky": "^9.1.7",
     "jasmine-core": "6.3.0",
@@ -146,6 +145,8 @@
     "uuid": "11.1.1",
     "@istanbuljs/load-nyc-config": {
       "js-yaml": "^4.3.2"
-    }
+    },
+    "minimatch": "^11.0.1",
+    "glob": "^14.0.2"
   }
 }

@@ -37,6 +37,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit JavaScript dependency locks
+        run: |
+          for project in . docs tools/vscode; do
+            npm --prefix "$project" audit --package-lock-only --audit-level=low
+          done
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
@@ -489,6 +495,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Reclaim runner disk space for Android
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h "$HOME"
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -548,6 +559,18 @@ jobs:
           org.gradle.workers.max=2
           kotlin.compiler.execution.strategy=in-process
           EOF
+
+      - name: Check emulator disk capacity
+        env:
+          EMULATOR_DISK_SIZE: ${{ matrix.disk_size }}
+        run: |
+          available_kib=$(df --output=avail "$HOME" | tail -n 1)
+          # Reserve image installation space and userdata filesystem overhead.
+          required_kib=$(( (${EMULATOR_DISK_SIZE%G} + 6) * 1024 * 1024 ))
+          if (( available_kib < required_kib )); then
+            echo "Insufficient emulator disk space: ${available_kib} KiB available, ${required_kib} KiB required" >&2
+            exit 1
+          fi
 
       - name: Run Android device checks
         uses: reactivecircus/android-emulator-runner@v2

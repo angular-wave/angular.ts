@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- Updated vulnerable dependency chains in the build tools, VS Code extension,
+  and Java demo. Removed the unused Rollup resolver and its Deepmerge dependency;
+  migrated lint tooling to support patched Minimatch and Glob versions. CI now
+  audits all three JavaScript dependency lockfiles.
+- Updated Android Gradle Plugin to 9.5.0 across the integration and Maven
+  consumer. Reclaimed hosted-runner disk space and added an emulator capacity
+  check to prevent boot failures. Kept fatal lint and Gradle warning policies.
+
 - Enabled strict checking in 44 previously unchecked test suites and both
   cookbook test runners using typed services, spies, fixtures, and checked DOM
   queries. Removed permissive global DOM declarations and added a CI check

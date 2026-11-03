@@ -861,7 +861,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
           rhs,
           (collection: unknown) => {
             swap();
-            let index = 0;
+            let index: number;
 
             previousNode = repeatElement;
 
@@ -877,7 +877,7 @@ export function ngRepeatDirective($injector: ng.InjectorService): ng.Directive {
 
             let trackById: RepeatBlockKey;
 
-            let collectionKeys: ArrayLike<unknown> = [];
+            let collectionKeys: ArrayLike<unknown>;
 
             let block: RepeatBlock;
 

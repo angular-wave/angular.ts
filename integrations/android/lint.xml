@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <lint>
     <!--
-        Keep Gradle 9.7.1 with AGP 9.4.1 until AGP removes its deprecated
+        Keep Gradle 9.7.1 until Detekt replaces its deprecated
         Configuration.setVisible calls. Gradle 9.8 fails warning.mode=fail
-        even with AGP 9.5.0-alpha08. Remove this wrapper-only update advisory
-        exception when a compatible AGP release is available:
-        https://issuetracker.google.com/issues/560282299
+        with Detekt 2.0.0-alpha.6, even with AGP 9.5.0. Exempt only the
+        wrapper's update advisory; plugin and dependency checks stay strict.
     -->
     <issue id="AndroidGradlePluginVersion">
         <ignore path="gradle/wrapper/gradle-wrapper.properties" />

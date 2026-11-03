@@ -2,7 +2,6 @@ import { gzipSync } from "node:zlib";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
 import terser from "@rollup/plugin-terser";
 import { rollup } from "rollup";
 
@@ -100,7 +99,6 @@ async function buildComposition(name, source) {
           return id === entryId ? source : null;
         },
       },
-      nodeResolve(),
       terser({
         compress: {
           keep_fnames: false,

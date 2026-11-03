@@ -1,4 +1,3 @@
-import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import terser from "@rollup/plugin-terser";
 import versionInjector from "rollup-plugin-version-injector";
@@ -84,7 +83,6 @@ function cssMinifyPlugin() {
 }
 
 const basePlugins = [
-  resolve(),
   commonjs(),
   versionInjector({
     injectInComments: {
@@ -92,7 +90,7 @@ const basePlugins = [
     },
   }),
 ];
-const modulePlugins = [resolve(), commonjs()];
+const modulePlugins = [commonjs()];
 
 export default [
   // ---- Minified UMD ----

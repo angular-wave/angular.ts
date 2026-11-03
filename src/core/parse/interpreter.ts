@@ -1838,7 +1838,7 @@ function findConstantAndWatchExpressions<T extends ASTNode>(
 ): T {
   let allConstants: boolean | undefined;
 
-  let argsToWatch: ASTNode[] = [];
+  let argsToWatch: ASTNode[];
 
   let isFilter: boolean | undefined;
 
