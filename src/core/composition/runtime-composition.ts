@@ -13,7 +13,7 @@ import {
   destroyExceptionHandlerRuntimeState,
   type ExceptionHandlerRuntimeState,
 } from "../../services/exception/exception.ts";
-import type { ProviderDefinition } from "../../interface.ts";
+import type { InjectionTokenMap, ProviderDefinition } from "../../interface.ts";
 import type { ProviderRegistry } from "../di/interface.ts";
 
 export interface ProviderCompositionContext {
@@ -23,25 +23,30 @@ export interface ProviderCompositionContext {
   readonly providers: ReadonlyMap<string, unknown>;
 }
 
-export interface RuntimeRegistrationRecipe {
+export interface RuntimeRegistrationRecipe<Name extends string = string> {
   /** @internal */
   readonly _compose?: undefined;
   /** @internal */
   _register(
     registry: ProviderRegistry,
-    name: string,
+    name: Name,
     context: ProviderCompositionContext,
   ): unknown;
 }
 
-export type RuntimeProviderRecipe =
+export type RuntimeProviderRecipe<Name extends string = string> =
   | (ProviderDefinition & {
       /** @internal */
       _compose?: (context: ProviderCompositionContext) => unknown;
       /** @internal */
       readonly _register?: undefined;
     })
-  | RuntimeRegistrationRecipe;
+  | RuntimeRegistrationRecipe<Name>;
+
+/** Named runtime recipes retain the canonical token of each built-in service. */
+export type RuntimeProviderDefinitions = {
+  [Name in keyof InjectionTokenMap]?: RuntimeProviderRecipe<Name>;
+} & Record<string, RuntimeProviderRecipe>;
 
 export interface CoreRuntimeDependencies {
   appContext?: AppContext;
@@ -118,7 +123,7 @@ export interface RuntimeComposition {
 /** @internal */
 export function registerRuntimeProviders(
   registry: ProviderRegistry,
-  definitions: Record<string, RuntimeProviderRecipe>,
+  definitions: RuntimeProviderDefinitions,
   runtime: RuntimeComposition,
   providers: Map<string, unknown> = new Map(),
 ): Map<string, unknown> {

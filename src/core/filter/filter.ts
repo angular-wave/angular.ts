@@ -79,6 +79,6 @@ export function createFilterService(
 /** @internal */
 export function createFilterRegistration(
   registry: FilterRegistry,
-): [string, ($injector: ng.InjectorService) => FilterService] {
+): [typeof _injector, ($injector: ng.InjectorService) => FilterService] {
   return [_injector, ($injector) => createFilterService(registry, $injector)];
 }

@@ -21,3 +21,8 @@ trait Scope extends js.Object:
     js.native
   def on(name: String, listener: js.Function): ListenerDeregister = js.native
   def destroy(): Unit = js.native
+
+object Scope:
+  extension (scope: Scope)
+    /** Views the live scope proxy as an application-defined JavaScript state facade. */
+    def state[TState <: js.Object]: TState = scope.asInstanceOf[TState]

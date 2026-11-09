@@ -179,11 +179,11 @@ export function createRouterRuntime(
 }
 
 /** @internal */
-export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
+export const routerRuntimeRegistration: RuntimeRegistrationRecipe<"$state"> = {
   /** @internal */
   _register(
     registry: ProviderRegistry,
-    name: string,
+    name,
     { runtime, providers }: ProviderCompositionContext,
   ) {
     const locationState = requireProvider(
@@ -225,6 +225,7 @@ export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
       _injector,
       _location,
       _rootElement,
+      // Initialize the public registry before using the router-owned internals.
       _stateRegistry,
       (
         templateRequest: ng.TemplateRequestService,
@@ -234,7 +235,6 @@ export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
         injector: ng.InjectorService,
         location: ng.LocationService,
         rootElement: HTMLElement,
-        stateRegistry: StateRegistryRuntime,
       ) => {
         const templateFactory = routerRuntime.createTemplateFactory(
           templateRequest,
@@ -251,7 +251,7 @@ export const routerRuntimeRegistration: RuntimeRegistrationRecipe = {
         return stateService._initRuntime(
           injector,
           location,
-          stateRegistry,
+          routerRuntime.stateRegistry,
           rootScope,
           viewService,
           rootElement,

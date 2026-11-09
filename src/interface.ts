@@ -154,7 +154,9 @@ export const PublicInjectionTokens = {
   $workflow: _workflow,
   $workflowSupervisor: _workflowSupervisor,
   $injector: _injector,
-} as const;
+} as const satisfies {
+  [Name in keyof InjectionTokenMap]: Name;
+};
 
 type PublicInjectionTokenParity = [
   Exclude<keyof InjectionTokenMap, keyof typeof PublicInjectionTokens>,

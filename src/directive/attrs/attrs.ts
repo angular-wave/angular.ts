@@ -16,6 +16,7 @@ import {
   trim,
 } from "../../shared/utils.ts";
 import { ALIASED_ATTR } from "../../shared/constants.ts";
+import { ngOpenDirective } from "../open/open.ts";
 
 export const REGEX_STRING_REGEXP = /^\/(.+)\/([a-z]*)$/;
 
@@ -80,13 +81,14 @@ function sanitizeSrcset(
   return result;
 }
 
-export const ngAttributeAliasDirectives: Record<string, ng.DirectiveFactory> =
-  {};
+export const ngAttributeAliasDirectives: Record<string, ng.DirectiveFactory> = {
+  ngOpen: ngOpenDirective,
+};
 
 // boolean attrs are evaluated
 BOOLEAN_ATTR.forEach((i) => {
-  // binding to multiple is not supported
-  if (i === "multiple") return;
+  // Multiple is unsupported; open has a native two-way binding above.
+  if (i === "multiple" || i === "open") return;
 
   type BooleanAliasLinkFn = (
     scope: ng.Scope,

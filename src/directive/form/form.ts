@@ -874,7 +874,8 @@ export class FormController {
  * AngularTS commits pending `ngModelOptions` view values, marks the form
  * submitted, and lets `ngSubmit` run as a normal `submit` event listener.
  * AngularTS prevents the default action only when the form has no `action`
- * attribute. With an `action`, the native submit is left uncancelled.
+ * attribute and the effective method is not `dialog`. Native dialog submissions,
+ * including submit-button `formmethod` overrides, remain browser-owned.
  *
  * Native reset behavior also remains browser-owned. After reset, AngularTS
  * reads the resulting native control values back into registered model
@@ -932,7 +933,16 @@ const formDirectiveFactory = function (
                   controller.commitViewValue();
                   controller.setSubmitted();
 
-                  if (shouldPreventSubmit) {
+                  const submitter =
+                    "submitter" in event ? event.submitter : null;
+                  const method =
+                    (submitter instanceof HTMLButtonElement ||
+                      submitter instanceof HTMLInputElement) &&
+                    submitter.hasAttribute("formmethod")
+                      ? submitter.formMethod
+                      : formElementParam.method;
+
+                  if (shouldPreventSubmit && method !== "dialog") {
                     event.preventDefault();
                   }
                 };

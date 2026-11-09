@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+- Added two-way `ng-open` bindings for native popovers, dialogs, and details.
+  Native dismissal and disclosure changes update the bound application state;
+  added opt-in `data-modal`, scope-owned cleanup, and stale-event protection.
+  Preserved existing one-way computed boolean bindings.
+- Preserved native `method="dialog"` and submit-button `formmethod="dialog"`
+  submissions while still committing model values and marking forms submitted.
+- Enforced `InjectionTokenMap` contracts for literal factory and service
+  registrations, dependency argument types, runtime recipe names, and canonical
+  public token values. Preserved custom tokens and legacy forwarding and added
+  compile-time rejection tests.
+- Added live typed state views for Scala and Gleam scopes. Fixed Gleam
+  `scope.set` to assign named properties through ordinary JavaScript scope
+  proxies instead of calling a nonexistent path-based setter.
+
 - Updated vulnerable dependency chains in the build tools, VS Code extension,
   and Java demo. Removed the unused Rollup resolver and its Deepmerge dependency;
   migrated lint tooling to support patched Minimatch and Glob versions. CI now

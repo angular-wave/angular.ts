@@ -41,6 +41,37 @@ The `examples/basic_app` directory contains a complete todo application with
 an injected store, component, HTML page, and build setup. The full AngularTS
 guide is linked from the package sidebar.
 
+## Typed scope state and immutable replacement
+
+`scope.state(scope)` views the live Proxy as the state type declared by
+`scope.Scope(state)`. It does not copy or decode the state; the declared fields
+must match the actual scope. `scope.set(scope, key, value)` assigns a single
+property through that Proxy, rather than calling a nonexistent runtime setter:
+
+```gleam
+import angular_ts/scope
+
+pub type Todo {
+  Todo(title: String, done: Bool)
+}
+
+pub type TodoState {
+  TodoState(task: Todo)
+}
+
+pub fn complete(model: scope.Scope(TodoState)) -> scope.Scope(TodoState) {
+  let original = scope.state(model).task
+  scope.set(model, "task", Todo(..original, done: True))
+}
+```
+
+The key is a literal property name, not a dotted path or a WASM scope path.
+Replace the owning record for nested immutable updates. Use the typed view for
+field access, not to pattern-match the root Proxy as a Gleam record.
+
+Run `make -C integrations/reactivity test` to check compiled Gleam records and
+Scala.js case classes with real scope watches and DOM bindings.
+
 ## Access shared models
 
 After bootstrap, `ng.get_model("cart")` or `runtime.get_model("cart")` lazily

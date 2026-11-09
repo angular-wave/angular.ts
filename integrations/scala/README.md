@@ -63,6 +63,35 @@ return the same reactive instance as dependency injection. Field assignments
 update observing views. Unknown names, ordinary services, and uninitialized or
 destroyed apps throw runtime errors.
 
+## Typed scope state and immutable replacement
+
+Use the `Scope` companion extension to view a scope as your application state:
+
+```scala
+import angular.ts.Scope
+import angular.ts.Scope.*
+import scala.scalajs.js
+import scala.scalajs.js.annotation.JSExport
+
+case class Todo(@JSExport title: String, @JSExport done: Boolean)
+
+@js.native
+trait TodoState extends js.Object:
+  var todo: Todo = js.native
+
+def complete(scope: Scope): Unit =
+  val state = scope.state[TodoState]
+  state.todo = state.todo.copy(done = true)
+```
+
+`state` returns the live Proxy, not a snapshot and not a runtime `.state` property.
+The root state facade describes writable slots; their values can be immutable
+domain objects. Export fields that HTML reads with `@JSExport`. A replacement
+assigned through the scope notifies observers without mutating the old object.
+
+Run `make -C integrations/reactivity test` to validate this with compiled Scala.js
+and Gleam objects against the real JavaScript scope runtime.
+
 ## Typed form controls and cancellation
 
 Use `TypedNgModelController[TModel, TView]` for typed values, parsers, formatters,

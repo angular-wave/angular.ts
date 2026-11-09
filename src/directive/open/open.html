@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Native open binding tests</title>
+    <style>
+      #outside {
+        position: fixed;
+        left: 8px;
+        bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app">
+      <button id="outside" type="button">Outside</button>
+      <button
+        id="toggle-menu"
+        type="button"
+        ng-click="vm.menuOpen = !vm.menuOpen"
+      >
+        Toggle menu state
+      </button>
+      <button id="native-menu" type="button" popovertarget="menu">
+        Native menu invoker
+      </button>
+      <div id="menu" popover="auto" ng-open="vm.menuOpen">
+        <button type="button">Inside menu</button>
+      </div>
+      <div id="second-menu" popover="auto" ng-open="vm.secondOpen">
+        Second menu
+      </div>
+      <div id="manual-menu" popover="manual" ng-open="vm.manualOpen">
+        Manual menu
+      </div>
+      <details id="details" ng-open="vm.detailsOpen">
+        <summary>Details summary</summary>
+        <p>Details content</p>
+      </details>
+      <details id="computed-details" ng-open="1 + 1 === 2">
+        <summary>Computed details</summary>
+        <p>Legacy computed binding</p>
+      </details>
+      <dialog id="dialog" ng-open="vm.dialogOpen">Non-modal dialog</dialog>
+      <dialog id="modal" ng-open="vm.modalOpen" data-modal>
+        <form method="dialog">
+          <button id="accept" value="accepted">Accept</button>
+        </form>
+      </dialog>
+      <dialog id="popover-dialog" popover="auto" ng-open="vm.popoverDialogOpen">
+        Non-modal dialog popover
+      </dialog>
+      <dialog id="override-modal" ng-open="vm.overrideOpen" data-modal>
+        <form method="post">
+          <button id="override-accept" formmethod="dialog" value="override">
+            Close with method override
+          </button>
+        </form>
+      </dialog>
+    </main>
+    <script type="module">
+      import { Angular } from "/src/angular.ts";
+      import { dealoc } from "/src/shared/dom.ts";
+
+      const errors = [];
+      const angular = (window.angular = new Angular());
+      angular
+        .createModule("openTests", ["ng"])
+        .factory("$exceptionHandler", () => {
+          return (error) => errors.push(String(error));
+        });
+      const injector = angular.bootstrap(document.getElementById("app"), [
+        "openTests",
+      ]);
+      const scope = injector.get("$rootScope");
+      scope.vm = {
+        menuOpen: false,
+        secondOpen: false,
+        manualOpen: false,
+        detailsOpen: false,
+        dialogOpen: false,
+        modalOpen: false,
+        popoverDialogOpen: false,
+        overrideOpen: false,
+      };
+      window.openFixture = {
+        scope,
+        compile: injector.get("$compile"),
+        dealoc,
+        errors,
+      };
+    </script>
+  </body>
+</html>

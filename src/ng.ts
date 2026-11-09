@@ -59,7 +59,7 @@ import { createParseService } from "./core/parse/parse.ts";
 import { requireAppRoot } from "./core/app-context/app-context.ts";
 import type {
   RuntimeComposition,
-  RuntimeProviderRecipe,
+  RuntimeProviderDefinitions,
   RuntimeRegistrationRecipe,
 } from "./core/composition/runtime-composition.ts";
 import { registerRuntimeProviders } from "./core/composition/runtime-composition.ts";
@@ -323,6 +323,7 @@ export {
   ngValueAriaDirective,
 } from "./directive/aria/aria.ts";
 export { ngAttributeAliasDirectives } from "./directive/attrs/attrs.ts";
+export { ngOpenDirective } from "./directive/open/open.ts";
 export {
   ngBindDirective,
   ngBindHtmlDirective,
@@ -417,7 +418,7 @@ export {
 } from "./shared/dom.ts";
 type Dynamic = ReturnType<typeof JSON.parse>;
 
-type ProviderGroup = Record<string, RuntimeProviderRecipe>;
+type ProviderGroup = RuntimeProviderDefinitions;
 
 type DirectiveGroup = Record<string, ng.DirectiveFactory>;
 
@@ -460,55 +461,61 @@ function registerBuiltInFilters(filterRegistry: FilterRegistry): void {
 }
 
 /** Providers required by scopes, expressions, controllers, and compile. */
-const controllerRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    return registry.factory(name, [
-      _injector,
-      ($injector: ng.InjectorService) =>
-        createControllerService(context.runtime.controllerRegistry, $injector),
-    ]);
-  },
-};
+const controllerRuntimeRegistration: RuntimeRegistrationRecipe<"$controller"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      return registry.factory(name, [
+        _injector,
+        ($injector: ng.InjectorService) =>
+          createControllerService(
+            context.runtime.controllerRegistry,
+            $injector,
+          ),
+      ]);
+    },
+  };
 
-const exceptionHandlerRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const state = context.runtime.exceptionHandlerState;
+const exceptionHandlerRuntimeRegistration: RuntimeRegistrationRecipe<"$exceptionHandler"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      const state = context.runtime.exceptionHandlerState;
 
-    context.runtime.configRegistry.register(name, (value) => {
-      applyExceptionHandlerConfiguration(
-        state,
-        value as ExceptionHandlerConfig,
-      );
-    });
-
-    return registry.factory(name, () => createExceptionHandlerService(state));
-  },
-};
-
-const interpolateRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const state = context.runtime.interpolateState;
-
-    context.runtime.configRegistry.register(name, (value) => {
-      applyInterpolateConfiguration(state, value as InterpolateConfig);
-    });
-
-    return registry.factory(name, [
-      _parse,
-      ($parse: ng.ParseService) =>
-        createInterpolateService(
+      context.runtime.configRegistry.register(name, (value) => {
+        applyExceptionHandlerConfiguration(
           state,
-          $parse,
-          context.compileRegistry._bindingPolicies,
-        ),
-    ]);
-  },
-};
+          value as ExceptionHandlerConfig,
+        );
+      });
 
-const parseRuntimeRegistration: RuntimeRegistrationRecipe = {
+      return registry.factory(name, () => createExceptionHandlerService(state));
+    },
+  };
+
+const interpolateRuntimeRegistration: RuntimeRegistrationRecipe<"$interpolate"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      const state = context.runtime.interpolateState;
+
+      context.runtime.configRegistry.register(name, (value) => {
+        applyInterpolateConfiguration(state, value as InterpolateConfig);
+      });
+
+      return registry.factory(name, [
+        _parse,
+        ($parse: ng.ParseService) =>
+          createInterpolateService(
+            state,
+            $parse,
+            context.compileRegistry._bindingPolicies,
+          ),
+      ]);
+    },
+  };
+
+const parseRuntimeRegistration: RuntimeRegistrationRecipe<"$parse"> = {
   /** @internal */
   _register(registry, name): unknown {
     return registry.factory(name, [
@@ -518,7 +525,7 @@ const parseRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const rootScopeRuntimeRegistration: RuntimeRegistrationRecipe = {
+const rootScopeRuntimeRegistration: RuntimeRegistrationRecipe<"$rootScope"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     return registry.factory(name, [
@@ -546,31 +553,32 @@ export const ngCoreProviders: ProviderGroup = {
 };
 
 /** Reactive state and command orchestration providers for full app runtimes. */
-const machineRuntimeRegistration: RuntimeRegistrationRecipe = {
+const machineRuntimeRegistration: RuntimeRegistrationRecipe<"$machine"> = {
   /** @internal */
-  _register(registry: ProviderRegistry, name: string): unknown {
+  _register(registry, name): unknown {
     return registry.factory(name, createMachineService);
   },
 };
 
-const workflowRuntimeRegistration: RuntimeRegistrationRecipe = {
+const workflowRuntimeRegistration: RuntimeRegistrationRecipe<"$workflow"> = {
   /** @internal */
-  _register(registry: ProviderRegistry, name: string): unknown {
+  _register(registry, name): unknown {
     return registry.factory(name, createWorkflowService);
   },
 };
 
-const workflowSupervisorRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry: ProviderRegistry, name: string): unknown {
-    return registry.factory(name, [
-      _workflow,
-      ($workflow: WorkflowService): WorkflowSupervisorService =>
-        (config) =>
-          createWorkflowSupervisor($workflow, config),
-    ]);
-  },
-};
+const workflowSupervisorRuntimeRegistration: RuntimeRegistrationRecipe<"$workflowSupervisor"> =
+  {
+    /** @internal */
+    _register(registry, name): unknown {
+      return registry.factory(name, [
+        _workflow,
+        ($workflow: WorkflowService): WorkflowSupervisorService =>
+          (config) =>
+            createWorkflowSupervisor($workflow, config),
+      ]);
+    },
+  };
 
 export const ngOrchestrationProviders = {
   [_machine]: machineRuntimeRegistration,
@@ -578,9 +586,9 @@ export const ngOrchestrationProviders = {
   [_workflowSupervisor]: workflowSupervisorRuntimeRegistration,
 } satisfies ProviderGroup;
 
-const storageRuntimeRegistration: RuntimeRegistrationRecipe = {
+const storageRuntimeRegistration: RuntimeRegistrationRecipe<"$storage"> = {
   /** @internal */
-  _register(registry: ProviderRegistry, name: string): unknown {
+  _register(registry, name): unknown {
     return registry.factory(name, () => createPersistentProxy);
   },
 };
@@ -589,7 +597,7 @@ export const ngStorageProviders = {
   [_storage]: storageRuntimeRegistration,
 } satisfies ProviderGroup;
 
-const filterRuntimeRegistration: RuntimeRegistrationRecipe = {
+const filterRuntimeRegistration: RuntimeRegistrationRecipe<"$filter"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const filterRegistry = context.runtime.filterRegistry;
@@ -623,41 +631,42 @@ export const ngBuiltInFilters = {
 } satisfies FilterGroup;
 
 /** Browser services that are useful in normal apps but optional for small runtimes. */
-const anchorScrollRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const state = createAnchorScrollRuntimeState();
+const anchorScrollRuntimeRegistration: RuntimeRegistrationRecipe<"$anchorScroll"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      const state = createAnchorScrollRuntimeState();
 
-    context.runtime.configRegistry.register(name, (value) => {
-      applyAnchorScrollConfiguration(state, value as AnchorScrollConfig);
-    });
-    context.platform.addDisposer(() => {
-      destroyAnchorScrollRuntimeState(state);
-    });
+      context.runtime.configRegistry.register(name, (value) => {
+        applyAnchorScrollConfiguration(state, value as AnchorScrollConfig);
+      });
+      context.platform.addDisposer(() => {
+        destroyAnchorScrollRuntimeState(state);
+      });
 
-    return registry.factory(name, [
-      _location,
-      _rootScope,
-      _document,
-      _window,
-      (
-        $location: ng.LocationService,
-        $rootScope: ng.Scope,
-        $document: Document,
-        $window: Window,
-      ) =>
-        createAnchorScrollService(
-          state,
-          $location,
-          $rootScope,
-          $document,
-          $window as Window & typeof globalThis,
-        ),
-    ]);
-  },
-};
+      return registry.factory(name, [
+        _location,
+        _rootScope,
+        _document,
+        _window,
+        (
+          $location: ng.LocationService,
+          $rootScope: ng.Scope,
+          $document: Document,
+          $window: Window,
+        ) =>
+          createAnchorScrollService(
+            state,
+            $location,
+            $rootScope,
+            $document,
+            $window as Window & typeof globalThis,
+          ),
+      ]);
+    },
+  };
 
-const cookieRuntimeRegistration: RuntimeRegistrationRecipe = {
+const cookieRuntimeRegistration: RuntimeRegistrationRecipe<"$cookie"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     let defaults: CookieOptions = {};
@@ -677,58 +686,61 @@ const cookieRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const templateCacheRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    let cache: TemplateCache = new Map();
+const templateCacheRuntimeRegistration: RuntimeRegistrationRecipe<"$templateCache"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      let cache: TemplateCache = new Map();
 
-    context.runtime.configRegistry.register(name, (value) => {
-      const config = value as TemplateCacheConfig;
+      context.runtime.configRegistry.register(name, (value) => {
+        const config = value as TemplateCacheConfig;
 
-      if (config.cache !== undefined) cache = config.cache;
-    });
+        if (config.cache !== undefined) cache = config.cache;
+      });
 
-    return registry.factory(name, () => cache);
-  },
-};
+      return registry.factory(name, () => cache);
+    },
+  };
 
-const templateRequestRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    let httpOptions = createTemplateRequestHttpOptions();
+const templateRequestRuntimeRegistration: RuntimeRegistrationRecipe<"$templateRequest"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      let httpOptions = createTemplateRequestHttpOptions();
 
-    context.runtime.configRegistry.register(name, (value) => {
-      const config = value as TemplateRequestConfig;
+      context.runtime.configRegistry.register(name, (value) => {
+        const config = value as TemplateRequestConfig;
 
-      httpOptions = applyTemplateRequestConfig(httpOptions, config);
-    });
+        httpOptions = applyTemplateRequestConfig(httpOptions, config);
+      });
 
-    return registry.factory(name, [
-      _templateCache,
-      _http,
-      ($templateCache: ng.TemplateCacheService, $http: ng.HttpService) =>
-        createTemplateRequestService(
-          $templateCache,
-          $http,
-          httpOptions,
-          (url) =>
-            context.compileRegistry._bindingPolicies._resourceUrl(
-              url,
-              context.platform.window,
-            ),
-        ),
-    ]);
-  },
-};
+      return registry.factory(name, [
+        _templateCache,
+        _http,
+        ($templateCache: ng.TemplateCacheService, $http: ng.HttpService) =>
+          createTemplateRequestService(
+            $templateCache,
+            $http,
+            httpOptions,
+            (url) =>
+              context.compileRegistry._bindingPolicies._resourceUrl(
+                url,
+                context.platform.window,
+              ),
+          ),
+      ]);
+    },
+  };
 
-const httpParamSerializerRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name): unknown {
-    return registry.factory(name, createHttpParamSerializer);
-  },
-};
+const httpParamSerializerRuntimeRegistration: RuntimeRegistrationRecipe<"$httpParamSerializer"> =
+  {
+    /** @internal */
+    _register(registry, name): unknown {
+      return registry.factory(name, createHttpParamSerializer);
+    },
+  };
 
-const httpRuntimeRegistration: RuntimeRegistrationRecipe = {
+const httpRuntimeRegistration: RuntimeRegistrationRecipe<"$http"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const configuration = createHttpRuntimeConfiguration();
@@ -759,7 +771,7 @@ const httpRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const ariaRuntimeRegistration: RuntimeRegistrationRecipe = {
+const ariaRuntimeRegistration: RuntimeRegistrationRecipe<"$aria"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const state = createAriaRuntimeState();
@@ -778,7 +790,7 @@ const ariaRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const locationRuntimeRegistration: RuntimeRegistrationRecipe = {
+const locationRuntimeRegistration: RuntimeRegistrationRecipe<"$location"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const state = createLocationRuntimeState(context.platform.window);
@@ -805,7 +817,7 @@ const locationRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const logRuntimeRegistration: RuntimeRegistrationRecipe = {
+const logRuntimeRegistration: RuntimeRegistrationRecipe<"$log"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const configuration = createLogRuntimeConfiguration();
@@ -850,7 +862,7 @@ export const ngBrowserProviders = {
   $templateRequest: templateRequestRuntimeRegistration,
 } satisfies ProviderGroup;
 
-const securityRuntimeRegistration: RuntimeRegistrationRecipe = {
+const securityRuntimeRegistration: RuntimeRegistrationRecipe<"$security"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const configuration = createSecurityRuntimeConfiguration();
@@ -873,7 +885,7 @@ export const ngSecurityProviders = {
 } satisfies ProviderGroup;
 
 /** Native animation service composition. */
-const animateRuntimeRegistration: RuntimeRegistrationRecipe = {
+const animateRuntimeRegistration: RuntimeRegistrationRecipe<"$animate"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const animationRegistry = context.runtime.animationRegistry;
@@ -899,14 +911,14 @@ export const ngRouterProviders = {
   [_state]: routerRuntimeRegistration,
 } satisfies ProviderGroup;
 
-const streamRuntimeRegistration: RuntimeRegistrationRecipe = {
+const streamRuntimeRegistration: RuntimeRegistrationRecipe<"$stream"> = {
   /** @internal */
-  _register(registry: ProviderRegistry, name: string): unknown {
+  _register(registry, name): unknown {
     return registry.factory(name, createStreamService);
   },
 };
 
-const eventBusRuntimeRegistration: RuntimeRegistrationRecipe = {
+const eventBusRuntimeRegistration: RuntimeRegistrationRecipe<"$eventBus"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const state = createEventBusRuntimeState();
@@ -937,7 +949,7 @@ const eventBusRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const restRuntimeRegistration: RuntimeRegistrationRecipe = {
+const restRuntimeRegistration: RuntimeRegistrationRecipe<"$rest"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     let defaults: RestOptions = {};
@@ -957,7 +969,7 @@ const restRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const websocketRuntimeRegistration: RuntimeRegistrationRecipe = {
+const websocketRuntimeRegistration: RuntimeRegistrationRecipe<"$websocket"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const configuration = createWebSocketRuntimeConfiguration();
@@ -989,7 +1001,7 @@ const websocketRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const sseRuntimeRegistration: RuntimeRegistrationRecipe = {
+const sseRuntimeRegistration: RuntimeRegistrationRecipe<"$sse"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const configuration = createSseRuntimeConfiguration();
@@ -1018,45 +1030,46 @@ const sseRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const webTransportRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const configuration = createWebTransportRuntimeConfiguration();
-    const runtimeWindow = context.platform.window as Window & {
-      WebTransport?: new (
-        url: string,
-        options?: WebTransportOptions,
-      ) => WebTransport;
-    };
+const webTransportRuntimeRegistration: RuntimeRegistrationRecipe<"$webTransport"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      const configuration = createWebTransportRuntimeConfiguration();
+      const runtimeWindow = context.platform.window as Window & {
+        WebTransport?: new (
+          url: string,
+          options?: WebTransportOptions,
+        ) => WebTransport;
+      };
 
-    context.runtime.configRegistry.register(name, (value) => {
-      applyWebTransportConfiguration(
-        configuration,
-        value as {
-          defaults?: WebTransportConfig;
-        },
-      );
-    });
-    context.platform.addDisposer(() => {
-      destroyWebTransportRuntimeConfiguration(configuration);
-    });
-
-    return registry.factory(name, [
-      _log,
-      _exceptionHandler,
-      ($log: ng.LogService, $exceptionHandler: ng.ExceptionHandlerService) =>
-        createWebTransportService(
-          $log,
+      context.runtime.configRegistry.register(name, (value) => {
+        applyWebTransportConfiguration(
           configuration,
-          () => runtimeWindow.WebTransport,
-          runtimeWindow.location.href,
-          $exceptionHandler,
-        ),
-    ]);
-  },
-};
+          value as {
+            defaults?: WebTransportConfig;
+          },
+        );
+      });
+      context.platform.addDisposer(() => {
+        destroyWebTransportRuntimeConfiguration(configuration);
+      });
 
-const workerRuntimeRegistration: RuntimeRegistrationRecipe = {
+      return registry.factory(name, [
+        _log,
+        _exceptionHandler,
+        ($log: ng.LogService, $exceptionHandler: ng.ExceptionHandlerService) =>
+          createWebTransportService(
+            $log,
+            configuration,
+            () => runtimeWindow.WebTransport,
+            runtimeWindow.location.href,
+            $exceptionHandler,
+          ),
+      ]);
+    },
+  };
+
+const workerRuntimeRegistration: RuntimeRegistrationRecipe<"$worker"> = {
   /** @internal */
   _register(registry, name, context): unknown {
     const state = createWorkerRuntimeState();
@@ -1088,87 +1101,94 @@ const workerRuntimeRegistration: RuntimeRegistrationRecipe = {
   },
 };
 
-const webComponentRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const state = createWebComponentRuntimeState();
+const webComponentRuntimeRegistration: RuntimeRegistrationRecipe<"$webComponent"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      const state = createWebComponentRuntimeState();
 
-    context.runtime.configRegistry.register(name, (value) => {
-      applyWebComponentConfiguration(state, value as WebComponentConfig);
-    });
-    context.platform.addDisposer(() => {
-      destroyWebComponentRuntimeState(state);
-    });
+      context.runtime.configRegistry.register(name, (value) => {
+        applyWebComponentConfiguration(state, value as WebComponentConfig);
+      });
+      context.platform.addDisposer(() => {
+        destroyWebComponentRuntimeState(state);
+      });
 
-    return registry.factory(name, [
-      _injector,
-      _rootScope,
-      _compile,
-      _exceptionHandler,
-      (
-        $injector: ng.InjectorService,
-        $rootScope: ng.Scope,
-        $compile: ng.CompileService,
-        $exceptionHandler: ng.ExceptionHandlerService,
-      ) =>
-        createWebComponentService(
-          $injector,
-          $rootScope,
-          $compile,
-          state,
-          $exceptionHandler,
-        ),
-    ]);
-  },
-};
+      return registry.factory(name, [
+        _injector,
+        _rootScope,
+        _compile,
+        _exceptionHandler,
+        (
+          $injector: ng.InjectorService,
+          $rootScope: ng.Scope,
+          $compile: ng.CompileService,
+          $exceptionHandler: ng.ExceptionHandlerService,
+        ) =>
+          createWebComponentService(
+            $injector,
+            $rootScope,
+            $compile,
+            state,
+            $exceptionHandler,
+          ),
+      ]);
+    },
+  };
 
-const serviceWorkerRuntimeRegistration: RuntimeRegistrationRecipe = {
-  /** @internal */
-  _register(registry, name, context): unknown {
-    const configuration = createServiceWorkerRuntimeConfiguration();
-    let service: ServiceWorkerService | undefined;
-    let destroyed = false;
+const serviceWorkerRuntimeRegistration: RuntimeRegistrationRecipe<"$serviceWorker"> =
+  {
+    /** @internal */
+    _register(registry, name, context): unknown {
+      const configuration = createServiceWorkerRuntimeConfiguration();
+      let service: ServiceWorkerService | undefined;
+      let destroyed = false;
 
-    context.runtime.configRegistry.register(name, (value) => {
-      const command = value as {
-        scriptUrl: string | URL;
-        config: ServiceWorkerConfig;
-      };
+      context.runtime.configRegistry.register(name, (value) => {
+        const command = value as {
+          scriptUrl: string | URL;
+          config: ServiceWorkerConfig;
+        };
 
-      applyServiceWorkerConfiguration(
-        configuration,
-        command.scriptUrl,
-        command.config,
-      );
-    });
-
-    context.platform.addDisposer(() => {
-      destroyed = true;
-
-      if (service) destroyServiceWorkerService(service);
-    });
-
-    return registry.factory(name, [
-      _log,
-      _exceptionHandler,
-      _security,
-      (
-        log: ng.LogService,
-        $exceptionHandler: ng.ExceptionHandlerService,
-        security: SecurityPolicy,
-      ) => {
-        service = createServiceWorkerService(
-          context.platform.window.navigator.serviceWorker,
-          { log, exceptionHandler: $exceptionHandler, configuration, security },
+        applyServiceWorkerConfiguration(
+          configuration,
+          command.scriptUrl,
+          command.config,
         );
+      });
 
-        if (destroyed) destroyServiceWorkerService(service);
+      context.platform.addDisposer(() => {
+        destroyed = true;
 
-        return service;
-      },
-    ]);
-  },
-};
+        if (service) destroyServiceWorkerService(service);
+      });
+
+      return registry.factory(name, [
+        _log,
+        _exceptionHandler,
+        _security,
+        (
+          log: ng.LogService,
+          $exceptionHandler: ng.ExceptionHandlerService,
+          security: SecurityPolicy,
+        ) => {
+          service = createServiceWorkerService(
+            context.platform.window.navigator.serviceWorker,
+            {
+              log,
+              exceptionHandler: $exceptionHandler,
+              configuration,
+              security,
+            },
+          );
+
+          if (destroyed) destroyServiceWorkerService(service);
+
+          return service;
+        },
+      ]);
+    },
+  };
 
 /** Network, messaging, persistence, and worker-style integration providers. */
 export const ngIntegrationProviders = {

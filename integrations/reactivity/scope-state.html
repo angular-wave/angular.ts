@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Typed scope state conformance</title>
+  </head>
+  <body>
+    <main id="app"></main>
+    <script type="module">
+      import { Angular } from "/src/angular.ts";
+
+      const angular = new Angular();
+      window.angular = angular;
+      angular.createModule("scopeStateTests", ["ng"]);
+      const injector = angular.bootstrap(document.getElementById("app"), [
+        "scopeStateTests",
+      ]);
+      window.scopeStateTest = {
+        scope: injector.get("$rootScope"),
+        compile: injector.get("$compile"),
+        changes: [],
+      };
+    </script>
+  </body>
+</html>

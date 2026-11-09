@@ -1,4 +1,4 @@
-.PHONY: all root-types compile test scaladoc-check generate generate-check parity example-build runtime-build runtime-test check release-readiness package-local package-check release-check publish-local publish-central clean
+.PHONY: all root-types compile test scaladoc-check generate generate-check parity example-build scope-state-build runtime-build runtime-test check release-readiness package-local package-check release-check publish-local publish-central clean
 
 SBT ?= sbt
 SBT_FLAGS ?= --batch --no-server
@@ -20,6 +20,9 @@ scaladoc-check:
 
 example-build:
 	$(SBT) $(SBT_FLAGS) basicApp/fastLinkJS
+
+scope-state-build:
+	$(SBT) $(SBT_FLAGS) scopeStateTests/fastLinkJS
 
 generate: root-types
 	$(NODE) tool/generate_ng_namespace_parity.mjs

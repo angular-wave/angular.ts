@@ -77,6 +77,19 @@ lazy val angularTsScala =
       Test / scalaSource := baseDirectory.value / "src" / "test" / "scala",
     )
 
+lazy val scopeStateTests =
+  project
+    .in(file("test/scope_state"))
+    .enablePlugins(ScalaJSPlugin)
+    .dependsOn(angularTsScala)
+    .settings(commonSettings)
+    .settings(
+      name := "angular-ts-scala-scope-state-tests",
+      publish / skip := true,
+      scalaJSUseMainModuleInitializer := false,
+      scalaJSLinkerConfig ~= (_.withModuleKind(org.scalajs.linker.interface.ModuleKind.ESModule)),
+    )
+
 lazy val basicApp =
   project
     .in(file("examples/basic_app"))

@@ -172,8 +172,9 @@ export function createInjector(
   function service(
     name: string,
     constructor:
-      | Injectable<Constructor>
-      | Injectable<(...args: Dynamic[]) => unknown>,
+      | Constructor
+      | Injectable<(...args: Dynamic[]) => unknown>
+      | [...string[], Constructor],
   ): ServiceProvider {
     return factory(name, [
       _injector,
